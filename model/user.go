@@ -2,7 +2,9 @@ package model
 
 import (
 	"context"
+
 	"github.com/google/uuid"
+
 	"github.com/pshvedko/db/request"
 )
 
