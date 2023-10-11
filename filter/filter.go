@@ -46,7 +46,11 @@ func keys(f map[string]any) (key []string) {
 	return
 }
 
-func straight(q, o, p string, b Builder, f map[string]any) (err error) {
+const (
+	eq = iota
+)
+
+func straight(q, o, p string, t int, b Builder, f map[string]any) (err error) {
 	_, err = fmt.Fprint(b, q)
 	if err != nil {
 		return
@@ -58,7 +62,12 @@ func straight(q, o, p string, b Builder, f map[string]any) (err error) {
 				return
 			}
 		}
-		err = b.Eq(k, f[k])
+		switch t {
+		case eq:
+			err = b.Eq(k, f[k])
+		default:
+			return io.EOF
+		}
 		if err != nil {
 			return
 		}
@@ -89,9 +98,9 @@ type Eq map[string]any
 
 func (f Eq) To(b Builder) error {
 	if len(f) > 1 {
-		return straight("( ", " AND ", " )", b, f)
+		return straight("( ", " AND ", " )", eq, b, f)
 	}
-	return straight("", " AND ", "", b, f)
+	return straight("", " AND ", "", eq, b, f)
 }
 
 type Ge map[string]any
