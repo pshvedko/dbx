@@ -94,6 +94,12 @@ func TestFilter_To(t *testing.T) {
 			want:  "( ( bool IS FALSE AND int = :int0 ) OR int = :int1 )",
 			want1: map[string]any{"int0": 0, "int1": 1},
 		},
+		{
+			name:  "",
+			f:     Ne{"int": 0, "float": 3.14, "string": "one", "null": nil, "bool": true},
+			want:  "( bool IS NOT TRUE AND float <> :float0 AND int <> :int0 AND null IS NOT NULL AND string <> :string0 )",
+			want1: map[string]any{"int0": 0, "float0": 3.14, "string0": "one"},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
