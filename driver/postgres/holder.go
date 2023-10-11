@@ -1,34 +1,40 @@
 package postgres
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-type Holder struct {
+type Builder struct {
+	strings.Builder
 	k map[string]int
 	v map[string]any
 }
 
-func (h Holder) Values() map[string]any {
-	return h.v
+func (b Builder) Values() map[string]any {
+	return b.v
 }
 
-func (h Holder) Eq(k string, v any) string {
-	p := fmt.Sprint(k, h.k[k])
-	h.k[k]++
+func (b *Builder) Eq(k string, v any) (err error) {
 	switch x := v.(type) {
 	case nil:
-		return fmt.Sprint(k, " IS NULL")
+		_, err = fmt.Fprint(b, k, " IS NULL")
 	case bool:
-		return fmt.Sprint(k, " IS ", func(x bool) string {
+		_, err = fmt.Fprint(b, k, func() string {
 			if x {
-				return "TRUE"
+				return " IS TRUE"
 			}
-			return "FALSE"
-		}(x))
+			return " IS FALSE"
+		}())
+	default:
+		p := fmt.Sprint(k, b.k[k])
+		b.k[k]++
+		b.v[p] = v
+		_, err = fmt.Fprint(b, k, " = :", p)
 	}
-	h.v[p] = v
-	return fmt.Sprint(k, " = :", p)
+	return
 }
 
-func NewHolder() Holder {
-	return Holder{k: map[string]int{}, v: map[string]any{}}
+func NewBuilder() *Builder {
+	return &Builder{k: map[string]int{}, v: map[string]any{}}
 }

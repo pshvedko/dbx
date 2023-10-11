@@ -17,6 +17,6 @@ func (r Request) Get(u *model.User) error {
 
 func New(ctx context.Context) Request {
 	return Request{
-		Builder: postgres.NewHolder(),
+		Builder: postgres.NewBuilder(),
 	}
 }
