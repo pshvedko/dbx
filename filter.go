@@ -1,22 +1,19 @@
-package postgres
+package db
 
 import (
 	"fmt"
 	"strings"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Builder struct {
-	strings.Builder
-	k map[string]int
-	v map[string]any
+	b strings.Builder
+	v []any
 }
 
-func NewBuilder() *Builder {
-	return &Builder{k: map[string]int{}, v: map[string]any{}}
-}
-
-func (b Builder) Values() map[string]any {
-	return b.v
+func (b *Builder) Write(p []byte) (int, error) {
+	return b.b.Write(p)
 }
 
 func boolean(x bool) string {
@@ -29,14 +26,12 @@ func boolean(x bool) string {
 func (b *Builder) Operation(k string, v any, o ...string) (err error) {
 	switch x := v.(type) {
 	case nil:
-		_, err = fmt.Fprint(b, k, o[0], "NULL")
+		_, err = fmt.Fprint(&b.b, k, o[0], "NULL")
 	case bool:
-		_, err = fmt.Fprint(b, k, o[0], boolean(x))
+		_, err = fmt.Fprint(&b.b, k, o[0], boolean(x))
 	default:
-		p := fmt.Sprint(k, b.k[k])
-		b.k[k]++
-		b.v[p] = v
-		_, err = fmt.Fprint(b, k, o[len(o)-1], ":", p)
+		b.v = append(b.v, v)
+		_, err = fmt.Fprint(&b.b, k, o[len(o)-1], "$", len(b.v))
 	}
 	return
 }
@@ -75,7 +70,7 @@ func (b *Builder) Ni(s string, a ...any) error {
 	panic("implement me")
 }
 
-func (b Builder) As(s string, a any) error {
+func (b *Builder) As(s string, a any) error {
 	//TODO implement me
 	panic("implement me")
 }

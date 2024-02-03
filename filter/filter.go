@@ -8,8 +8,6 @@ import (
 
 type Builder interface {
 	io.Writer
-	fmt.Stringer
-	Values() map[string]any
 	Eq(string, any) error
 	Ne(string, any) error
 	Ge(string, any) error
