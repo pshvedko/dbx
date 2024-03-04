@@ -103,11 +103,13 @@ func TestFilter_To(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := Builder{}
+			b := Builder{
+				Holder: &Numbered{},
+			}
 			if err := tt.f.To(&b); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			got, got1 := b.b.String(), b.v
+			got, got1 := b.String(), b.Values()
 			if got != tt.want {
 				t.Errorf("To() got = %v, want %v", got, tt.want)
 			}
