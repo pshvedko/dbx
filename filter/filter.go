@@ -19,15 +19,17 @@ type Builder interface {
 	Ni(string, ...any) error
 }
 
-type Fielder interface {
-	Fields(map[string]any) ([]string, error)
+type Projector interface {
+	Names() []string
+	Values() []any
+	Table() string
 }
 
 type Filter interface {
-	To(Builder, Fielder) error
+	To(Builder, Projector) error
 }
 
-func conjunction(b Builder, j Fielder, o string, ff []Filter) (err error) {
+func conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	if len(ff) > 1 {
 		_, err = fmt.Fprint(b, "( ")
 		if err != nil {
@@ -54,11 +56,16 @@ func conjunction(b Builder, j Fielder, o string, ff []Filter) (err error) {
 	return
 }
 
-func straight(b Builder, j Fielder, o string, oo map[string]any, t any) (err error) {
-	var ff []string
-	ff, err = j.Fields(oo)
-	if err != nil {
-		return
+func straight(b Builder, j Projector, o string, oo map[string]any, t any) (err error) {
+	ff := make([]string, 0, len(oo))
+	for _, k := range j.Names() {
+		_, ok := oo[k]
+		if ok {
+			ff = append(ff, k)
+		}
+	}
+	if len(ff) != cap(ff) {
+		return io.EOF
 	}
 	if len(oo) > 1 {
 		_, err = fmt.Fprint(b, "( ")
@@ -105,66 +112,66 @@ func straight(b Builder, j Fielder, o string, oo map[string]any, t any) (err err
 
 type And []Filter
 
-func (f And) To(b Builder, j Fielder) error {
+func (f And) To(b Builder, j Projector) error {
 	return conjunction(b, j, "AND", f)
 }
 
 type Or []Filter
 
-func (f Or) To(b Builder, j Fielder) error {
+func (f Or) To(b Builder, j Projector) error {
 	return conjunction(b, j, "OR", f)
 }
 
 type Eq map[string]any
 
-func (f Eq) To(b Builder, j Fielder) error {
+func (f Eq) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type Ne map[string]any
 
-func (f Ne) To(b Builder, j Fielder) error {
+func (f Ne) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type Ge map[string]any
 
-func (f Ge) To(b Builder, j Fielder) error {
+func (f Ge) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type Gt map[string]any
 
-func (f Gt) To(b Builder, j Fielder) error {
+func (f Gt) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type Le map[string]any
 
-func (f Le) To(b Builder, j Fielder) error {
+func (f Le) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type Lt map[string]any
 
-func (f Lt) To(b Builder, j Fielder) error {
+func (f Lt) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type As map[string]any
 
-func (f As) To(b Builder, j Fielder) error {
+func (f As) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
 type In map[string][]any
 
-func (f In) To(b Builder, j Fielder) error {
+func (f In) To(b Builder, j Projector) error {
 	return io.EOF
 }
 
 type Ni map[string][]any
 
-func (f Ni) To(b Builder, j Fielder) error {
+func (f Ni) To(b Builder, j Projector) error {
 	return io.EOF
 }

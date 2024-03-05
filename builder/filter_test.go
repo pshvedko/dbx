@@ -1,7 +1,6 @@
 package builder_test
 
 import (
-	"io"
 	"reflect"
 	"testing"
 
@@ -9,20 +8,24 @@ import (
 	"github.com/pshvedko/db/filter"
 )
 
-type Fielder []string
+type Object struct {
+	Bool   bool    `json:"bool,omitempty"`
+	Float  float64 `json:"float,omitempty"`
+	Int    int     `json:"int,omitempty"`
+	Null   any     `json:"null,omitempty"`
+	String string  `json:"string,omitempty"`
+}
 
-func (f Fielder) Fields(m map[string]any) ([]string, error) {
-	a := make([]string, 0, len(m))
-	for _, k := range f {
-		_, ok := m[k]
-		if ok {
-			a = append(a, k)
-		}
-	}
-	if len(a) == cap(a) {
-		return a, nil
-	}
-	return nil, io.EOF
+func (o Object) Table() string {
+	return "objects"
+}
+
+func (o Object) Names() []string {
+	return []string{"bool", "float", "int", "null", "string"}
+}
+
+func (o *Object) Values() []any {
+	return []any{&o.Bool, &o.Float, &o.Int, &o.Null, &o.String}
 }
 
 func TestFilter_To(t *testing.T) {
@@ -122,7 +125,7 @@ func TestFilter_To(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := builder.Filter{}
-			if err := tt.f.To(&b, Fielder{"bool", "float", "int", "null", "string"}); (err != nil) != tt.wantErr {
+			if err := tt.f.To(&b, &Object{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()

@@ -8,7 +8,7 @@ import (
 )
 
 type Object interface {
-	filter.Fielder
+	filter.Projector
 }
 
 func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.Option) (err error) {
@@ -17,5 +17,5 @@ func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.
 		return
 	}
 	defer r.End(&err)
-	return r.SelectOne(ctx, o, f)
+	return r.Get(ctx, o, f)
 }
