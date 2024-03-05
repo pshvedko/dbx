@@ -55,7 +55,7 @@ func (f *Filter) Op(k string, o int, v any) error {
 		p = "$"
 		q = strconv.Itoa(len(f.v))
 	}
-	_, err := fmt.Fprint(f, k, " ", operation[o], " ", p, q)
+	_, err := fmt.Fprintf(f, "%q %s %s%s", k, operation[o], p, q)
 	return err
 }
 

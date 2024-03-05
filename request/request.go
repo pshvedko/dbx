@@ -9,6 +9,7 @@ import (
 
 type Request struct {
 	c Connection
+	t bool
 }
 
 func (r *Request) makeConn(ctx context.Context, db Connector) error {
@@ -18,17 +19,19 @@ func (r *Request) makeConn(ctx context.Context, db Connector) error {
 			return err
 		}
 		r.c = Conn{Conn: c}
+		r.t = false
 	}
 	return nil
 }
 
 func (r *Request) makeTx(ctx context.Context) error {
-	if r.c.NoTxx() && ctx != nil {
+	if r.t == false && ctx != nil {
 		c, err := r.c.BeginTxx(ctx, nil)
 		if err != nil {
 			return err
 		}
 		r.c = Tx{Tx: c}
+		r.t = true
 	}
 	return nil
 }
@@ -47,6 +50,7 @@ func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 func (r *Request) End(err *error) {
 	*err = r.c.End(*err)
 	r.c = nil
+	r.t = false
 }
 
 func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) error {

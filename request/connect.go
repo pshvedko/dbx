@@ -8,14 +8,13 @@ import (
 )
 
 type Connector interface {
-	Connx(ctx context.Context) (*sqlx.Conn, error)
+	Connx(context.Context) (*sqlx.Conn, error)
 }
 
 type Connection interface {
-	NoTxx() bool
-	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
-	QueryxContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
-	QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row
+	sqlx.ExecerContext
+	sqlx.QueryerContext
+	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
 	End(error) error
 }
 
@@ -29,10 +28,6 @@ func (c Conn) End(err1 error) error {
 		return err2
 	}
 	return err1
-}
-
-func (c Conn) NoTxx() bool {
-	return true
 }
 
 type Tx struct {
@@ -52,8 +47,4 @@ func (c Tx) End(err1 error) error {
 
 func (c Tx) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error) {
 	panic("dont implement me")
-}
-
-func (c Tx) NoTxx() bool {
-	return false
 }
