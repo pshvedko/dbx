@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"context"
+	"github.com/google/uuid"
 	"os"
 	"testing"
 
@@ -63,14 +64,16 @@ func (bd DB) TestGet(t *testing.T) {
 				oo:  nil,
 			},
 			want: &help.Object{
-				Id:      1,
-				Bool:    true,
+				ID:      1,
+				Bool:    help.PtrBool(true),
 				Float32: 0,
-				Float64: 3.14,
+				Float64: help.PtrFloat64(3.14),
 				Int:     0,
-				Int16:   16,
+				Int16:   help.PtrInt16(16),
 				Null:    nil,
-				String:  "red",
+				String:  help.PtrString("red"),
+				Uint64:  nil,
+				UUID2:   help.PtrUUID(uuid.UUID{}),
 			},
 			wantErr: false,
 		},
@@ -79,7 +82,7 @@ func (bd DB) TestGet(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := bd.Get(tt.args.ctx, tt.args.o, tt.args.f, tt.args.oo...)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Get() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("Get() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			require.Equal(t, tt.want, tt.args.o)
 		})
