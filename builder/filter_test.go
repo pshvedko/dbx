@@ -1,11 +1,29 @@
-package db
+package builder_test
 
 import (
+	"io"
 	"reflect"
 	"testing"
 
+	"github.com/pshvedko/db/builder"
 	"github.com/pshvedko/db/filter"
 )
+
+type Fielder []string
+
+func (f Fielder) Fields(m map[string]any) ([]string, error) {
+	a := make([]string, 0, len(m))
+	for _, k := range f {
+		_, ok := m[k]
+		if ok {
+			a = append(a, k)
+		}
+	}
+	if len(a) == cap(a) {
+		return a, nil
+	}
+	return nil, io.EOF
+}
 
 func TestFilter_To(t *testing.T) {
 	tests := []struct {
@@ -103,10 +121,8 @@ func TestFilter_To(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := Builder{
-				Holder: &Numbered{},
-			}
-			if err := tt.f.To(&b); (err != nil) != tt.wantErr {
+			b := builder.Filter{}
+			if err := tt.f.To(&b, Fielder{"bool", "float", "int", "null", "string"}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()
