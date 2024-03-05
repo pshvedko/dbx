@@ -12,7 +12,7 @@ type Object interface {
 }
 
 func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.Option) (err error) {
-	r, err := request.New(ctx, db, append(oo, request.WithTx(db))...)
+	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return
 	}

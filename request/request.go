@@ -11,6 +11,28 @@ type Request struct {
 	c Connection
 }
 
+func (r *Request) makeConn(ctx context.Context, db Connector) error {
+	if r.c != nil {
+		c, err := db.Connx(ctx)
+		if err != nil {
+			return err
+		}
+		r.c = Conn{Conn: c}
+	}
+	return nil
+}
+
+func (r *Request) makeTx(ctx context.Context) error {
+	if r.c.CanTxx() {
+		c, err := r.c.BeginTxx(ctx, nil)
+		if err != nil {
+			return err
+		}
+		r.c = Tx{Tx: c}
+	}
+	return nil
+}
+
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	var r Request
 	for _, o := range append(oo, WithConnect(db)) {
