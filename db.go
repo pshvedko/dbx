@@ -16,6 +16,6 @@ func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.
 	if err != nil {
 		return
 	}
-	defer r.End(ctx, &err)
+	defer r.End(&err)
 	return r.SelectOne(ctx, o, f)
 }

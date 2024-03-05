@@ -12,17 +12,26 @@ type Connector interface {
 }
 
 type Connection interface {
-	CanTxx() bool
+	NoTxx() bool
 	BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error)
 	QueryxContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
 	QueryRowxContext(ctx context.Context, query string, args ...interface{}) *sqlx.Row
+	End(error) error
 }
 
 type Conn struct {
 	*sqlx.Conn
 }
 
-func (c Conn) CanTxx() bool {
+func (c Conn) End(err1 error) error {
+	err2 := c.Close()
+	if err2 != nil {
+		return err2
+	}
+	return err1
+}
+
+func (c Conn) NoTxx() bool {
 	return true
 }
 
@@ -30,10 +39,21 @@ type Tx struct {
 	*sqlx.Tx
 }
 
-func (t Tx) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error) {
+func (c Tx) End(err1 error) error {
+	if err1 == nil {
+		return c.Commit()
+	}
+	err2 := c.Rollback()
+	if err2 != nil {
+		return err2
+	}
+	return err1
+}
+
+func (c Tx) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error) {
 	panic("dont implement me")
 }
 
-func (t Tx) CanTxx() bool {
+func (c Tx) NoTxx() bool {
 	return false
 }

@@ -23,7 +23,7 @@ func (r *Request) makeConn(ctx context.Context, db Connector) error {
 }
 
 func (r *Request) makeTx(ctx context.Context) error {
-	if r.c.CanTxx() {
+	if r.c.NoTxx() {
 		c, err := r.c.BeginTxx(ctx, nil)
 		if err != nil {
 			return err
@@ -44,8 +44,8 @@ func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	return &r, nil
 }
 
-func (r *Request) End(ctx context.Context, err *error) {
-
+func (r *Request) End(err *error) {
+	*err = r.c.End(*err)
 }
 
 func (r *Request) SelectOne(ctx context.Context, o filter.Fielder, f filter.Filter) error {
