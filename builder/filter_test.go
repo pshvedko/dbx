@@ -8,7 +8,7 @@ import (
 	"github.com/pshvedko/db/filter"
 )
 
-type Object struct {
+type Object1 struct {
 	Bool   bool    `json:"bool,omitempty"`
 	Float  float64 `json:"float,omitempty"`
 	Int    int     `json:"int,omitempty"`
@@ -16,15 +16,15 @@ type Object struct {
 	String string  `json:"string,omitempty"`
 }
 
-func (o Object) Table() string {
+func (o Object1) Table() string {
 	return "objects"
 }
 
-func (o Object) Names() []string {
+func (o Object1) Names() []string {
 	return []string{"bool", "float", "int", "null", "string"}
 }
 
-func (o *Object) Values() []any {
+func (o *Object1) Values() []any {
 	return []any{&o.Bool, &o.Float, &o.Int, &o.Null, &o.String}
 }
 
@@ -125,7 +125,7 @@ func TestFilter_To(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := builder.Filter{}
-			if err := tt.f.To(&b, &Object{}); (err != nil) != tt.wantErr {
+			if err := tt.f.To(&b, &Object1{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()

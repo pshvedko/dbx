@@ -1,13 +1,14 @@
-package request
+package builder_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/pshvedko/db/filter"
+	"github.com/pshvedko/db/request"
 )
 
-type Object struct {
+type Object2 struct {
 	Bool    bool    `json:"bool,omitempty"`
 	Int     int     `json:"int,omitempty"`
 	Int16   int16   `json:"int_16,omitempty"`
@@ -16,25 +17,25 @@ type Object struct {
 	String  string  `json:"string,omitempty"`
 }
 
-func (o Object) Table() string {
+func (o Object2) Table() string {
 	return "objects"
 }
 
-func (o Object) Names() []string {
+func (o Object2) Names() []string {
 	return []string{"bool", "int", "int_16", "float_32", "float_64", "string"}
 }
 
-func (o *Object) Values() []any {
+func (o *Object2) Values() []any {
 	return []any{&o.Bool, &o.Int, &o.Int16, &o.Float32, &o.Float64, &o.String}
 }
 
-func TestRequest_makeSelect(t *testing.T) {
+func TestRequest_Constructor_Select(t *testing.T) {
 	type args struct {
 		j filter.Projector
 		f filter.Filter
-		o []Option
+		o []request.Option
 	}
-	object := Object{}
+	object := Object2{}
 	tests := []struct {
 		name    string
 		args    args
@@ -59,12 +60,12 @@ func TestRequest_makeSelect(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, err := New(nil, nil, tt.args.o...)
+			r, err := request.New(nil, nil, tt.args.o...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("New() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			got, got1, got2, err := r.makeSelect(tt.args.j, tt.args.f)
+			got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("makeSelect() error = %v, wantErr %v", err, tt.wantErr)
 				return
