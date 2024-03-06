@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/pshvedko/db/builder"
 	"github.com/pshvedko/db/filter"
@@ -20,7 +21,7 @@ func (r *Request) makeConn(ctx context.Context, db Connector) error {
 		if err != nil {
 			return err
 		}
-		r.c = Conn{Conn: c}
+		r.c = Conn{Conn: c, Logger: slog.New(db.Handler())}
 		r.t = false
 	}
 	return nil
@@ -32,7 +33,7 @@ func (r *Request) makeTx(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		r.c = Tx{Tx: c}
+		r.c = Tx{Tx: c, Logger: slog.New(r.c.Handler())}
 		r.t = true
 	}
 	return nil
@@ -78,8 +79,13 @@ func (r *Request) List(ctx context.Context, j filter.Projector, f filter.Filter,
 			break
 		}
 	}
-	// FIXME
-	_ = rows.Close()
+	err2 := rows.Close()
+	if err2 != nil {
+		return 0, err2
+	}
+	if err != nil {
+		return 0, err
+	}
 	return 0, rows.Err()
 }
 

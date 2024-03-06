@@ -1,7 +1,10 @@
 package help
 
 import (
+	"context"
 	"github.com/google/uuid"
+	"log/slog"
+	"testing"
 	"time"
 )
 
@@ -98,3 +101,22 @@ func PtrUUID(v uuid.UUID) *uuid.UUID {
 func PtrTime(v time.Time) *time.Time {
 	return &v
 }
+
+type logHandler testing.T
+
+func (h *logHandler) Enabled(context.Context, slog.Level) bool { return true }
+
+func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
+	h.Log(r.Message)
+	r.Attrs(func(a slog.Attr) bool {
+		h.Log(a)
+		return true
+	})
+	return nil
+}
+
+func (h *logHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+
+func (h *logHandler) WithGroup(string) slog.Handler { return h }
+
+func LogHandler(t *testing.T) slog.Handler { return (*logHandler)(t) }

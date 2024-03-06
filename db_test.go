@@ -30,6 +30,7 @@ func openDB(t *testing.T) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	c.EnableLogger(help.LogHandler(t))
 	return &DB{DB: c}, nil
 }
 
