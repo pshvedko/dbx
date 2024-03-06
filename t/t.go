@@ -22,6 +22,7 @@ type Object struct {
 	Time1   time.Time  `json:"o_time_1,omitempty"`
 	Time2   *time.Time `json:"o_time_2,omitempty"`
 	Time3   *time.Time `json:"o_time_3,omitempty"`
+	Time4   time.Time  `json:"o_time_4,omitempty"`
 }
 
 func (o Object) Table() string {
@@ -32,15 +33,28 @@ func (o Object) Names() []string {
 	return []string{
 		"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64",
 		"o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4",
-		"o_time_1", "o_time_2", "o_time_3",
+		"o_time_1", "o_time_2", "o_time_3", "o_time_4",
 	}
+}
+
+type Time struct {
+	x *time.Time
+}
+
+func (t *Time) Scan(v any) error {
+	switch x := v.(type) {
+	case nil:
+	case time.Time:
+		*t.x = x
+	}
+	return nil
 }
 
 func (o *Object) Values() []any {
 	return []any{
 		&o.ID, &o.Bool, &o.Float32, &o.Float64, &o.Int, &o.Int16, &o.Null, &o.String, &o.Uint64,
 		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
-		&o.Time1, &o.Time2, &o.Time3,
+		&o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
 	}
 }
 
