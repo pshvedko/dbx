@@ -26,12 +26,12 @@ func openDB(t *testing.T) (*DB, error) {
 	if bd == "" {
 		t.Skip("env var TEST_POSTGRES is not set")
 	}
-	c, err := dbx.Open(bd)
+	db, err := dbx.Open(bd)
 	if err != nil {
 		return nil, err
 	}
-	c.EnableLogger(help.LogHandler(t))
-	return &DB{DB: c}, nil
+	db.EnableLogger(help.LogHandler(t))
+	return &DB{DB: db}, nil
 }
 
 func TestDB(t *testing.T) {
