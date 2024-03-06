@@ -24,8 +24,6 @@ func (f ExcludedColumn) Used(k string) bool {
 	return !ok
 }
 
-type By string
-
 type Order []string
 
 type Ranger struct {
