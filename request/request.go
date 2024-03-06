@@ -10,6 +10,8 @@ import (
 type Request struct {
 	c Connection
 	t bool
+	f map[string]struct{}
+	b bool
 }
 
 func (r *Request) makeConn(ctx context.Context, db Connector) error {
@@ -62,5 +64,28 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 }
 
 func (r *Request) Constructor() builder.Constructor {
-	return builder.Constructor{}
+	return builder.Constructor{
+		Fields: r.fields(),
+	}
+}
+
+func (r *Request) fields() builder.Fields {
+	if r.b || len(r.f) == 0 {
+		return builder.UnusedFields(r.f)
+	}
+	return builder.UsedFields(r.f)
+}
+
+func (r *Request) withField(b bool, kk ...string) error {
+	switch {
+	case r.b == b:
+		r.b = !r.b
+		fallthrough
+	case r.f == nil:
+		r.f = map[string]struct{}{}
+	}
+	for _, k := range kk {
+		r.f[k] = struct{}{}
+	}
+	return nil
 }

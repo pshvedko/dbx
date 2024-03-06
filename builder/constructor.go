@@ -6,8 +6,27 @@ import (
 	"github.com/pshvedko/db/filter"
 )
 
+type Fields interface {
+	Used(string) bool
+}
+
+type UsedFields map[string]struct{}
+
+func (f UsedFields) Used(k string) bool {
+	_, ok := f[k]
+	return ok
+}
+
+type UnusedFields map[string]struct{}
+
+func (f UnusedFields) Used(k string) bool {
+	_, ok := f[k]
+	return !ok
+}
+
 type Constructor struct {
 	Filter
+	Fields
 }
 
 func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any, []any, error) {
@@ -19,7 +38,10 @@ func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any,
 	nn := p.Names()
 	vv := p.Values()
 	for i, n := range nn {
-		if i > 0 {
+		if !c.Used(n) {
+			continue
+		}
+		if j > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
 				return "", nil, nil, err

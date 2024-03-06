@@ -29,3 +29,15 @@ func WithTx(db Connector) OptionFunc {
 		return r.makeTx(ctx)
 	}
 }
+
+type WithField []string
+
+func (o WithField) Apply(_ context.Context, r *Request) error {
+	return r.withField(true, o...)
+}
+
+type WithoutField []string
+
+func (o WithoutField) Apply(_ context.Context, r *Request) error {
+	return r.withField(false, o...)
+}

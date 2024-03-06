@@ -15,7 +15,7 @@ func TestConstructor_Select(t *testing.T) {
 		f filter.Filter
 		o []request.Option
 	}
-	object := help.Object{}
+	o := help.Object{}
 	tests := []struct {
 		name    string
 		args    args
@@ -28,13 +28,29 @@ func TestConstructor_Select(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				j: &object,
+				j: &o,
 				f: filter.Eq{"o_int": 1, "o_bool": true},
-				o: nil,
+				o: []request.Option{
+					request.WithField{"o_bool", "o_float_32", "o_int", "o_null", "o_string"},
+				},
 			},
-			want:    `SELECT "id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64", "o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4" FROM "objects" WHERE ( "o_bool" IS TRUE AND "o_int" = $1 )`,
+			want:    `SELECT "o_bool", "o_float_32", "o_int", "o_null", "o_string" FROM "objects" WHERE ( "o_bool" IS TRUE AND "o_int" = $1 )`,
 			want1:   []any{1},
-			want2:   object.Values(),
+			want2:   []any{&o.Bool, &o.Float32, &o.Int, &o.Null, &o.String},
+			wantErr: false,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{"o_int": 1, "o_bool": true},
+				o: []request.Option{
+					request.WithoutField{"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64"},
+				},
+			},
+			want:    `SELECT "o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4" FROM "objects" WHERE ( "o_bool" IS TRUE AND "o_int" = $1 )`,
+			want1:   []any{1},
+			want2:   []any{&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4},
 			wantErr: false,
 		},
 	}
