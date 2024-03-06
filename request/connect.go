@@ -79,6 +79,6 @@ func (c Tx) End(err1 error) error {
 	return err1
 }
 
-func (c Tx) BeginTxx(ctx context.Context, opts *sql.TxOptions) (*sqlx.Tx, error) {
+func (c Tx) BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error) {
 	panic("dont implement me")
 }
