@@ -3,7 +3,7 @@ package builder
 import (
 	"fmt"
 
-	"github.com/pshvedko/db/filter"
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Column interface {

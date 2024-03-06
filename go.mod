@@ -1,4 +1,4 @@
-module github.com/pshvedko/db
+module github.com/pshvedko/dbx
 
 go 1.21.1
 

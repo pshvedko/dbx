@@ -2,8 +2,8 @@ package dbx
 
 import (
 	"context"
-	"github.com/pshvedko/db/filter"
-	"github.com/pshvedko/db/request"
+	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 
 type Object interface {

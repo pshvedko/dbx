@@ -10,10 +10,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/pshvedko/db"
-	"github.com/pshvedko/db/filter"
-	"github.com/pshvedko/db/request"
-	"github.com/pshvedko/db/t"
+	"github.com/pshvedko/dbx"
+	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
+	"github.com/pshvedko/dbx/t"
 )
 
 type DB struct {

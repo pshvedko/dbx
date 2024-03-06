@@ -1,12 +1,12 @@
 package builder_test
 
 import (
-	help "github.com/pshvedko/db/t"
+	help "github.com/pshvedko/dbx/t"
 	"reflect"
 	"testing"
 
-	"github.com/pshvedko/db/filter"
-	"github.com/pshvedko/db/request"
+	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 
 type Object struct {

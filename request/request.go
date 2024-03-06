@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/pshvedko/db/builder"
-	"github.com/pshvedko/db/filter"
+	"github.com/pshvedko/dbx/builder"
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Request struct {

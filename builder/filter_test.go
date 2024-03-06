@@ -1,12 +1,12 @@
 package builder_test
 
 import (
-	help "github.com/pshvedko/db/t"
+	help "github.com/pshvedko/dbx/t"
 	"reflect"
 	"testing"
 
-	"github.com/pshvedko/db/builder"
-	"github.com/pshvedko/db/filter"
+	"github.com/pshvedko/dbx/builder"
+	"github.com/pshvedko/dbx/filter"
 )
 
 func TestFilter_To(t *testing.T) {
