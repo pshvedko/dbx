@@ -6,27 +6,27 @@ import (
 	"github.com/pshvedko/db/filter"
 )
 
-type Fields interface {
+type Column interface {
 	Used(string) bool
 }
 
-type UsedFields map[string]struct{}
+type AllowedColumn map[string]struct{}
 
-func (f UsedFields) Used(k string) bool {
+func (f AllowedColumn) Used(k string) bool {
 	_, ok := f[k]
 	return ok
 }
 
-type UnusedFields map[string]struct{}
+type ExcludedColumn map[string]struct{}
 
-func (f UnusedFields) Used(k string) bool {
+func (f ExcludedColumn) Used(k string) bool {
 	_, ok := f[k]
 	return !ok
 }
 
 type Constructor struct {
 	Filter
-	Fields
+	Column
 }
 
 func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any, []any, error) {

@@ -63,17 +63,37 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 	return r.c.QueryRowxContext(ctx, q, aa...).Scan(vv...)
 }
 
+func (r *Request) List(ctx context.Context, j filter.Projector, f filter.Filter) (int, error) {
+	q, aa, vv, err := r.Constructor().Select(j, f)
+	if err != nil {
+		return 0, err
+	}
+	rows, err := r.c.QueryxContext(ctx, q, aa...)
+	if err != nil {
+		return 0, err
+	}
+	for rows.Next() {
+		err = rows.Scan(vv...)
+		if err != nil {
+			break
+		}
+	}
+	// FIXME
+	_ = rows.Close()
+	return 0, rows.Err()
+}
+
 func (r *Request) Constructor() builder.Constructor {
 	return builder.Constructor{
-		Fields: r.fields(),
+		Column: r.fields(),
 	}
 }
 
-func (r *Request) fields() builder.Fields {
+func (r *Request) fields() builder.Column {
 	if r.b || len(r.f) == 0 {
-		return builder.UnusedFields(r.f)
+		return builder.ExcludedColumn(r.f)
 	}
-	return builder.UsedFields(r.f)
+	return builder.AllowedColumn(r.f)
 }
 
 func (r *Request) withField(b bool, kk ...string) error {

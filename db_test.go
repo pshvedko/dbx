@@ -2,10 +2,12 @@ package db_test
 
 import (
 	"context"
-	"github.com/google/uuid"
+	"database/sql"
 	"os"
 	"testing"
+	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pshvedko/db"
@@ -52,7 +54,7 @@ func (bd DB) TestGet(t *testing.T) {
 		name    string
 		args    args
 		want    db.Object
-		wantErr bool
+		wantErr error
 	}{
 		// TODO: Add test cases.
 		{
@@ -77,8 +79,11 @@ func (bd DB) TestGet(t *testing.T) {
 				UUID2:   help.PtrUUID(uuid.UUID{}),
 				UUID3:   nil,
 				UUID4:   uuid.UUID{},
+				Time1:   time.Unix(0, 0).UTC(),
+				Time2:   help.PtrTime(time.Unix(0, 0).UTC()),
+				Time3:   nil,
 			},
-			wantErr: false,
+			wantErr: nil,
 		},
 		{
 			name: "",
@@ -103,15 +108,24 @@ func (bd DB) TestGet(t *testing.T) {
 				UUID3:   nil,
 				UUID4:   uuid.UUID{},
 			},
-			wantErr: false,
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				ctx: ctx,
+				o:   &help.Object{},
+				f:   filter.Eq{"id": nil},
+				oo:  nil,
+			},
+			want:    &help.Object{},
+			wantErr: sql.ErrNoRows,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := bd.Get(tt.args.ctx, tt.args.o, tt.args.f, tt.args.oo...)
-			if (err != nil) != tt.wantErr {
-				t.Fatalf("Get() error = %v, wantErr %v", err, tt.wantErr)
-			}
+			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, tt.args.o)
 		})
 	}

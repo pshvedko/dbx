@@ -45,7 +45,8 @@ func TestConstructor_Select(t *testing.T) {
 				j: &o,
 				f: filter.Eq{"o_int": 1, "o_bool": true},
 				o: []request.Option{
-					request.WithoutField{"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64"},
+					request.WithoutField{
+						"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64", "o_time_1", "o_time_2", "o_time_3"},
 				},
 			},
 			want:    `SELECT "o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4" FROM "objects" WHERE ( "o_bool" IS TRUE AND "o_int" = $1 )`,
