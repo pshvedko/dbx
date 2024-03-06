@@ -23,6 +23,10 @@ type Fielder interface {
 	Names() []string
 	Values() []any
 }
+type Injector interface {
+	Get() Projector
+	Put(Projector)
+}
 
 type Projector interface {
 	Fielder
@@ -171,11 +175,13 @@ func (f As) To(b Builder, j Projector) error {
 type In map[string][]any
 
 func (f In) To(b Builder, j Projector) error {
-	return io.EOF
+	//TODO implement me
+	panic("implement me")
 }
 
 type Ni map[string][]any
 
 func (f Ni) To(b Builder, j Projector) error {
-	return io.EOF
+	//TODO implement me
+	panic("implement me")
 }

@@ -41,9 +41,10 @@ func TestDB(t *testing.T) {
 	require.NotNil(t, tt)
 
 	t.Run("Get", tt.TestGet)
+	t.Run("List", tt.TestList)
 }
 
-func (bd DB) TestGet(t *testing.T) {
+func (db DB) TestGet(t *testing.T) {
 	type args struct {
 		ctx context.Context
 		o   dbx.Object
@@ -138,9 +139,64 @@ func (bd DB) TestGet(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := bd.Get(tt.args.ctx, tt.args.o, tt.args.f, tt.args.oo...)
+			err := db.Get(tt.args.ctx, tt.args.o, tt.args.f, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, tt.args.o)
+		})
+	}
+}
+
+func (db *DB) TestList(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		i   filter.Injector
+		f   filter.Filter
+		o   *uint
+		l   *uint
+		y   []string
+		oo  []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint
+		want1   filter.Injector
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				i:   &help.ObjectList{},
+				f:   nil,
+				o:   help.PtrUint(1),
+				l:   help.PtrUint(3),
+				y:   []string{"-id"},
+				oo:  []request.Option{request.WithField{"id", "o_string_1"}},
+			},
+			want: 0,
+			want1: &help.ObjectList{
+				{
+					ID:      3,
+					String1: help.PtrString("white"),
+				}, {
+					ID:      2,
+					String1: help.PtrString("black"),
+				}, {
+					ID:      1,
+					String1: help.PtrString("red"),
+				},
+			},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := db.List(tt.args.ctx, tt.args.i, tt.args.f, tt.args.o, tt.args.l, tt.args.y, tt.args.oo...)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.want1, tt.args.i)
 		})
 	}
 }

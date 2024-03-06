@@ -2,7 +2,6 @@ package builder
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -37,8 +36,13 @@ func (f *Filter) Values() []any {
 	return f.v
 }
 
+func (f *Filter) Hold(v any) string {
+	f.v = append(f.v, v)
+	return fmt.Sprintf("$%d", len(f.v))
+}
+
 func (f *Filter) Op(k string, o int, v any) error {
-	var p, q string
+	var p string
 	switch x := v.(type) {
 	case nil:
 		p = "NULL"
@@ -51,11 +55,9 @@ func (f *Filter) Op(k string, o int, v any) error {
 		}
 		o++
 	default:
-		f.v = append(f.v, v)
-		p = "$"
-		q = strconv.Itoa(len(f.v))
+		p = f.Hold(v)
 	}
-	_, err := fmt.Fprintf(f, "%q %s %s%s", k, operation[o], p, q)
+	_, err := fmt.Fprintf(f, "%q %s %s", k, operation[o], p)
 	return err
 }
 

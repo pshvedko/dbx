@@ -64,21 +64,27 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 	return r.c.QueryRowxContext(ctx, q, aa...).Scan(vv...)
 }
 
-func (r *Request) List(ctx context.Context, j filter.Projector, f filter.Filter, o, l *uint, y builder.Order) (int, error) {
+func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y builder.Order) (uint, error) {
+	j := i.Get()
 	q, aa, vv, err := r.Constructor().Range(o, l).Sort(y).Select(j, f)
 	if err != nil {
 		return 0, err
 	}
+
 	rows, err := r.c.QueryxContext(ctx, q, aa...)
 	if err != nil {
 		return 0, err
 	}
+
+	_ = vv
 	for rows.Next() {
 		err = rows.Scan(vv...)
 		if err != nil {
 			break
 		}
+		i.Put(j)
 	}
+
 	err2 := rows.Close()
 	if err2 != nil {
 		return 0, err2

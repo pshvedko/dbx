@@ -3,10 +3,26 @@ package help
 import (
 	"context"
 	"github.com/google/uuid"
+	"github.com/pshvedko/dbx/filter"
 	"log/slog"
 	"testing"
 	"time"
 )
+
+type ObjectList []Object
+
+func (o ObjectList) Get() filter.Projector {
+	return &Object{}
+}
+
+func (o *ObjectList) Put(j filter.Projector) {
+	switch v := j.(type) {
+	case *Object:
+		*o = append(*o, *v)
+	default:
+		panic("invalid injection")
+	}
+}
 
 type Object struct {
 	ID      uint32     `json:"id"`
@@ -87,6 +103,10 @@ func PtrFloat64(v float64) *float64 {
 }
 
 func PtrInt16(v int16) *int16 {
+	return &v
+}
+
+func PtrUint(v uint) *uint {
 	return &v
 }
 
