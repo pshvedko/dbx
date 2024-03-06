@@ -39,15 +39,32 @@ func (r *Request) makeTx(ctx context.Context) error {
 	return nil
 }
 
+func (r *Request) Tx(ctx context.Context, db Connector) error {
+	err := r.makeConn(ctx, db)
+	if err != nil {
+		return err
+	}
+	return r.makeTx(ctx)
+}
+
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	var r Request
-	for _, o := range append(oo, WithConnect(db)) {
+	for _, o := range append(oo, makeConnect(db)) {
 		err := o.Apply(ctx, &r)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return &r, nil
+}
+
+func (r *Request) Apply(_ context.Context, x *Request) error {
+	switch x.c {
+	case nil:
+	default:
+		x.c = r.c
+	}
+	return nil
 }
 
 func (r *Request) End(err *error) {
