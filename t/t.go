@@ -127,9 +127,9 @@ type logHandler testing.T
 func (h *logHandler) Enabled(context.Context, slog.Level) bool { return true }
 
 func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
-	h.Log(r.Message)
+	h.Log(r.Level, r.Message)
 	r.Attrs(func(a slog.Attr) bool {
-		h.Log(a)
+		h.Log(r.Level, a)
 		return true
 	})
 	return nil

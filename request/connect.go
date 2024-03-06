@@ -28,12 +28,12 @@ type Conn struct {
 }
 
 func (c Conn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	c.Logger.DebugContext(ctx, query, placeholder(args)...)
 	return c.Conn.QueryxContext(ctx, query, args...)
 }
 
 func (c Conn) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	c.Logger.DebugContext(ctx, query, placeholder(args)...)
 	return c.Conn.QueryRowxContext(ctx, query, args...)
 }
 
@@ -59,12 +59,12 @@ type Tx struct {
 }
 
 func (c Tx) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	c.Logger.DebugContext(ctx, query, placeholder(args)...)
 	return c.Tx.QueryxContext(ctx, query, args...)
 }
 
 func (c Tx) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	c.Logger.DebugContext(ctx, query, placeholder(args)...)
 	return c.Tx.QueryRowxContext(ctx, query, args...)
 }
 
