@@ -37,16 +37,12 @@ func (c Conn) QueryRowxContext(ctx context.Context, query string, args ...any) *
 	return c.Conn.QueryRowxContext(ctx, query, args...)
 }
 
-func placeholder(args []any) []any {
-	i := len(args)
-	args = append(args, make([]any, i)...)
-	i <<= 1
-	for i > 0 {
-		args[i-1] = args[i>>1-1]
-		args[i-2] = fmt.Sprint("$", i>>1)
-		i -= 2
+func placeholder(vv []any) []any {
+	aa := make([]any, 0, 2*len(vv))
+	for i, v := range vv {
+		aa = append(aa, fmt.Sprint("$", i), v)
 	}
-	return args
+	return aa
 }
 
 func (c Conn) End(err1 error) error {
@@ -60,6 +56,16 @@ func (c Conn) End(err1 error) error {
 type Tx struct {
 	*sqlx.Tx
 	*slog.Logger
+}
+
+func (c Tx) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
+	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	return c.Tx.QueryxContext(ctx, query, args...)
+}
+
+func (c Tx) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
+	c.Logger.WarnContext(ctx, query, placeholder(args)...)
+	return c.Tx.QueryRowxContext(ctx, query, args...)
 }
 
 func (c Tx) End(err1 error) error {

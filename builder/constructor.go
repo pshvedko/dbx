@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pshvedko/dbx/filter"
 )
@@ -36,12 +37,32 @@ type Constructor struct {
 	Column
 	p Ranger
 	y Order
+	w int
+	m int
 }
 
-func (c Constructor) Select(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
+type Counter struct {
+	strings.Builder
+	q string
+	z int
+}
+
+func (c *Counter) Count() (string, int, error) {
+	_, err := c.WriteString("SELECT COUNT(*)")
+	if err != nil {
+		return "", 0, err
+	}
+	_, err = c.WriteString(c.q)
+	if err != nil {
+		return "", 0, err
+	}
+	return c.String(), c.z, nil
+}
+
+func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
 	_, err := c.WriteString("SELECT")
 	if err != nil {
-		return "", nil, nil, err
+		return nil, "", nil, nil, err
 	}
 
 	k := 0
@@ -54,44 +75,50 @@ func (c Constructor) Select(j filter.Projector, f filter.Filter) (string, []any,
 		if k > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
-				return "", nil, nil, err
+				return nil, "", nil, nil, err
 			}
 		}
-		_, err = fmt.Fprintf(&c, " %q", n)
+		_, err = fmt.Fprintf(c, " %q", n)
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 		vv[k] = vv[i]
 		k++
 	}
 
-	_, err = fmt.Fprintf(&c, " FROM %q", j.Table())
+	n := c.Len()
+
+	_, err = fmt.Fprintf(c, " FROM %q", j.Table())
 	if err != nil {
-		return "", nil, nil, err
+		return nil, "", nil, nil, err
 	}
 
-	_, err = fmt.Fprintf(&c, " WHERE ")
+	_, err = fmt.Fprintf(c, " WHERE ")
 	if err != nil {
-		return "", nil, nil, err
+		return nil, "", nil, nil, err
 	}
-	n := c.Len()
+
+	w := c.Len()
+
 	if f != nil {
-		err = f.To(&c, j)
+		err = f.To(c, j)
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 	}
-	if n == c.Len() {
-		_, err = fmt.Fprintf(&c, "TRUE")
+	if w == c.Len() {
+		_, err = fmt.Fprintf(c, "TRUE")
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 	}
+
+	m := c.Len()
 
 	if len(c.y) > 0 {
-		_, err = fmt.Fprintf(&c, " ORDER BY")
+		_, err = fmt.Fprintf(c, " ORDER BY")
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 		for i, y := range c.y {
 			if len(y) == 0 {
@@ -111,38 +138,46 @@ func (c Constructor) Select(j filter.Projector, f filter.Filter) (string, []any,
 			if i > 0 {
 				err = c.WriteByte(',')
 				if err != nil {
-					return "", nil, nil, err
+					return nil, "", nil, nil, err
 				}
 			}
-			_, err = fmt.Fprintf(&c, " %q%s", y, o)
+			_, err = fmt.Fprintf(c, " %q%s", y, o)
 			if err != nil {
-				return "", nil, nil, err
+				return nil, "", nil, nil, err
 			}
 		}
 	}
 
+	z := c.Size()
+
 	if c.p.o != nil {
-		_, err = fmt.Fprintf(&c, " OFFSET %s", c.Hold(*c.p.o))
+		_, err = fmt.Fprintf(c, " OFFSET %s", c.Hold(*c.p.o))
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 	}
 	if c.p.l != nil {
-		_, err = fmt.Fprintf(&c, " LIMIT %s", c.Hold(*c.p.l))
+		_, err = fmt.Fprintf(c, " LIMIT %s", c.Hold(*c.p.l))
 		if err != nil {
-			return "", nil, nil, err
+			return nil, "", nil, nil, err
 		}
 	}
 
-	return c.String(), c.Values(), vv[:k], nil
+	q := c.String()
+
+	if z == c.Size() {
+		return nil, q, c.Values(), vv[:k], nil
+	}
+
+	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:k], nil
 }
 
-func (c Constructor) Range(o, l *uint) Constructor {
+func (c *Constructor) Range(o, l *uint) *Constructor {
 	c.p.o, c.p.l = o, l
 	return c
 }
 
-func (c Constructor) Sort(y Order) Constructor {
+func (c *Constructor) Sort(y Order) *Constructor {
 	c.y = y
 	return c
 }

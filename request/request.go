@@ -57,7 +57,7 @@ func (r *Request) End(err *error) {
 }
 
 func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) error {
-	q, aa, vv, err := r.Constructor().Select(j, f)
+	_, q, aa, vv, err := r.Constructor().Select(j, f)
 	if err != nil {
 		return err
 	}
@@ -66,25 +66,24 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 
 func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y builder.Order) (uint, error) {
 	j := i.Get()
-	q, aa, vv, err := r.Constructor().Range(o, l).Sort(y).Select(j, f)
+	c := r.Constructor()
+	z, q, aa, vv, err := c.Range(o, l).Sort(y).Select(j, f)
 	if err != nil {
 		return 0, err
 	}
-
 	rows, err := r.c.QueryxContext(ctx, q, aa...)
 	if err != nil {
 		return 0, err
 	}
-
-	_ = vv
+	var t uint
 	for rows.Next() {
 		err = rows.Scan(vv...)
 		if err != nil {
 			break
 		}
 		i.Put(j)
+		t++
 	}
-
 	err2 := rows.Close()
 	if err2 != nil {
 		return 0, err2
@@ -92,11 +91,25 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 	if err != nil {
 		return 0, err
 	}
-	return 0, rows.Err()
+	err = rows.Err()
+	if err != nil {
+		return 0, err
+	} else if z == nil {
+		return t, nil
+	}
+	p, n, err := z.Count()
+	if err != nil {
+		return 0, err
+	}
+	err = r.c.QueryRowxContext(ctx, p, aa[:n]...).Scan(&t)
+	if err != nil {
+		return 0, err
+	}
+	return t, nil
 }
 
-func (r *Request) Constructor() builder.Constructor {
-	return builder.Constructor{
+func (r *Request) Constructor() *builder.Constructor {
+	return &builder.Constructor{
 		Column: r.fields(),
 	}
 }

@@ -67,7 +67,7 @@ func TestConstructor_Select(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("New() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
+			_, got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("makeSelect() error = %v, wantErr %v", err, tt.wantErr)
 			}

@@ -169,13 +169,13 @@ func (db *DB) TestList(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				i:   &help.ObjectList{},
-				f:   nil,
+				f:   filter.Eq{"o_time_1": time.Unix(0, 0).UTC(), "o_uint_64": nil},
 				o:   help.PtrUint(1),
 				l:   help.PtrUint(3),
 				y:   []string{"-id"},
 				oo:  []request.Option{request.WithField{"id", "o_string_1"}},
 			},
-			want: 0,
+			want: 4,
 			want1: &help.ObjectList{
 				{
 					ID:      3,

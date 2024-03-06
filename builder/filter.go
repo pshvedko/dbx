@@ -32,6 +32,10 @@ type Filter struct {
 	v []any
 }
 
+func (f *Filter) Size() int {
+	return len(f.v)
+}
+
 func (f *Filter) Values() []any {
 	return f.v
 }
