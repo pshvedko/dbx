@@ -63,6 +63,7 @@ func (r *Request) Apply(_ context.Context, x *Request) error {
 	case nil:
 	default:
 		x.c = r.c
+		x.t = r.t
 	}
 	return nil
 }
