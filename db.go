@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-
 	"github.com/pshvedko/db/filter"
 	"github.com/pshvedko/db/request"
 )

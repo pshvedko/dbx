@@ -19,9 +19,13 @@ type Builder interface {
 	Ni(string, ...any) error
 }
 
-type Projector interface {
+type Fielder interface {
 	Names() []string
 	Values() []any
+}
+
+type Projector interface {
+	Fielder
 	Table() string
 }
 

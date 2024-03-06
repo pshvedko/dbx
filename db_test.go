@@ -109,6 +109,16 @@ func (bd DB) TestGet(t *testing.T) {
 				UUID4:   uuid.UUID{},
 			},
 			wantErr: nil,
+		}, {
+			name: "",
+			args: args{
+				ctx: ctx,
+				o:   &help.Object{},
+				f:   filter.Eq{"id": 1},
+				oo:  []request.Option{request.WithoutField(help.Object{}.Names())},
+			},
+			want:    &help.Object{},
+			wantErr: nil,
 		},
 		{
 			name: "",

@@ -63,8 +63,8 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 	return r.c.QueryRowxContext(ctx, q, aa...).Scan(vv...)
 }
 
-func (r *Request) List(ctx context.Context, j filter.Projector, f filter.Filter) (int, error) {
-	q, aa, vv, err := r.Constructor().Select(j, f)
+func (r *Request) List(ctx context.Context, j filter.Projector, f filter.Filter, o, l *uint, y builder.Order) (int, error) {
+	q, aa, vv, err := r.Constructor().Range(o, l).Sort(y).Select(j, f)
 	if err != nil {
 		return 0, err
 	}

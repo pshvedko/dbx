@@ -24,24 +24,35 @@ func (f ExcludedColumn) Used(k string) bool {
 	return !ok
 }
 
+type By string
+
+type Order []string
+
+type Ranger struct {
+	o *uint
+	l *uint
+}
+
 type Constructor struct {
 	Filter
 	Column
+	p Ranger
+	y Order
 }
 
-func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any, []any, error) {
+func (c Constructor) Select(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	_, err := c.WriteString("SELECT")
 	if err != nil {
 		return "", nil, nil, err
 	}
-	j := 0
-	nn := p.Names()
-	vv := p.Values()
+	k := 0
+	nn := j.Names()
+	vv := j.Values()
 	for i, n := range nn {
 		if !c.Used(n) {
 			continue
 		}
-		if j > 0 {
+		if k > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
 				return "", nil, nil, err
@@ -51,11 +62,11 @@ func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any,
 		if err != nil {
 			return "", nil, nil, err
 		}
-		vv[j] = vv[i]
-		j++
+		vv[k] = vv[i]
+		k++
 	}
 	{
-		_, err = fmt.Fprintf(&c, " FROM %q", p.Table())
+		_, err = fmt.Fprintf(&c, " FROM %q", j.Table())
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -67,7 +78,7 @@ func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any,
 		}
 		n := c.Len()
 		if f != nil {
-			err = f.To(&c, p)
+			err = f.To(&c, j)
 			if err != nil {
 				return "", nil, nil, err
 			}
@@ -79,5 +90,61 @@ func (c Constructor) Select(p filter.Projector, f filter.Filter) (string, []any,
 			}
 		}
 	}
-	return c.String(), c.Values(), vv[:j], nil
+	{
+		if c.p.o != nil {
+			_, err = fmt.Fprintf(&c, " OFFSET %d", *c.p.o)
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+		if c.p.l != nil {
+			_, err = fmt.Fprintf(&c, " LIMIT %d", *c.p.l)
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+	}
+	if len(c.y) > 0 {
+		_, err = fmt.Fprintf(&c, " ORDER BY")
+		if err != nil {
+			return "", nil, nil, err
+		}
+		for i, y := range c.y {
+			if len(y) == 0 {
+				continue
+			}
+			var o string
+			switch y[0] {
+			case '-':
+				o = " DESC"
+				fallthrough
+			case '+':
+				y = y[1:]
+			}
+			if len(y) == 0 {
+				continue
+			}
+			if i > 0 {
+				err = c.WriteByte(',')
+				if err != nil {
+					return "", nil, nil, err
+				}
+			}
+			_, err = fmt.Fprintf(&c, " %q%s", y, o)
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+	}
+	return c.String(), c.Values(), vv[:k], nil
+}
+
+func (c Constructor) Range(o, l *uint) Constructor {
+	c.p.o, c.p.l = o, l
+	return c
+}
+
+func (c Constructor) Sort(y Order) Constructor {
+	c.y = y
+	return c
 }
