@@ -1,4 +1,4 @@
-package db_test
+package dbx_test
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 )
 
 type DB struct {
-	*db.DB
+	*dbx.DB
 }
 
 func openDB(t *testing.T) (*DB, error) {
@@ -26,7 +26,7 @@ func openDB(t *testing.T) (*DB, error) {
 	if bd == "" {
 		t.Skip("env var TEST_POSTGRES is not set")
 	}
-	c, err := db.Open(bd)
+	c, err := dbx.Open(bd)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func TestDB(t *testing.T) {
 func (bd DB) TestGet(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		o   db.Object
+		o   dbx.Object
 		f   filter.Filter
 		oo  []request.Option
 	}
@@ -54,7 +54,7 @@ func (bd DB) TestGet(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    db.Object
+		want    dbx.Object
 		wantErr error
 	}{
 		// TODO: Add test cases.
