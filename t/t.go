@@ -13,7 +13,9 @@ type Object struct {
 	Int     int        `json:"o_int,omitempty"`
 	Int16   *int16     `json:"o_int_16,omitempty"`
 	Null    any        `json:"o_null,omitempty"`
-	String  *string    `json:"o_string,omitempty"`
+	String1 *string    `json:"o_string_1,omitempty"`
+	String2 string     `json:"o_string_2,omitempty"`
+	String3 string     `json:"o_string_3,omitempty"`
 	Uint64  *uint64    `json:"o_uint_64,omitempty"`
 	UUID1   uuid.UUID  `json:"o_uuid_1,omitempty"`
 	UUID2   *uuid.UUID `json:"o_uuid_2,omitempty"`
@@ -31,10 +33,33 @@ func (o Object) Table() string {
 
 func (o Object) Names() []string {
 	return []string{
-		"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string", "o_uint_64",
+		"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string_1",
+		"o_string_2", "o_string_3", "o_uint_64",
 		"o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4",
 		"o_time_1", "o_time_2", "o_time_3", "o_time_4",
 	}
+}
+
+func (o *Object) Values() []any {
+	return []any{
+		&o.ID, &o.Bool, &o.Float32, &o.Float64, &o.Int, &o.Int16, &o.Null, &o.String1,
+		&String{x: &o.String2}, &String{x: &o.String3}, &o.Uint64,
+		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
+		&o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
+	}
+}
+
+type String struct {
+	x *string
+}
+
+func (s *String) Scan(v any) error {
+	switch x := v.(type) {
+	case nil:
+	case string:
+		*s.x = x
+	}
+	return nil
 }
 
 type Time struct {
@@ -48,14 +73,6 @@ func (t *Time) Scan(v any) error {
 		*t.x = x
 	}
 	return nil
-}
-
-func (o *Object) Values() []any {
-	return []any{
-		&o.ID, &o.Bool, &o.Float32, &o.Float64, &o.Int, &o.Int16, &o.Null, &o.String, &o.Uint64,
-		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
-		&o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
-	}
 }
 
 func PtrBool(v bool) *bool {

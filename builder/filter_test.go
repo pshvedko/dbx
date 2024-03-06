@@ -38,20 +38,20 @@ func TestFilter_To(t *testing.T) {
 		},
 		{
 			name:  "",
-			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string": "one"},
-			want:  `( "o_float_64" = $1 AND "o_int" = $2 AND "o_string" = $3 )`,
+			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string_1": "one"},
+			want:  `( "o_float_64" = $1 AND "o_int" = $2 AND "o_string_1" = $3 )`,
 			want1: []any{3.14, 0, "one"},
 		},
 		{
 			name:  "",
-			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string": "one", "o_null": nil},
-			want:  `( "o_float_64" = $1 AND "o_int" = $2 AND "o_null" IS NULL AND "o_string" = $3 )`,
+			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string_1": "one", "o_null": nil},
+			want:  `( "o_float_64" = $1 AND "o_int" = $2 AND "o_null" IS NULL AND "o_string_1" = $3 )`,
 			want1: []any{3.14, 0, "one"},
 		},
 		{
 			name:  "",
-			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string": "one", "o_null": nil, "o_bool": true},
-			want:  `( "o_bool" IS TRUE AND "o_float_64" = $1 AND "o_int" = $2 AND "o_null" IS NULL AND "o_string" = $3 )`,
+			f:     filter.Eq{"o_int": 0, "o_float_64": 3.14, "o_string_1": "one", "o_null": nil, "o_bool": true},
+			want:  `( "o_bool" IS TRUE AND "o_float_64" = $1 AND "o_int" = $2 AND "o_null" IS NULL AND "o_string_1" = $3 )`,
 			want1: []any{3.14, 0, "one"},
 		},
 		{
@@ -98,8 +98,8 @@ func TestFilter_To(t *testing.T) {
 		},
 		{
 			name:  "",
-			f:     filter.Ne{"o_int": 0, "o_float_64": 3.14, "o_string": "one", "o_null": nil, "o_bool": true},
-			want:  `( "o_bool" IS NOT TRUE AND "o_float_64" <> $1 AND "o_int" <> $2 AND "o_null" IS NOT NULL AND "o_string" <> $3 )`,
+			f:     filter.Ne{"o_int": 0, "o_float_64": 3.14, "o_string_1": "one", "o_null": nil, "o_bool": true},
+			want:  `( "o_bool" IS NOT TRUE AND "o_float_64" <> $1 AND "o_int" <> $2 AND "o_null" IS NOT NULL AND "o_string_1" <> $3 )`,
 			want1: []any{3.14, 0, "one"},
 		},
 	}
