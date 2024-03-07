@@ -69,7 +69,7 @@ func conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	return
 }
 
-func straight(b Builder, j Projector, o string, oo map[string]any, t any) (err error) {
+func straight[T any](b Builder, j Projector, o string, oo map[string]T, t any) (err error) {
 	ff := make([]string, 0, len(oo))
 	for _, k := range j.Names() {
 		_, ok := oo[k]
@@ -184,21 +184,13 @@ func (f As) To(b Builder, j Projector) error {
 type In map[string]Array
 
 func (f In) To(b Builder, j Projector) error {
-	m := make(map[string]any, len(f))
-	for k, v := range f {
-		m[k] = v
-	}
-	return straight(b, j, "AND", m, f)
+	return straight(b, j, "AND", f, f)
 }
 
 type Ni map[string]Array
 
 func (f Ni) To(b Builder, j Projector) error {
-	m := make(map[string]any, len(f))
-	for k, v := range f {
-		m[k] = v
-	}
-	return straight(b, j, "AND", m, f)
+	return straight(b, j, "AND", f, f)
 }
 
 type Array []any
