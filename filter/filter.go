@@ -1,8 +1,13 @@
 package filter
 
 import (
+	"database/sql/driver"
 	"fmt"
 	"io"
+	"strings"
+	"time"
+
+	"github.com/lib/pq"
 )
 
 type Builder interface {
@@ -15,8 +20,8 @@ type Builder interface {
 	Le(string, any) error
 	Lt(string, any) error
 	As(string, any) error
-	In(string, ...any) error
-	Ni(string, ...any) error
+	In(string, any) error
+	Ni(string, any) error
 }
 
 type Fielder interface {
@@ -108,6 +113,10 @@ func straight(b Builder, j Projector, o string, oo map[string]any, t any) (err e
 			err = b.Lt(k, oo[k])
 		case As:
 			err = b.As(k, oo[k])
+		case In:
+			err = b.In(k, oo[k])
+		case Ni:
+			err = b.Ni(k, oo[k])
 		default:
 			return io.EOF
 		}
@@ -172,16 +181,62 @@ func (f As) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
-type In map[string][]any
-
-func (f In) To(b Builder, j Projector) error {
-	//TODO implement me
-	panic("implement me")
+func remap(f map[string]Array) map[string]any {
+	m := make(map[string]any, len(f))
+	for k, v := range f {
+		m[k] = v
+	}
+	return m
 }
 
-type Ni map[string][]any
+type In map[string]Array
+
+func (f In) To(b Builder, j Projector) error {
+	return straight(b, j, "AND", remap(f), f)
+}
+
+type Ni map[string]Array
 
 func (f Ni) To(b Builder, j Projector) error {
-	//TODO implement me
-	panic("implement me")
+	return straight(b, j, "AND", remap(f), f)
+}
+
+type Array []any
+
+func (a Array) Value() (driver.Value, error) {
+	var b strings.Builder
+	err := b.WriteByte('{')
+	if err != nil {
+		return nil, err
+	}
+	for i, v := range a {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		switch x := v.(type) {
+		case nil:
+			_, err = b.WriteString("NULL")
+		case bool:
+			switch x {
+			case true:
+				_, err = b.WriteString("TRUE")
+			case false:
+				_, err = b.WriteString("FALSE")
+			}
+		case time.Time:
+			_, err = b.Write(pq.FormatTimestamp(x))
+		case string, fmt.Stringer:
+			_, err = fmt.Fprintf(&b, "%q", v)
+		default:
+			_, err = fmt.Fprint(&b, v)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	err = b.WriteByte('}')
+	if err != nil {
+		return nil, err
+	}
+	return b.String(), nil
 }

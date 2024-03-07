@@ -23,26 +23,56 @@ type DB struct {
 func openDB(t *testing.T) (*DB, error) {
 	t.Helper()
 	bd := os.Getenv("TEST_POSTGRES")
-	if bd == "" {
+	if len(bd) == 0 {
 		t.Skip("env var TEST_POSTGRES is not set")
 	}
 	db, err := dbx.Open(bd)
 	if err != nil {
 		return nil, err
 	}
-	t.Cleanup(func() { require.NoError(t, db.Close()) })
 	db.EnableLogger(help.LogHandler(t))
+	t.Cleanup(func() { require.NoError(t, db.Close()) })
 	return &DB{DB: db}, nil
 }
 
 func TestDB(t *testing.T) {
-	tt, err := openDB(t)
-
+	db, err := openDB(t)
 	require.NoError(t, err)
-	require.NotNil(t, tt)
+	require.NotNil(t, db)
+	t.Run("Get", db.TestGet)
+	t.Run("List", db.TestList)
+	t.Run("ListIn", db.TestListIn)
+	t.Run("ListInRaw", db.TestListAny)
+}
 
-	t.Run("Get", tt.TestGet)
-	t.Run("List", tt.TestList)
+func (db DB) TestListAny(t *testing.T) {
+	var oo []help.Object
+	err := db.Select(&oo,
+		`SELECT "id" FROM "objects" WHERE "id" =ANY($1) AND 
+                               "o_string_1" =ANY($2) AND 
+                               "o_bool" =ANY($3) AND 
+                               "o_float_64" =ANY($4) AND
+                               "o_uuid_2" =ANY($5) AND
+                               "o_time_1" <>ALL($6)`,
+		filter.Array{1, 2, 3, 100},
+		filter.Array{"red", "black", "white", "green", "yellow"},
+		filter.Array{false, true},
+		filter.Array{0, 3.14},
+		filter.Array{uuid.UUID{}},
+		filter.Array{time.Time{}},
+	)
+	require.NoError(t, err)
+	require.ElementsMatch(t, []help.Object{{ID: 1}, {ID: 2}, {ID: 3}}, oo)
+}
+
+func (db DB) TestListIn(t *testing.T) {
+	var oo help.ObjectList
+	total, err := db.List(context.TODO(), &oo, filter.And{
+		filter.In{"id": {1, 2, 3, 4, 5}},
+		filter.Ni{"o_time_1": {time.Time{}}}}, nil, nil, nil, request.WithField{"id"})
+	require.NoError(t, err)
+	require.EqualValues(t, 5, total)
+	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {

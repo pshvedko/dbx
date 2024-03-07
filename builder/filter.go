@@ -7,24 +7,28 @@ import (
 
 const (
 	Eq = iota
-	Ei
+	Is
 	Ne
-	Ni
+	Si
 	Ge
 	Gt
 	Le
 	Lt
+	In
+	Ni
 )
 
-var operation = [...]string{
-	Eq: "=",
-	Ei: "IS",
-	Ne: "<>",
-	Ni: "IS NOT",
-	Ge: ">=",
-	Gt: ">",
-	Le: "<=",
-	Lt: "<",
+var operation = [...][3]string{
+	Eq: {"=", " "},
+	Is: {"IS", " "},
+	Ne: {"<>", " "},
+	Si: {"IS NOT", " "},
+	Ge: {">=", " "},
+	Gt: {">", " "},
+	Le: {"<=", " "},
+	Lt: {"<", " "},
+	In: {"= ANY", "(", ")"},
+	Ni: {"<> ALL", "(", ")"},
 }
 
 type Filter struct {
@@ -61,7 +65,7 @@ func (f *Filter) Op(k string, o int, v any) error {
 	default:
 		p = f.Hold(v)
 	}
-	_, err := fmt.Fprintf(f, "%q %s %s", k, operation[o], p)
+	_, err := fmt.Fprintf(f, "%q %s%s%s%s", k, operation[o][0], operation[o][1], p, operation[o][2])
 	return err
 }
 
@@ -89,14 +93,12 @@ func (f *Filter) Lt(k string, v any) error {
 	return f.Op(k, Lt, v)
 }
 
-func (f *Filter) In(s string, a ...any) error {
-	//TODO implement me
-	panic("implement me")
+func (f *Filter) In(k string, v any) error {
+	return f.Op(k, In, v)
 }
 
-func (f *Filter) Ni(s string, a ...any) error {
-	//TODO implement me
-	panic("implement me")
+func (f *Filter) Ni(k string, v any) error {
+	return f.Op(k, Ni, v)
 }
 
 func (f *Filter) As(s string, a any) error {
