@@ -32,9 +32,16 @@ type Ranger struct {
 	l *uint
 }
 
+type Option struct {
+	Created string
+	Updated string
+	Deleted string
+}
+
 type Constructor struct {
 	Filter
 	Column
+	Option
 	p Ranger
 	y Order
 	w int
@@ -65,10 +72,19 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 
+	a := filter.And{}
+	if f != nil {
+		a = append(a, f)
+	}
+
 	k := 0
 	nn := j.Names()
 	vv := j.Values()
 	for i, n := range nn {
+		switch n {
+		case c.Deleted:
+			a = append(a, filter.Eq{n: nil})
+		}
 		if !c.Used(n) {
 			continue
 		}
@@ -100,11 +116,9 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 
 	w := c.Len()
 
-	if f != nil {
-		err = f.To(c, j)
-		if err != nil {
-			return nil, "", nil, nil, err
-		}
+	err = a.To(c, j)
+	if err != nil {
+		return nil, "", nil, nil, err
 	}
 	if w == c.Len() {
 		_, err = fmt.Fprintf(c, "TRUE")

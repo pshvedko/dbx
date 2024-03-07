@@ -31,3 +31,10 @@ type WithoutField []string
 func (o WithoutField) Apply(_ context.Context, r *Request) error {
 	return r.withField(false, o...)
 }
+
+type Deleted string
+
+func (w Deleted) Apply(_ context.Context, r *Request) error {
+	r.deleted = string(w)
+	return nil
+}

@@ -30,7 +30,8 @@ func openDB(t *testing.T) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	db.EnableLogger(help.LogHandler(t))
+	db.SetLogger(help.LogHandler(t))
+	db.SetOption(request.Deleted("o_time_4"))
 	t.Cleanup(func() { require.NoError(t, db.Close()) })
 	return &DB{DB: db}, nil
 }
@@ -42,18 +43,12 @@ func TestDB(t *testing.T) {
 	t.Run("Get", db.TestGet)
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
-	t.Run("ListInRaw", db.TestListAny)
+	t.Run("ListAny", db.TestListAny)
 }
 
 func (db DB) TestListAny(t *testing.T) {
 	var oo []help.Object
-	err := db.Select(&oo,
-		`SELECT "id" FROM "objects" WHERE "id" =ANY($1) AND 
-                               "o_string_1" =ANY($2) AND 
-                               "o_bool" =ANY($3) AND 
-                               "o_float_64" =ANY($4) AND
-                               "o_uuid_2" =ANY($5) AND
-                               "o_time_1" <>ALL($6)`,
+	err := db.Select(&oo, `SELECT "id" FROM "objects" WHERE "id" =ANY($1) AND "o_string_1" =ANY($2) AND "o_bool" =ANY($3) AND "o_float_64" =ANY($4) AND "o_uuid_2" =ANY($5) AND "o_time_1" <>ALL($6)`,
 		filter.Array{1, 2, 3, 100},
 		filter.Array{"red", "black", "white", "green", "yellow"},
 		filter.Array{false, true},
@@ -195,6 +190,21 @@ func (db *DB) TestList(t *testing.T) {
 		wantErr error
 	}{
 		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				i:   &help.ObjectList{},
+				f:   nil,
+				o:   nil,
+				l:   nil,
+				y:   []string{"id"},
+				oo:  []request.Option{request.WithField{"id"}},
+			},
+			want:    5,
+			want1:   &help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}},
+			wantErr: nil,
+		},
 		{
 			name: "",
 			args: args{

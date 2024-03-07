@@ -9,10 +9,13 @@ import (
 )
 
 type Request struct {
-	c Connection
-	t bool
-	f map[string]struct{}
-	b bool
+	c       Connection
+	t       bool
+	f       map[string]struct{}
+	b       bool
+	deleted string
+	updated string
+	created string
 }
 
 func (r *Request) makeConn(ctx context.Context, db Connector) error {
@@ -49,7 +52,7 @@ func (r *Request) Tx(ctx context.Context, db Connector) error {
 
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	var r Request
-	for _, o := range append(oo, makeConnect(db)) {
+	for _, o := range append(db.Option(), append(oo, makeConnect(db))...) {
 		err := o.Apply(ctx, &r)
 		if err != nil {
 			return nil, err
@@ -129,6 +132,11 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
 		Column: r.fields(),
+		Option: builder.Option{
+			Created: r.created,
+			Updated: r.updated,
+			Deleted: r.deleted,
+		},
 	}
 }
 

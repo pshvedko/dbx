@@ -2,6 +2,9 @@ package dbx
 
 import (
 	"context"
+	"log/slog"
+
+	"github.com/jmoiron/sqlx"
 
 	"github.com/pshvedko/dbx/filter"
 	"github.com/pshvedko/dbx/request"
@@ -11,8 +14,33 @@ type Object interface {
 	filter.Projector
 }
 
+type DB struct {
+	*sqlx.DB
+	*slog.Logger
+	option []request.Option
+}
+
+func Open(name string) (*DB, error) {
+	db, err := sqlx.Open("pgx", name)
+	if err != nil {
+		return nil, err
+	}
+	return &DB{
+		DB:     db,
+		Logger: slog.New(logHandler{}),
+	}, nil
+}
+
 func (db *DB) Apply(ctx context.Context, r *request.Request) error {
 	return r.Tx(ctx, db)
+}
+
+func (db *DB) Option() []request.Option {
+	return db.option
+}
+
+func (db *DB) SetOption(oo ...request.Option) {
+	db.option = append(db.option, oo...)
 }
 
 func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.Option) (err error) {

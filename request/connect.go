@@ -12,6 +12,7 @@ import (
 type Connector interface {
 	Logger
 	Connx(context.Context) (*sqlx.Conn, error)
+	Option() []Option
 }
 
 type Connection interface {
@@ -80,5 +81,5 @@ func (c Tx) End(err1 error) error {
 }
 
 func (c Tx) BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error) {
-	panic("dont implement me")
+	panic("don't implement me")
 }

@@ -2,6 +2,8 @@ package help
 
 import (
 	"context"
+	"github.com/jmoiron/sqlx"
+	"github.com/pshvedko/dbx/request"
 	"log/slog"
 	"testing"
 	"time"
@@ -142,3 +144,10 @@ func (h *logHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
 func (h *logHandler) WithGroup(string) slog.Handler { return h }
 
 func LogHandler(t *testing.T) slog.Handler { return (*logHandler)(t) }
+
+type DB struct {
+	*sqlx.DB
+	*slog.Logger
+}
+
+func (D DB) Option() []request.Option { return nil }
