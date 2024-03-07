@@ -2,7 +2,18 @@ package builder
 
 import "github.com/pshvedko/dbx/filter"
 
-type Modify interface {
+type Modify struct {
+	Created string
+	Updated string
+	Deleted string
+	Ability
+}
+
+func (m Modify) Visibility(a filter.And) filter.And {
+	return m.Ability.Visibility(a, m.Deleted)
+}
+
+type Ability interface {
 	Visibility(a filter.And, n string) filter.And
 }
 
@@ -11,7 +22,7 @@ type DefaultAvailability struct {
 }
 
 type DeletedOnly struct {
-	Modify
+	Ability
 }
 
 func (DeletedOnly) Visibility(a filter.And, n string) filter.And {
@@ -19,7 +30,7 @@ func (DeletedOnly) Visibility(a filter.And, n string) filter.And {
 }
 
 type DeletedNone struct {
-	Modify
+	Ability
 }
 
 func (DeletedNone) Visibility(a filter.And, n string) filter.And {
@@ -27,7 +38,7 @@ func (DeletedNone) Visibility(a filter.And, n string) filter.And {
 }
 
 type DeletedFree struct {
-	Modify
+	Ability
 }
 
 func (DeletedFree) Visibility(a filter.And, _ string) filter.And {

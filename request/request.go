@@ -17,8 +17,10 @@ type Request struct {
 	deleted string
 	updated string
 	created string
-	m       builder.Modify
+	m       builder.Ability
 	o       *sql.TxOptions
+	owner   string
+	group   string
 }
 
 func (r *Request) makeConn(ctx context.Context, db Connector) error {
@@ -129,11 +131,15 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
 		Column: r.fields(),
-		Modify: r.m,
-		Option: builder.Option{
+		Access: builder.Access{
+			Owner: r.owner,
+			Group: r.group,
+		},
+		Modify: builder.Modify{
 			Created: r.created,
 			Updated: r.updated,
 			Deleted: r.deleted,
+			Ability: r.m,
 		},
 	}
 }

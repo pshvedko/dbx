@@ -32,17 +32,16 @@ type Ranger struct {
 	l *uint
 }
 
-type Option struct {
-	Created string
-	Updated string
-	Deleted string
+type Access struct {
+	Group string
+	Owner string
 }
 
 type Constructor struct {
 	Filter
 	Column
-	Option
 	Modify
+	Access
 	p Ranger
 	y Order
 	w int
@@ -84,7 +83,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	for i, n := range nn {
 		switch n {
 		case c.Deleted:
-			a = c.Visibility(a, n)
+			a = c.Visibility(a)
 		}
 		if !c.Used(n) {
 			continue

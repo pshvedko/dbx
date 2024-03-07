@@ -49,15 +49,15 @@ func (o BeginTx) Apply(r *Request) error {
 type Owner string
 
 func (o Owner) Apply(r *Request) error {
-	//TODO implement me
-	panic("implement me")
+	r.owner = string(o)
+	return nil
 }
 
 type Group string
 
 func (o Group) Apply(r *Request) error {
-	//TODO implement me
-	panic("implement me")
+	r.group = string(o)
+	return nil
 }
 
 type Deleted string
@@ -78,11 +78,11 @@ const (
 func (o ReadDeleted) Apply(r *Request) error {
 	switch o {
 	case DeletedFree:
-		r.m = builder.DeletedFree{Modify: r.m}
+		r.m = builder.DeletedFree{Ability: r.m}
 	case DeletedNone:
-		r.m = builder.DeletedNone{Modify: r.m}
+		r.m = builder.DeletedNone{Ability: r.m}
 	case DeletedOnly:
-		r.m = builder.DeletedOnly{Modify: r.m}
+		r.m = builder.DeletedOnly{Ability: r.m}
 	}
 	return nil
 }
