@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 
 	"github.com/pshvedko/dbx/builder"
@@ -17,6 +18,7 @@ type Request struct {
 	updated string
 	created string
 	m       builder.Modify
+	o       *sql.TxOptions
 }
 
 func (r *Request) makeConn(ctx context.Context, db Connector) error {
@@ -32,8 +34,8 @@ func (r *Request) makeConn(ctx context.Context, db Connector) error {
 }
 
 func (r *Request) makeTx(ctx context.Context) error {
-	if r.t == false && ctx != nil {
-		c, err := r.c.BeginTxx(ctx, nil)
+	if r.o != nil && !r.t && ctx != nil {
+		c, err := r.c.BeginTxx(ctx, r.o)
 		if err != nil {
 			return err
 		}
@@ -43,20 +45,12 @@ func (r *Request) makeTx(ctx context.Context) error {
 	return nil
 }
 
-func (r *Request) Tx(ctx context.Context, db Connector) error {
-	err := r.makeConn(ctx, db)
-	if err != nil {
-		return err
-	}
-	return r.makeTx(ctx)
-}
-
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	r := Request{
 		m: builder.DefaultAvailability{},
 	}
-	for _, o := range append(db.Option(), append(oo, makeConnect(db))...) {
-		err := o.Apply(ctx, &r)
+	for _, o := range append(db.Option(), append(oo, makeConnect(ctx, db))...) {
+		err := o.Apply(&r)
 		if err != nil {
 			return nil, err
 		}
@@ -64,12 +58,12 @@ func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	return &r, nil
 }
 
-func (r *Request) Apply(_ context.Context, x *Request) error {
-	switch x.c {
+func (r *Request) Apply(a *Request) error {
+	switch a.c {
 	case nil:
 	default:
-		x.c = r.c
-		x.t = r.t
+		a.c = r.c
+		a.t = r.t
 	}
 	return nil
 }

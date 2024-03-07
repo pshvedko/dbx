@@ -17,7 +17,7 @@ type Object interface {
 type DB struct {
 	*sqlx.DB
 	*slog.Logger
-	option []request.Option
+	oo []request.Option
 }
 
 func Open(name string) (*DB, error) {
@@ -31,20 +31,16 @@ func Open(name string) (*DB, error) {
 	}, nil
 }
 
-func (db *DB) Apply(ctx context.Context, r *request.Request) error {
-	return r.Tx(ctx, db)
-}
-
 func (db *DB) Option() []request.Option {
-	return db.option
+	return db.oo
 }
 
 func (db *DB) SetOption(oo ...request.Option) {
-	db.option = append(db.option, oo...)
+	db.oo = append(db.oo, oo...)
 }
 
 func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.Option) (err error) {
-	r, err := request.New(ctx, db, oo...)
+	r, err := request.New(ctx, db, append(oo, request.BeginTx{})...)
 	if err != nil {
 		return
 	}
