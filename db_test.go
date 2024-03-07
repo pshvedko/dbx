@@ -31,7 +31,7 @@ func openDB(t *testing.T) (*DB, error) {
 		return nil, err
 	}
 	db.SetLogger(help.LogHandler(t))
-	db.SetOption(request.Deleted("o_time_4"))
+	db.SetOption(request.WithDeleted("o_time_4"))
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
 	})

@@ -3,8 +3,6 @@ package request
 import (
 	"context"
 	"database/sql"
-
-	"github.com/pshvedko/dbx/builder"
 )
 
 type Option interface {
@@ -39,50 +37,43 @@ func (o WithoutField) Apply(r *Request) error {
 	return r.withField(false, o...)
 }
 
-type BeginTx sql.TxOptions
+type WithTx sql.TxOptions
 
-func (o BeginTx) Apply(r *Request) error {
+func (o WithTx) Apply(r *Request) error {
 	r.o = (*sql.TxOptions)(&o)
 	return nil
 }
 
-type Owner string
+type WithOwner string
 
-func (o Owner) Apply(r *Request) error {
+func (o WithOwner) Apply(r *Request) error {
 	r.owner = string(o)
 	return nil
 }
 
-type Group string
+type WithGroup string
 
-func (o Group) Apply(r *Request) error {
+func (o WithGroup) Apply(r *Request) error {
 	r.group = string(o)
 	return nil
 }
 
-type Deleted string
+type WithDeleted string
 
-func (o Deleted) Apply(r *Request) error {
-	r.deleted = string(o)
+func (o WithDeleted) Apply(r *Request) error {
+	r.x.d = string(o)
 	return nil
 }
 
 type ReadDeleted int
 
 const (
-	DeletedOnly ReadDeleted = iota
-	DeletedNone
+	DeletedNone ReadDeleted = iota
+	DeletedOnly
 	DeletedFree
 )
 
 func (o ReadDeleted) Apply(r *Request) error {
-	switch o {
-	case DeletedFree:
-		r.m = builder.DeletedFree{Ability: r.m}
-	case DeletedNone:
-		r.m = builder.DeletedNone{Ability: r.m}
-	case DeletedOnly:
-		r.m = builder.DeletedOnly{Ability: r.m}
-	}
+	r.m = o
 	return nil
 }

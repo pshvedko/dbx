@@ -40,7 +40,7 @@ func (db *DB) SetOption(oo ...request.Option) {
 }
 
 func (db *DB) Get(ctx context.Context, o Object, f filter.Filter, oo ...request.Option) (err error) {
-	r, err := request.New(ctx, db, append(oo, request.BeginTx{})...)
+	r, err := request.New(ctx, db, append(oo, request.WithTx{})...)
 	if err != nil {
 		return
 	}

@@ -10,18 +10,20 @@ import (
 )
 
 type Request struct {
-	c       Connection
-	e       bool
-	t       bool
-	f       map[string]struct{}
-	b       bool
-	deleted string
-	updated string
-	created string
-	m       builder.Ability
-	o       *sql.TxOptions
-	owner   string
-	group   string
+	c     Connection
+	e     bool
+	t     bool
+	b     bool
+	f     map[string]struct{}
+	o     *sql.TxOptions
+	owner string
+	group string
+	m     ReadDeleted
+	x     struct {
+		d string
+		u string
+		c string
+	}
 }
 
 func (r *Request) makeConn(ctx context.Context, b Connector) error {
@@ -53,9 +55,7 @@ func (r *Request) makeTx(ctx context.Context, b Beginner) error {
 }
 
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
-	r := Request{
-		m: builder.DefaultAvailability{},
-	}
+	r := Request{}
 	for _, o := range append(db.Option(), append(oo, makeConnect(ctx, db))...) {
 		err := o.Apply(&r)
 		if err != nil {
@@ -81,7 +81,6 @@ func (r *Request) End(err *error) {
 	}
 	r.c = nil
 	r.o = nil
-	r.m = nil
 	r.f = nil
 	r.b = false
 	r.t = false
@@ -142,25 +141,29 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
-		Column: r.fields(),
+		Column: func() builder.Column {
+			if r.b || len(r.f) == 0 {
+				return builder.ExcludedColumn(r.f)
+			}
+			return builder.AllowedColumn(r.f)
+		}(),
 		Access: builder.Access{
 			Owner: r.owner,
 			Group: r.group,
 		},
 		Modify: builder.Modify{
-			Created: r.created,
-			Updated: r.updated,
-			Deleted: r.deleted,
-			Ability: r.m,
+			Created: r.x.c,
+			Updated: r.x.u,
+			Deleted: func() builder.Deleted {
+				if r.m == DeletedFree {
+					return builder.DeletedFree(r.x.d)
+				} else if r.m == DeletedOnly {
+					return builder.DeletedOnly(r.x.d)
+				}
+				return builder.DeletedNone(r.x.d)
+			}(),
 		},
 	}
-}
-
-func (r *Request) fields() builder.Column {
-	if r.b || len(r.f) == 0 {
-		return builder.ExcludedColumn(r.f)
-	}
-	return builder.AllowedColumn(r.f)
 }
 
 func (r *Request) withField(b bool, kk ...string) error {

@@ -7,24 +7,6 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-type Column interface {
-	Used(string) bool
-}
-
-type AllowedColumn map[string]struct{}
-
-func (f AllowedColumn) Used(k string) bool {
-	_, ok := f[k]
-	return ok
-}
-
-type ExcludedColumn map[string]struct{}
-
-func (f ExcludedColumn) Used(k string) bool {
-	_, ok := f[k]
-	return !ok
-}
-
 type Order []string
 
 type Ranger struct {
@@ -81,11 +63,11 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	nn := j.Names()
 	vv := j.Values()
 	for i, n := range nn {
-		switch n {
-		case c.Deleted:
+		switch {
+		case c.HasDeleted(n):
 			a = c.Visibility(a)
 		}
-		if !c.Used(n) {
+		if !c.HasColumn(n) {
 			continue
 		}
 		if k > 0 {
