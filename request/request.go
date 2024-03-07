@@ -11,6 +11,7 @@ import (
 
 type Request struct {
 	c       Connection
+	e       bool
 	t       bool
 	f       map[string]struct{}
 	b       bool
@@ -23,25 +24,29 @@ type Request struct {
 	group   string
 }
 
-func (r *Request) makeConn(ctx context.Context, db Connector) error {
-	if r.c == nil && ctx != nil && db != nil {
-		c, err := db.Connx(ctx)
+func (r *Request) makeConn(ctx context.Context, b Connector) error {
+	if r.c == nil && ctx != nil && b != nil {
+		c, err := b.Connx(ctx)
 		if err != nil {
 			return err
 		}
-		r.c = Conn{Conn: c, Logger: slog.New(db.Handler())}
-		r.t = false
+		r.c = Conn{Conn: c, Logger: slog.New(b.Handler())}
+		r.e = true
 	}
 	return nil
 }
 
-func (r *Request) makeTx(ctx context.Context) error {
+func (r *Request) makeTx(ctx context.Context, b Beginner) error {
 	if r.o != nil && !r.t && ctx != nil {
-		c, err := r.c.BeginTxx(ctx, r.o)
+		if r.e {
+			b = r.c
+		}
+		t, err := b.BeginTxx(ctx, r.o)
 		if err != nil {
 			return err
 		}
-		r.c = Tx{Tx: c, Logger: slog.New(r.c.Handler())}
+		r.c = Tx{Tx: t, Logger: slog.New(b.Handler())}
+		r.e = true
 		r.t = true
 	}
 	return nil
@@ -71,9 +76,16 @@ func (r *Request) Apply(a *Request) error {
 }
 
 func (r *Request) End(err *error) {
-	*err = r.c.End(*err)
+	if r.e {
+		*err = r.c.End(*err)
+	}
 	r.c = nil
+	r.o = nil
+	r.m = nil
+	r.f = nil
+	r.b = false
 	r.t = false
+	r.e = false
 }
 
 func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) error {

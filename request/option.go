@@ -17,13 +17,13 @@ func (f OptionFunc) Apply(r *Request) error {
 	return f(r)
 }
 
-func makeConnect(ctx context.Context, db Connector) OptionFunc {
+func makeConnect(ctx context.Context, c Connector) OptionFunc {
 	return func(r *Request) error {
-		err := r.makeConn(ctx, db)
+		err := r.makeConn(ctx, c)
 		if err != nil {
 			return err
 		}
-		return r.makeTx(ctx)
+		return r.makeTx(ctx, c)
 	}
 }
 

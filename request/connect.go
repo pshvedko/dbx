@@ -9,17 +9,21 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type Connector interface {
+type Beginner interface {
 	Logger
+	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
+}
+
+type Connector interface {
+	Beginner
 	Connx(context.Context) (*sqlx.Conn, error)
 	Option() []Option
 }
 
 type Connection interface {
-	Logger
+	Beginner
 	sqlx.ExecerContext
 	sqlx.QueryerContext
-	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
 	End(error) error
 }
 
