@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"github.com/pshvedko/dbx/builder"
 )
 
 type Option interface {
@@ -36,5 +37,25 @@ type Deleted string
 
 func (w Deleted) Apply(_ context.Context, r *Request) error {
 	r.deleted = string(w)
+	return nil
+}
+
+type ReadDeleted int
+
+const (
+	DeletedOnly ReadDeleted = iota
+	DeletedNone
+	DeletedFree
+)
+
+func (w ReadDeleted) Apply(_ context.Context, r *Request) error {
+	switch w {
+	case DeletedFree:
+		r.m = builder.DeletedFree{Modify: r.m}
+	case DeletedNone:
+		r.m = builder.DeletedNone{Modify: r.m}
+	case DeletedOnly:
+		r.m = builder.DeletedOnly{Modify: r.m}
+	}
 	return nil
 }

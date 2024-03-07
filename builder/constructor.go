@@ -42,6 +42,7 @@ type Constructor struct {
 	Filter
 	Column
 	Option
+	Modify
 	p Ranger
 	y Order
 	w int
@@ -83,7 +84,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	for i, n := range nn {
 		switch n {
 		case c.Deleted:
-			a = append(a, filter.Eq{n: nil})
+			a = c.Visibility(a, n)
 		}
 		if !c.Used(n) {
 			continue
