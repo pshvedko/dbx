@@ -30,6 +30,7 @@ func openDB(t *testing.T) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	t.Cleanup(func() { require.NoError(t, db.Close()) })
 	db.EnableLogger(help.LogHandler(t))
 	return &DB{DB: db}, nil
 }
