@@ -181,24 +181,24 @@ func (f As) To(b Builder, j Projector) error {
 	return straight(b, j, "AND", f, f)
 }
 
-func remap(f map[string]Array) map[string]any {
+type In map[string]Array
+
+func (f In) To(b Builder, j Projector) error {
 	m := make(map[string]any, len(f))
 	for k, v := range f {
 		m[k] = v
 	}
-	return m
-}
-
-type In map[string]Array
-
-func (f In) To(b Builder, j Projector) error {
-	return straight(b, j, "AND", remap(f), f)
+	return straight(b, j, "AND", m, f)
 }
 
 type Ni map[string]Array
 
 func (f Ni) To(b Builder, j Projector) error {
-	return straight(b, j, "AND", remap(f), f)
+	m := make(map[string]any, len(f))
+	for k, v := range f {
+		m[k] = v
+	}
+	return straight(b, j, "AND", m, f)
 }
 
 type Array []any

@@ -68,7 +68,7 @@ func (db DB) TestListAny(t *testing.T) {
 func (db DB) TestListIn(t *testing.T) {
 	var oo help.ObjectList
 	total, err := db.List(context.TODO(), &oo, filter.And{
-		filter.In{"id": {1, 2, 3, 4, 5}},
+		filter.In{"id": {1, 2, 3, 4, 5}, "o_string_1": {"red", "black", "white", "green", "yellow"}},
 		filter.Ni{"o_time_1": {time.Time{}}}}, nil, nil, nil, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
