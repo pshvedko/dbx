@@ -90,12 +90,10 @@ func (r *Request) End(err *error) {
 		err1 := r.c.End(*err)
 		err2 := r.c.Close()
 		switch {
-		case err1 != nil && err2 != nil:
-			*err = errors.Join(err1, err2)
-		case err1 != nil:
-			*err = err1
-		default:
+		case err1 == nil:
 			*err = err2
+		case err2 != nil:
+			*err = errors.Join(err1, err2)
 		}
 	}
 	r.c = nil
