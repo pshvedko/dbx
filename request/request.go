@@ -86,12 +86,10 @@ func (r *Request) Apply(a *Request) error {
 
 func (r *Request) End(err *error) {
 	if r.e {
-		err1 := r.c.End(*err)
+		*err = r.c.End(*err)
 		err2 := r.c.Close()
 		if err2 != nil {
 			*err = err2
-		} else {
-			*err = err1
 		}
 	}
 	r.c = nil
