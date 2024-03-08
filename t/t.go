@@ -74,16 +74,17 @@ func (o *Object) Values() []any {
 	}
 }
 
-func (o Object) Auto(i int) (any, bool) {
+func (o Object) Value(i int) (any, bool) {
+	v := o.Get(i)
 	switch i {
 	case 0:
-		return o.Value(i), true
+		return v, v != nil
 	default:
-		return o.Value(i), false
+		return v, true
 	}
 }
 
-func (o Object) Value(i int) any {
+func (o Object) Get(i int) any {
 	switch i {
 	case 0:
 		return filter.Nil(o.ID)
@@ -227,6 +228,11 @@ func (m *Map) Get(k string) *Array {
 		m.M[k] = a
 	}
 	return a
+}
+
+func (m *Map) Add(k string, v any) (string, any) {
+	m.Get(k).Add(v)
+	return k, v
 }
 
 type Array struct {

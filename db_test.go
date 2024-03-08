@@ -367,7 +367,7 @@ func (db DB) TestPut(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
-			ids.Get(tt.args.o.Table()).Add(tt.args.o.Value(0))
+			t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
 			require.Equal(t, tt.want, tt.args.o)
 		})
 	}

@@ -27,8 +27,8 @@ type Builder interface {
 type Fielder interface {
 	Names() []string
 	Values() []any
-	Value(int) any
-	Auto(int) (any, bool)
+	Value(int) (any, bool)
+	Get(int) any
 }
 
 type Injector interface {
