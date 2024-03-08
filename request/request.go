@@ -28,6 +28,13 @@ type Request struct {
 	}
 }
 
+func (r *Request) closer() io.Closer {
+	if r.e {
+		return r.c
+	}
+	return r
+}
+
 func (r *Request) Close() error {
 	return nil
 }
@@ -42,13 +49,6 @@ func (r *Request) makeConn(ctx context.Context, b Connector) error {
 		r.e = true
 	}
 	return nil
-}
-
-func (r *Request) closer() io.Closer {
-	if r.e {
-		return r.c
-	}
-	return r
 }
 
 func (r *Request) makeTx(ctx context.Context) error {
