@@ -328,12 +328,13 @@ func (db *DB) TestList(t *testing.T) {
 func (db DB) TestPut(t *testing.T) {
 	type args struct {
 		ctx context.Context
-		o   filter.Projector
+		o   dbx.Object
 		oo  []request.Option
 	}
 	tests := []struct {
 		name    string
 		args    args
+		want    dbx.Object
 		wantErr error
 	}{
 		// TODO: Add test cases.
@@ -342,27 +343,20 @@ func (db DB) TestPut(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				o: &help.Object{
-					ID:      0,
+					ID:      9,
 					Bool:    help.PtrBool(false),
-					Float32: 0,
 					Float64: help.PtrFloat64(0),
-					Int:     0,
 					Int16:   help.PtrInt16(0),
-					Null:    nil,
 					String1: help.PtrString("orange"),
-					String2: "",
-					String3: "",
-					Uint64:  nil,
-					UUID1:   uuid.UUID{},
-					UUID2:   nil,
-					UUID3:   nil,
-					UUID4:   uuid.UUID{},
-					Time1:   time.Time{},
-					Time2:   nil,
-					Time3:   nil,
-					Time4:   time.Time{},
 				},
 				oo: []request.Option{request.WithTx{}},
+			},
+			want: &help.Object{
+				ID:      9,
+				Bool:    help.PtrBool(false),
+				Float64: help.PtrFloat64(0),
+				Int16:   help.PtrInt16(0),
+				String1: help.PtrString("orange"),
 			},
 			wantErr: nil,
 		},
@@ -375,6 +369,7 @@ func (db DB) TestPut(t *testing.T) {
 			id := tt.args.o.Value(0)
 			ids.Append(id)
 			t.Log("ID", id)
+			require.Equal(t, tt.want, tt.args.o)
 		})
 	}
 	_, err := db.Exec(`DELETE FROM "objects" WHERE "id" =ANY($1)`, &ids)
