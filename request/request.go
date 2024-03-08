@@ -89,10 +89,9 @@ func (r *Request) End(err *error) {
 	if r.e {
 		err1 := r.c.End(*err)
 		err2 := r.c.Close()
-		switch {
-		case err1 == nil:
+		if err1 == nil {
 			*err = err2
-		case err2 != nil:
+		} else if err2 != nil {
 			*err = errors.Join(err1, err2)
 		}
 	}
