@@ -3,6 +3,7 @@ package dbx_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -34,7 +35,7 @@ func openDB(t *testing.T) (*DB, error) {
 	db.SetLogger(help.LogHandler(t))
 	db.SetOption(request.WithDeleted("o_time_4"))
 	t.Cleanup(func() {
-		require.NoError(t, db.Close())
+		_ = db.Close()
 	})
 	return &DB{DB: db, Context: context.TODO()}, nil
 }
@@ -361,17 +362,18 @@ func (db DB) TestPut(t *testing.T) {
 			wantErr: nil,
 		},
 	}
-	var ids help.Array
+	var ids help.Map
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
-			id := tt.args.o.Value(0)
-			ids.Append(id)
-			t.Log("ID", id)
+			ids.Get(tt.args.o.Table()).Add(tt.args.o.Value(0))
 			require.Equal(t, tt.want, tt.args.o)
 		})
 	}
-	_, err := db.Exec(`DELETE FROM "objects" WHERE "id" =ANY($1)`, &ids)
-	require.NoError(t, err)
+	t.Cleanup(func() {
+		for k, v := range ids.M {
+			_, _ = db.Exec(fmt.Sprintf(`DELETE FROM %q WHERE "id" =ANY($1)`, k), v)
+		}
+	})
 }

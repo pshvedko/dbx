@@ -210,12 +210,31 @@ func (DB) Connect(context.Context) (*sqlx.Conn, error) { return nil, nil }
 
 func (DB) Option() []request.Option { return nil }
 
+type Map struct {
+	sync.Mutex
+	M map[string]*Array
+}
+
+func (m *Map) Get(k string) *Array {
+	m.Lock()
+	defer m.Unlock()
+	if m.M == nil {
+		m.M = map[string]*Array{}
+	}
+	a, ok := m.M[k]
+	if !ok {
+		a = &Array{}
+		m.M[k] = a
+	}
+	return a
+}
+
 type Array struct {
 	sync.Mutex
 	filter.Array
 }
 
-func (a *Array) Append(v any) {
+func (a *Array) Add(v any) {
 	a.Lock()
 	defer a.Unlock()
 	a.Array = append(a.Array, v)
