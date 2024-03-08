@@ -13,6 +13,7 @@ import (
 
 type Beginner interface {
 	Logger
+	io.Closer
 	BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error)
 }
 
@@ -27,7 +28,6 @@ type Connection interface {
 	sqlx.ExecerContext
 	sqlx.QueryerContext
 	End(error) error
-	Close() error
 }
 
 type Conn struct {
