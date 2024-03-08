@@ -375,6 +375,6 @@ func (db DB) TestPut(t *testing.T) {
 			ids.Append(tt.args.o.Value(0))
 		})
 	}
-	_, err := db.Exec(`DELETE FROM "objects" WHERE id =ANY($1)`, &ids)
+	_, err := db.Exec(`DELETE FROM "objects" WHERE "id" =ANY($1)`, &ids)
 	require.NoError(t, err)
 }
