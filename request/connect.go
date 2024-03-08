@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -76,11 +77,11 @@ func (c Tx) End(err1 error) error {
 	if err1 == nil {
 		return c.Commit()
 	}
-	err := c.Rollback()
-	if err == nil {
+	err2 := c.Rollback()
+	if err2 == nil {
 		return err1
 	}
-	return err
+	return errors.Join(err1, err2)
 }
 
 func (c Tx) BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error) {

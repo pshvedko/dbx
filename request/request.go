@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"io"
 	"log/slog"
 
@@ -88,9 +89,12 @@ func (r *Request) End(err *error) {
 	if r.e {
 		err1 := r.c.End(*err)
 		err2 := r.c.Close()
-		if err1 != nil {
+		switch {
+		case err1 != nil && err2 != nil:
+			*err = errors.Join(err1, err2)
+		case err1 != nil:
 			*err = err1
-		} else {
+		default:
 			*err = err2
 		}
 	}
