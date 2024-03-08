@@ -3,16 +3,16 @@ package help
 import (
 	"context"
 	"database/sql/driver"
-	"github.com/jmoiron/sqlx"
-	"github.com/pshvedko/dbx/request"
 	"log/slog"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 
 type ObjectList []Object
@@ -74,18 +74,19 @@ func (o *Object) Values() []any {
 	}
 }
 
-func Nil[T comparable](v T) any {
-	var z T
-	if v != z {
-		return v
+func (o Object) Auto(i int) (any, bool) {
+	switch i {
+	case 0:
+		return o.Value(i), true
+	default:
+		return o.Value(i), false
 	}
-	return nil
 }
 
 func (o Object) Value(i int) any {
 	switch i {
 	case 0:
-		return o.ID
+		return filter.Nil(o.ID)
 	case 1:
 		return o.Bool
 	case 2:
@@ -101,9 +102,9 @@ func (o Object) Value(i int) any {
 	case 7:
 		return o.String1
 	case 8:
-		return Nil(o.String2)
+		return filter.Nil(o.String2)
 	case 9:
-		return Nil(o.String3)
+		return filter.Nil(o.String3)
 	case 10:
 		return o.Uint64
 	case 11:
@@ -113,7 +114,7 @@ func (o Object) Value(i int) any {
 	case 13:
 		return o.UUID3
 	case 14:
-		return Nil(o.UUID4)
+		return filter.Nil(o.UUID4)
 	case 15:
 		return o.Time1
 	case 16:
@@ -121,7 +122,7 @@ func (o Object) Value(i int) any {
 	case 17:
 		return o.Time3
 	case 18:
-		return Nil(o.Time4)
+		return filter.Nil(o.Time4)
 	default:
 		panic("illegal index")
 	}

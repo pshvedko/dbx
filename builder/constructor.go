@@ -175,8 +175,16 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		return "", nil, nil, err
 	}
 	v, nn, vv := 0, j.Names(), j.Values()
+	a, aa := 0, make([]any, len(vv))
 	for i, n := range nn {
-		if v > 0 {
+		vv[v] = vv[i]
+		nn[v] = nn[i]
+		v++
+		o, ok := j.Auto(i)
+		if ok && o == nil {
+			continue
+		}
+		if a > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
 				return "", nil, nil, err
@@ -186,16 +194,14 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		if err != nil {
 			return "", nil, nil, err
 		}
-		vv[v] = vv[i]
-		nn[v] = nn[i]
-		v++
+		aa[a] = o
+		a++
 	}
 	_, err = fmt.Fprintf(c, " ) VALUES (")
 	if err != nil {
 		return "", nil, nil, err
 	}
-	aa := make([]any, v)
-	for i := range vv[:v] {
+	for i := range aa[:a] {
 		if i > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
@@ -206,7 +212,6 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		if err != nil {
 			return "", nil, nil, err
 		}
-		aa[i] = j.Value(i)
 	}
 	_, err = fmt.Fprintf(c, " ) RETURNING")
 	if err != nil {
@@ -224,5 +229,5 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			return "", nil, nil, err
 		}
 	}
-	return c.String(), aa, vv[:v], nil
+	return c.String(), aa[:a], vv[:v], nil
 }

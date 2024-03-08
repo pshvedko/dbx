@@ -372,7 +372,9 @@ func (db DB) TestPut(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
-			ids.Append(tt.args.o.Value(0))
+			id := tt.args.o.Value(0)
+			ids.Append(id)
+			t.Log("ID", id)
 		})
 	}
 	_, err := db.Exec(`DELETE FROM "objects" WHERE "id" =ANY($1)`, &ids)
