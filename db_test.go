@@ -43,11 +43,12 @@ func TestDB(t *testing.T) {
 	db, err := openDB(t)
 	require.NoError(t, err)
 	require.NotNil(t, db)
+	t.Run("Connect", db.TestConn)
 	t.Run("Get", db.TestGet)
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
-	t.Run("ListAny", db.TestConn)
+	t.Run("Put", db.TestPut)
 }
 
 func (db DB) TestConn(t *testing.T) {
@@ -268,8 +269,8 @@ func (db *DB) TestList(t *testing.T) {
 				y:   []string{"id"},
 				oo:  []request.Option{request.WithField{"id"}, request.DeletedOnly},
 			},
-			want:    1,
-			want1:   &help.ObjectList{{ID: 6}},
+			want:    2,
+			want1:   &help.ObjectList{{ID: 6}, {ID: 7}},
 			wantErr: nil,
 		},
 		{
@@ -283,8 +284,8 @@ func (db *DB) TestList(t *testing.T) {
 				y:   []string{"id"},
 				oo:  []request.Option{request.WithField{"id"}, request.DeletedFree},
 			},
-			want:    6,
-			want1:   &help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}, {ID: 6}},
+			want:    7,
+			want1:   &help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}, {ID: 6}, {ID: 7}},
 			wantErr: nil,
 		},
 		{
@@ -296,7 +297,7 @@ func (db *DB) TestList(t *testing.T) {
 				o:   help.PtrUint(1),
 				l:   help.PtrUint(3),
 				y:   []string{"-id"},
-				oo:  []request.Option{request.WithField{"id", "o_string_1"}},
+				oo:  []request.Option{request.WithField{"id", "o_absent_0", "o_string_1"}},
 			},
 			want: 4,
 			want1: &help.ObjectList{
@@ -322,4 +323,58 @@ func (db *DB) TestList(t *testing.T) {
 			require.Equal(t, tt.want1, tt.args.i)
 		})
 	}
+}
+
+func (db DB) TestPut(t *testing.T) {
+	type args struct {
+		ctx context.Context
+		o   filter.Projector
+		oo  []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				o: &help.Object{
+					ID:      0,
+					Bool:    help.PtrBool(false),
+					Float32: 0,
+					Float64: help.PtrFloat64(0),
+					Int:     0,
+					Int16:   help.PtrInt16(0),
+					Null:    nil,
+					String1: help.PtrString("orange"),
+					String2: "",
+					String3: "",
+					Uint64:  nil,
+					UUID1:   uuid.UUID{},
+					UUID2:   nil,
+					UUID3:   nil,
+					UUID4:   uuid.UUID{},
+					Time1:   time.Time{},
+					Time2:   nil,
+					Time3:   nil,
+					Time4:   time.Time{},
+				},
+				oo: []request.Option{request.WithTx{}},
+			},
+			wantErr: nil,
+		},
+	}
+	var ids help.Array
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
+			require.ErrorIs(t, err, tt.wantErr)
+			ids.Append(tt.args.o.Value(0))
+		})
+	}
+	_, err := db.Exec(`DELETE FROM "objects" WHERE id =ANY($1)`, &ids)
+	require.NoError(t, err)
 }

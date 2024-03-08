@@ -19,14 +19,14 @@ type Beginner interface {
 
 type Connector interface {
 	Beginner
-	Connx(context.Context) (*sqlx.Conn, error)
+	Connect(context.Context) (*sqlx.Conn, error)
 	Option() []Option
 }
 
 type Connection interface {
 	Beginner
-	sqlx.ExecerContext
-	sqlx.QueryerContext
+	Query(ctx context.Context, query string, args ...any) (*sqlx.Rows, error)
+	QueryRow(ctx context.Context, query string, args ...any) *sqlx.Row
 	End(error) error
 }
 
@@ -35,20 +35,20 @@ type Conn struct {
 	*slog.Logger
 }
 
-func (c Conn) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.Logger.DebugContext(ctx, query, placeholder(args)...)
-	return c.Conn.QueryxContext(ctx, query, args...)
+func (c Conn) Query(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
+	c.DebugContext(ctx, query, placeholder(args)...)
+	return c.QueryxContext(ctx, query, args...)
 }
 
-func (c Conn) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.Logger.DebugContext(ctx, query, placeholder(args)...)
-	return c.Conn.QueryRowxContext(ctx, query, args...)
+func (c Conn) QueryRow(ctx context.Context, query string, args ...any) *sqlx.Row {
+	c.DebugContext(ctx, query, placeholder(args)...)
+	return c.QueryRowxContext(ctx, query, args...)
 }
 
 func placeholder(vv []any) []any {
 	aa := make([]any, 0, 2*len(vv))
 	for i, v := range vv {
-		aa = append(aa, fmt.Sprint("$", i), v)
+		aa = append(aa, fmt.Sprint("$", i+1), v)
 	}
 	return aa
 }
@@ -63,14 +63,14 @@ type Tx struct {
 	io.Closer
 }
 
-func (c Tx) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.Logger.DebugContext(ctx, query, placeholder(args)...)
-	return c.Tx.QueryxContext(ctx, query, args...)
+func (c Tx) Query(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
+	c.DebugContext(ctx, query, placeholder(args)...)
+	return c.QueryxContext(ctx, query, args...)
 }
 
-func (c Tx) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.Logger.DebugContext(ctx, query, placeholder(args)...)
-	return c.Tx.QueryRowxContext(ctx, query, args...)
+func (c Tx) QueryRow(ctx context.Context, query string, args ...any) *sqlx.Row {
+	c.DebugContext(ctx, query, placeholder(args)...)
+	return c.QueryRowxContext(ctx, query, args...)
 }
 
 func (c Tx) End(err1 error) error {

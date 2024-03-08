@@ -27,6 +27,7 @@ type Builder interface {
 type Fielder interface {
 	Names() []string
 	Values() []any
+	Value(int) any
 }
 type Injector interface {
 	Get() Projector

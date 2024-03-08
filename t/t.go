@@ -2,9 +2,11 @@ package help
 
 import (
 	"context"
+	"database/sql/driver"
 	"github.com/jmoiron/sqlx"
 	"github.com/pshvedko/dbx/request"
 	"log/slog"
+	"sync"
 	"testing"
 	"time"
 
@@ -69,6 +71,59 @@ func (o *Object) Values() []any {
 		&String{x: &o.String2}, &String{x: &o.String3}, &o.Uint64,
 		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
 		&o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
+	}
+}
+
+func Nil[T comparable](v T) any {
+	var z T
+	if v != z {
+		return v
+	}
+	return nil
+}
+
+func (o Object) Value(i int) any {
+	switch i {
+	case 0:
+		return o.ID
+	case 1:
+		return o.Bool
+	case 2:
+		return o.Float32
+	case 3:
+		return o.Float64
+	case 4:
+		return o.Int
+	case 5:
+		return o.Int16
+	case 6:
+		return o.Null
+	case 7:
+		return o.String1
+	case 8:
+		return Nil(o.String2)
+	case 9:
+		return Nil(o.String3)
+	case 10:
+		return o.Uint64
+	case 11:
+		return o.UUID1
+	case 12:
+		return o.UUID2
+	case 13:
+		return o.UUID3
+	case 14:
+		return Nil(o.UUID4)
+	case 15:
+		return o.Time1
+	case 16:
+		return o.Time2
+	case 17:
+		return o.Time3
+	case 18:
+		return Nil(o.Time4)
+	default:
+		panic("illegal index")
 	}
 }
 
@@ -150,4 +205,23 @@ type DB struct {
 	*slog.Logger
 }
 
-func (D DB) Option() []request.Option { return nil }
+func (DB) Connect(context.Context) (*sqlx.Conn, error) { return nil, nil }
+
+func (DB) Option() []request.Option { return nil }
+
+type Array struct {
+	sync.Mutex
+	filter.Array
+}
+
+func (a *Array) Append(v any) {
+	a.Lock()
+	defer a.Unlock()
+	a.Array = append(a.Array, v)
+}
+
+func (a *Array) Value() (driver.Value, error) {
+	a.Lock()
+	defer a.Unlock()
+	return a.Array.Value()
+}

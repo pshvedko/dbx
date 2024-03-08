@@ -39,6 +39,10 @@ func (db *DB) SetOption(oo ...request.Option) {
 	db.oo = append(db.oo, oo...)
 }
 
+func (db *DB) Connect(ctx context.Context) (*sqlx.Conn, error) {
+	return db.Connx(ctx)
+}
+
 func (db *DB) Get(ctx context.Context, o filter.Projector, f filter.Filter, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {

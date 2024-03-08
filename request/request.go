@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"github.com/pshvedko/dbx/filter"
 	"io"
 	"log/slog"
 
 	"github.com/pshvedko/dbx/builder"
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Request struct {
@@ -41,7 +41,7 @@ func (r *Request) Close() error {
 
 func (r *Request) makeConn(ctx context.Context, b Connector) error {
 	if r.c == nil && ctx != nil && b != nil {
-		c, err := b.Connx(ctx)
+		c, err := b.Connect(ctx)
 		if err != nil {
 			return err
 		}
@@ -152,7 +152,7 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 	if err != nil {
 		return err
 	}
-	return r.c.QueryRowxContext(ctx, q, aa...).Scan(vv...)
+	return r.c.QueryRow(ctx, q, aa...).Scan(vv...)
 }
 
 func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y builder.Order) (uint, error) {
@@ -161,7 +161,7 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 	if err != nil {
 		return 0, err
 	}
-	rows, err := r.c.QueryxContext(ctx, q, aa...)
+	rows, err := r.c.Query(ctx, q, aa...)
 	if err != nil {
 		return 0, err
 	}
@@ -191,7 +191,7 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 	if err != nil {
 		return 0, err
 	}
-	err = r.c.QueryRowxContext(ctx, p, aa[:n]...).Scan(&t)
+	err = r.c.QueryRow(ctx, p, aa[:n]...).Scan(&t)
 	if err != nil {
 		return 0, err
 	}
@@ -199,5 +199,9 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 }
 
 func (r *Request) Put(ctx context.Context, j filter.Projector) error {
-	return nil
+	q, aa, vv, err := r.Constructor().Insert(j)
+	if err != nil {
+		return err
+	}
+	return r.c.QueryRow(ctx, q, aa...).Scan(vv...)
 }

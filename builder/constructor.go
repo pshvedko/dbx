@@ -37,7 +37,7 @@ type Counter struct {
 }
 
 func (c *Counter) Count() (string, int, error) {
-	c.Grow(64)
+	c.Grow(256)
 	_, err := c.WriteString("SELECT COUNT(*)")
 	if err != nil {
 		return "", 0, err
@@ -50,7 +50,7 @@ func (c *Counter) Count() (string, int, error) {
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
-	c.Grow(64)
+	c.Grow(256)
 	_, err := c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -59,9 +59,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if f != nil {
 		a = append(a, f)
 	}
-	k := 0
-	nn := j.Names()
-	vv := j.Values()
+	v, nn, vv := 0, j.Names(), j.Values()
 	for i, n := range nn {
 		switch {
 		case c.HasDeleted(n):
@@ -70,7 +68,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if !c.HasColumn(n) {
 			continue
 		}
-		if k > 0 {
+		if v > 0 {
 			err = c.WriteByte(',')
 			if err != nil {
 				return nil, "", nil, nil, err
@@ -80,8 +78,8 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		vv[k] = vv[i]
-		k++
+		vv[v] = vv[i]
+		v++
 	}
 	n := c.Len()
 	_, err = fmt.Fprintf(c, " FROM %q", j.Table())
@@ -151,9 +149,9 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	}
 	q := c.String()
 	if z == c.Size() {
-		return nil, q, c.Values(), vv[:k], nil
+		return nil, q, c.Values(), vv[:v], nil
 	}
-	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:k], nil
+	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
 }
 
 func (c *Constructor) Range(o, l *uint) *Constructor {
@@ -164,4 +162,67 @@ func (c *Constructor) Range(o, l *uint) *Constructor {
 func (c *Constructor) Sort(y Order) *Constructor {
 	c.y = y
 	return c
+}
+
+func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
+	c.Grow(256)
+	_, err := c.WriteString("INSERT INTO")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = fmt.Fprintf(c, " %q (", j.Table())
+	if err != nil {
+		return "", nil, nil, err
+	}
+	v, nn, vv := 0, j.Names(), j.Values()
+	for i, n := range nn {
+		if v > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+		_, err = fmt.Fprintf(c, " %q", n)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		vv[v] = vv[i]
+		nn[v] = nn[i]
+		v++
+	}
+	_, err = fmt.Fprintf(c, " ) VALUES (")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	aa := make([]any, v)
+	for i := range vv[:v] {
+		if i > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+		_, err = fmt.Fprintf(c, " $%d", i+1)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		aa[i] = j.Value(i)
+	}
+	_, err = fmt.Fprintf(c, " ) RETURNING")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	for i, n := range nn[:v] {
+		if i > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+		_, err = fmt.Fprintf(c, " %q", n)
+		if err != nil {
+			return "", nil, nil, err
+		}
+	}
+	return c.String(), aa, vv[:v], nil
 }
