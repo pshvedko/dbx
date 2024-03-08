@@ -37,6 +37,7 @@ type Counter struct {
 }
 
 func (c *Counter) Count() (string, int, error) {
+	c.Grow(64)
 	_, err := c.WriteString("SELECT COUNT(*)")
 	if err != nil {
 		return "", 0, err
@@ -49,16 +50,15 @@ func (c *Counter) Count() (string, int, error) {
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
+	c.Grow(64)
 	_, err := c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	a := filter.And{}
 	if f != nil {
 		a = append(a, f)
 	}
-
 	k := 0
 	nn := j.Names()
 	vv := j.Values()
@@ -83,21 +83,16 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		vv[k] = vv[i]
 		k++
 	}
-
 	n := c.Len()
-
 	_, err = fmt.Fprintf(c, " FROM %q", j.Table())
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	_, err = fmt.Fprintf(c, " WHERE ")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	w := c.Len()
-
 	err = a.To(c, j)
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -108,9 +103,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 			return nil, "", nil, nil, err
 		}
 	}
-
 	m := c.Len()
-
 	if len(c.y) > 0 {
 		_, err = fmt.Fprintf(c, " ORDER BY")
 		if err != nil {
@@ -143,9 +136,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 			}
 		}
 	}
-
 	z := c.Size()
-
 	if c.p.o != nil {
 		_, err = fmt.Fprintf(c, " OFFSET %s", c.Hold(*c.p.o))
 		if err != nil {
@@ -158,13 +149,10 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 			return nil, "", nil, nil, err
 		}
 	}
-
 	q := c.String()
-
 	if z == c.Size() {
 		return nil, q, c.Values(), vv[:k], nil
 	}
-
 	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:k], nil
 }
 

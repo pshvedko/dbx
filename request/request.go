@@ -85,16 +85,16 @@ func (r *Request) Apply(a *Request) error {
 	return nil
 }
 
-func (r *Request) End(err *error) {
+func (r *Request) End(err error) error {
 	if r.e {
-		err1 := r.c.End(*err)
+		err1 := r.c.End(err)
 		err2 := r.c.Close()
 		if err1 == nil {
-			*err = err2
+			err = err2
 		} else if err2 == nil {
-			*err = err1
+			err = err1
 		} else {
-			*err = errors.Join(err1, err2)
+			err = errors.Join(err1, err2)
 		}
 	}
 	r.c = nil
@@ -103,6 +103,7 @@ func (r *Request) End(err *error) {
 	r.b = false
 	r.t = false
 	r.e = false
+	return err
 }
 
 func (r *Request) withField(b bool, kk ...string) error {
@@ -195,4 +196,8 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 		return 0, err
 	}
 	return t, nil
+}
+
+func (r *Request) Put(ctx context.Context, j filter.Projector) error {
+	return nil
 }
