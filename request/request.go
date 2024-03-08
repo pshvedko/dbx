@@ -3,6 +3,7 @@ package request
 import (
 	"context"
 	"database/sql"
+	"io"
 	"log/slog"
 
 	"github.com/pshvedko/dbx/builder"
@@ -10,20 +11,24 @@ import (
 )
 
 type Request struct {
-	c     Connection
-	e     bool
-	t     bool
-	b     bool
-	f     map[string]struct{}
-	o     *sql.TxOptions
-	owner string
-	group string
-	m     ReadDeleted
-	x     struct {
+	c Connection
+	e bool
+	t bool
+	b bool
+	f map[string]struct{}
+	o *sql.TxOptions
+	u string
+	g string
+	m ReadDeleted
+	x struct {
 		d string
 		u string
 		c string
 	}
+}
+
+func (r *Request) Close() error {
+	return nil
 }
 
 func (r *Request) makeConn(ctx context.Context, b Connector) error {
@@ -38,16 +43,20 @@ func (r *Request) makeConn(ctx context.Context, b Connector) error {
 	return nil
 }
 
-func (r *Request) makeTx(ctx context.Context, b Beginner) error {
+func (r *Request) closer() io.Closer {
+	if r.e {
+		return r.c
+	}
+	return r
+}
+
+func (r *Request) makeTx(ctx context.Context) error {
 	if r.o != nil && !r.t && ctx != nil {
-		if r.e {
-			b = r.c
-		}
-		t, err := b.BeginTxx(ctx, r.o)
+		t, err := r.c.BeginTxx(ctx, r.o)
 		if err != nil {
 			return err
 		}
-		r.c = Tx{Tx: t, Logger: slog.New(b.Handler())}
+		r.c = Tx{Tx: t, Logger: slog.New(r.c.Handler()), Closer: r.closer()}
 		r.e = true
 		r.t = true
 	}
@@ -55,7 +64,7 @@ func (r *Request) makeTx(ctx context.Context, b Beginner) error {
 }
 
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
-	r := Request{}
+	var r Request
 	for _, o := range append(db.Option(), append(oo, makeConnect(ctx, db))...) {
 		err := o.Apply(&r)
 		if err != nil {
@@ -77,7 +86,13 @@ func (r *Request) Apply(a *Request) error {
 
 func (r *Request) End(err *error) {
 	if r.e {
-		*err = r.c.End(*err)
+		err1 := r.c.End(*err)
+		err2 := r.c.Close()
+		if err2 != nil {
+			*err = err2
+		} else {
+			*err = err1
+		}
 	}
 	r.c = nil
 	r.o = nil
@@ -148,8 +163,8 @@ func (r *Request) Constructor() *builder.Constructor {
 			return builder.AllowedColumn(r.f)
 		}(),
 		Access: builder.Access{
-			Owner: r.owner,
-			Group: r.group,
+			Owner: r.u,
+			Group: r.g,
 		},
 		Modify: builder.Modify{
 			Created: r.x.c,

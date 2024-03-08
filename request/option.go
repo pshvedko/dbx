@@ -21,7 +21,7 @@ func makeConnect(ctx context.Context, c Connector) OptionFunc {
 		if err != nil {
 			return err
 		}
-		return r.makeTx(ctx, c)
+		return r.makeTx(ctx)
 	}
 }
 
@@ -47,14 +47,14 @@ func (o WithTx) Apply(r *Request) error {
 type WithOwner string
 
 func (o WithOwner) Apply(r *Request) error {
-	r.owner = string(o)
+	r.u = string(o)
 	return nil
 }
 
 type WithGroup string
 
 func (o WithGroup) Apply(r *Request) error {
-	r.group = string(o)
+	r.g = string(o)
 	return nil
 }
 

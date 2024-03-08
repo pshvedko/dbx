@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
@@ -25,6 +26,7 @@ type Connection interface {
 	sqlx.ExecerContext
 	sqlx.QueryerContext
 	End(error) error
+	Close() error
 }
 
 type Conn struct {
@@ -51,16 +53,13 @@ func placeholder(vv []any) []any {
 }
 
 func (c Conn) End(err1 error) error {
-	err2 := c.Close()
-	if err2 != nil {
-		return err2
-	}
 	return err1
 }
 
 type Tx struct {
 	*sqlx.Tx
 	*slog.Logger
+	io.Closer
 }
 
 func (c Tx) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
@@ -77,11 +76,11 @@ func (c Tx) End(err1 error) error {
 	if err1 == nil {
 		return c.Commit()
 	}
-	err2 := c.Rollback()
-	if err2 != nil {
-		return err2
+	err := c.Rollback()
+	if err == nil {
+		return err1
 	}
-	return err1
+	return err
 }
 
 func (c Tx) BeginTxx(context.Context, *sql.TxOptions) (*sqlx.Tx, error) {
