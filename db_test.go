@@ -17,6 +17,7 @@ import (
 )
 
 type DB struct {
+	context.Context
 	*dbx.DB
 }
 
@@ -35,7 +36,7 @@ func openDB(t *testing.T) (*DB, error) {
 	t.Cleanup(func() {
 		require.NoError(t, db.Close())
 	})
-	return &DB{DB: db}, nil
+	return &DB{DB: db, Context: context.TODO()}, nil
 }
 
 func TestDB(t *testing.T) {
@@ -46,6 +47,55 @@ func TestDB(t *testing.T) {
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
+	t.Run("ListAny", db.TestConn)
+}
+
+func (db DB) TestConn(t *testing.T) {
+	conn, err := db.Connx(db)
+	require.NoError(t, err)
+	require.NotZero(t, t, conn)
+	var pid, pid2 int
+	err = conn.GetContext(db, &pid, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.NotZero(t, pid)
+	err = conn.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.Equal(t, pid, pid2)
+	err = conn.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.Equal(t, pid, pid2)
+
+	tx, err := conn.BeginTxx(db, &sql.TxOptions{})
+	require.NoError(t, err)
+	require.NotZero(t, tx)
+	err = tx.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.Equal(t, pid, pid2)
+	err = tx.Rollback()
+	require.NoError(t, err)
+	err = tx.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.Error(t, err)
+
+	tx, err = conn.BeginTxx(db, &sql.TxOptions{})
+	require.NoError(t, err)
+	require.NotZero(t, tx)
+	err = tx.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.Equal(t, pid, pid2)
+	err = tx.Commit()
+	require.NoError(t, err)
+	err = tx.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.Error(t, err)
+
+	err = conn.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.NoError(t, err)
+	require.Equal(t, pid, pid2)
+
+	err = conn.Close()
+	require.NoError(t, err)
+
+	err = conn.GetContext(db, &pid2, `SELECT pg_backend_pid()`)
+	require.Error(t, err)
 }
 
 func (db DB) TestListAny(t *testing.T) {
