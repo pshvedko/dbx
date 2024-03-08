@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/pshvedko/dbx/filter"
 	"io"
 	"log/slog"
 
 	"github.com/pshvedko/dbx/builder"
-	"github.com/pshvedko/dbx/filter"
 )
 
 type Request struct {
@@ -105,6 +105,47 @@ func (r *Request) End(err *error) {
 	r.e = false
 }
 
+func (r *Request) withField(b bool, kk ...string) error {
+	switch {
+	case r.b == b:
+		r.b = !r.b
+		fallthrough
+	case r.f == nil:
+		r.f = map[string]struct{}{}
+	}
+	for _, k := range kk {
+		r.f[k] = struct{}{}
+	}
+	return nil
+}
+
+func (r *Request) Constructor() *builder.Constructor {
+	return &builder.Constructor{
+		Column: func() builder.Column {
+			if r.b || len(r.f) == 0 {
+				return builder.ExcludedColumn(r.f)
+			}
+			return builder.AllowedColumn(r.f)
+		}(),
+		Access: builder.Access{
+			Owner: r.u,
+			Group: r.g,
+		},
+		Modify: builder.Modify{
+			Created: r.x.c,
+			Updated: r.x.u,
+			Deleted: func() builder.Deleted {
+				if r.m == DeletedFree {
+					return builder.DeletedFree(r.x.d)
+				} else if r.m == DeletedOnly {
+					return builder.DeletedOnly(r.x.d)
+				}
+				return builder.DeletedNone(r.x.d)
+			}(),
+		},
+	}
+}
+
 func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) error {
 	_, q, aa, vv, err := r.Constructor().Select(j, f)
 	if err != nil {
@@ -115,8 +156,7 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 
 func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y builder.Order) (uint, error) {
 	j := i.Get()
-	c := r.Constructor()
-	z, q, aa, vv, err := c.Range(o, l).Sort(y).Select(j, f)
+	z, q, aa, vv, err := r.Constructor().Range(o, l).Sort(y).Select(j, f)
 	if err != nil {
 		return 0, err
 	}
@@ -155,45 +195,4 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 		return 0, err
 	}
 	return t, nil
-}
-
-func (r *Request) Constructor() *builder.Constructor {
-	return &builder.Constructor{
-		Column: func() builder.Column {
-			if r.b || len(r.f) == 0 {
-				return builder.ExcludedColumn(r.f)
-			}
-			return builder.AllowedColumn(r.f)
-		}(),
-		Access: builder.Access{
-			Owner: r.u,
-			Group: r.g,
-		},
-		Modify: builder.Modify{
-			Created: r.x.c,
-			Updated: r.x.u,
-			Deleted: func() builder.Deleted {
-				if r.m == DeletedFree {
-					return builder.DeletedFree(r.x.d)
-				} else if r.m == DeletedOnly {
-					return builder.DeletedOnly(r.x.d)
-				}
-				return builder.DeletedNone(r.x.d)
-			}(),
-		},
-	}
-}
-
-func (r *Request) withField(b bool, kk ...string) error {
-	switch {
-	case r.b == b:
-		r.b = !r.b
-		fallthrough
-	case r.f == nil:
-		r.f = map[string]struct{}{}
-	}
-	for _, k := range kk {
-		r.f[k] = struct{}{}
-	}
-	return nil
 }
