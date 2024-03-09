@@ -113,7 +113,7 @@ func (o *Injectable[T]) Put(j Projector) {
 		case T:
 			*o = append(*o, t)
 		default:
-			panic("invalid injection")
+			panic("invalid copy")
 		}
 	default:
 		panic("invalid injection")
