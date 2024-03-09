@@ -180,8 +180,8 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		vv[v] = vv[i]
 		nn[v] = nn[i]
 		v++
-		o, auto, ok := j.Value(i)
-		if auto && ok {
+		o, none, auto := j.Value(i)
+		if none && auto {
 			continue
 		}
 		if a > 0 {

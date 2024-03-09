@@ -70,17 +70,12 @@ func (o *Object) Values() []any {
 }
 
 func (o Object) Value(i int) (any, bool, bool) {
-	v, ok := o.Auto(i)
-	return v, ok, v == nil
-}
-
-func (o Object) Auto(i int) (any, bool) {
 	v := o.Get(i)
 	switch i {
 	case 0:
-		return v, true
+		return v, v == nil, true
 	default:
-		return v, false
+		return v, v == nil, false
 	}
 }
 
