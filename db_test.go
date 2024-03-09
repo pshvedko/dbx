@@ -440,6 +440,8 @@ func (db DB) TestPut(t *testing.T) {
 			for i := 0; i < 15; i++ {
 				require.Equal(t, tt.want.Get(i), tt.args.o.Get(i))
 			}
+			t.Log(tt.args.o.Get(15))
+			t.Log(tt.args.o.Get(16))
 		})
 	}
 	t.Cleanup(func() {

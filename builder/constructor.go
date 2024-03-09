@@ -225,9 +225,11 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		var i int
 		for _, n := range nn[:v] {
 			switch {
+			case c.HasUpdated(n):
+				break
 			case c.HasDeleted(n):
 				d = n
-				continue
+				fallthrough
 			case pk.Have(n) || !c.Used(n) || c.HasCreated(n):
 				continue
 			}
