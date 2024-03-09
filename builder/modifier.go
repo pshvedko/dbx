@@ -1,21 +1,23 @@
 package builder
 
-import "github.com/pshvedko/dbx/filter"
+import (
+	"github.com/pshvedko/dbx/filter"
+)
 
 type Column interface {
-	HasColumn(string) bool
+	Used(string) bool
 }
 
 type AllowedColumn map[string]struct{}
 
-func (f AllowedColumn) HasColumn(k string) bool {
+func (f AllowedColumn) Used(k string) bool {
 	_, ok := f[k]
 	return ok
 }
 
 type ExcludedColumn map[string]struct{}
 
-func (f ExcludedColumn) HasColumn(k string) bool {
+func (f ExcludedColumn) Used(k string) bool {
 	_, ok := f[k]
 	return !ok
 }

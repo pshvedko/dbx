@@ -350,7 +350,7 @@ func (db DB) TestPut(t *testing.T) {
 					Int16:   help.PtrInt16(0),
 					String1: help.PtrString("orange"),
 				},
-				oo: []request.Option{request.WithTx{}},
+				oo: []request.Option{request.WithTx{}, request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
 			},
 			want: &help.Object{
 				ID:      9,

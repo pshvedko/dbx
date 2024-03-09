@@ -39,6 +39,10 @@ type Object struct {
 	Time4   time.Time  `json:"o_time_4,omitempty"`
 }
 
+func (*Object) PK() filter.PK {
+	return []string{"id"}
+}
+
 func (o *Object) Copy() filter.Projector {
 	if o == nil {
 		return &Object{}
@@ -47,11 +51,11 @@ func (o *Object) Copy() filter.Projector {
 	return &x
 }
 
-func (o Object) Table() string {
+func (Object) Table() string {
 	return "objects"
 }
 
-func (o Object) Names() []string {
+func (Object) Names() []string {
 	return []string{
 		"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string_1",
 		"o_string_2", "o_string_3", "o_uint_64",
@@ -72,7 +76,7 @@ func (o *Object) Values() []any {
 func (o Object) Value(i int) (any, bool, bool) {
 	v := o.Get(i)
 	switch i {
-	case 0:
+	case 0, 9:
 		return v, v == nil, true
 	default:
 		return v, v == nil, false

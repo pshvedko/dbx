@@ -24,7 +24,28 @@ type Builder interface {
 	Ni(string, any) error
 }
 
+type PK []string
+
+func (pk PK) Format(f fmt.State, _ rune) {
+	if len(pk) > 0 {
+		_, _ = fmt.Fprintf(f, "%q", pk[0])
+		for _, k := range pk[1:] {
+			_, _ = fmt.Fprintf(f, ", %q", k)
+		}
+	}
+}
+
+func (pk PK) Have(n string) bool {
+	for _, k := range pk {
+		if k == n {
+			return true
+		}
+	}
+	return false
+}
+
 type Fielder interface {
+	PK() PK
 	Names() []string
 	Values() []any
 	Value(int) (any, bool, bool)

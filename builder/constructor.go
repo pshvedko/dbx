@@ -65,7 +65,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		case c.HasDeleted(n):
 			a = c.Visibility(a)
 		}
-		if !c.HasColumn(n) {
+		if !c.Used(n) {
 			continue
 		}
 		if v > 0 {
@@ -86,7 +86,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	_, err = fmt.Fprintf(c, " WHERE ")
+	_, err = c.WriteString(" WHERE ")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -96,14 +96,14 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	if w == c.Len() {
-		_, err = fmt.Fprintf(c, "TRUE")
+		_, err = c.WriteString("TRUE")
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
 	m := c.Len()
 	if len(c.y) > 0 {
-		_, err = fmt.Fprintf(c, " ORDER BY")
+		_, err = c.WriteString(" ORDER BY")
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -184,50 +184,78 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		if none && auto {
 			continue
 		}
-		if a > 0 {
-			err = c.WriteByte(',')
-			if err != nil {
-				return "", nil, nil, err
-			}
-		}
-		_, err = fmt.Fprintf(c, " %q", n)
+		_, err = c.WithComma(a).Printf(" %q", n)
 		if err != nil {
 			return "", nil, nil, err
 		}
 		aa[a] = o
 		a++
 	}
-	_, err = fmt.Fprintf(c, " ) VALUES (")
+	_, err = c.WriteString(" ) VALUES (")
 	if err != nil {
 		return "", nil, nil, err
 	}
 	for i := range aa[:a] {
-		if i > 0 {
-			err = c.WriteByte(',')
-			if err != nil {
-				return "", nil, nil, err
-			}
-		}
-		_, err = fmt.Fprintf(c, " $%d", i+1)
+		_, err = c.WithComma(i).Printf(" $%d", i+1)
 		if err != nil {
 			return "", nil, nil, err
 		}
 	}
-	_, err = fmt.Fprintf(c, " ) RETURNING")
+	_, err = c.WriteString(" )")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	pk := j.PK()
+	if len(pk) > 0 {
+		_, err = c.Printf(" ON CONFLICT ( %v ) DO UPDATE SET", pk)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		var i int
+		for _, n := range nn[:v] {
+			if pk.Have(n) || !c.Used(n) {
+				continue
+			}
+			_, err = c.WithComma(i).Printf(" %q = EXCLUDED.%q", n, n)
+			if err != nil {
+				return "", nil, nil, err
+			}
+			i++
+		}
+	}
+	_, err = c.WriteString(" RETURNING")
 	if err != nil {
 		return "", nil, nil, err
 	}
 	for i, n := range nn[:v] {
-		if i > 0 {
-			err = c.WriteByte(',')
-			if err != nil {
-				return "", nil, nil, err
-			}
-		}
-		_, err = fmt.Fprintf(c, " %q", n)
+		_, err = c.WithComma(i).Printf(" %q", n)
 		if err != nil {
 			return "", nil, nil, err
 		}
 	}
 	return c.String(), aa[:a], vv[:v], nil
+}
+
+type Printer interface {
+	Printf(string, ...any) (int, error)
+}
+
+type ErrPrint struct {
+	error
+}
+
+func (e ErrPrint) Printf(string, ...any) (int, error) { return 0, e }
+
+func (c *Constructor) WithComma(i int) Printer {
+	if i > 0 {
+		err := c.WriteByte(',')
+		if err != nil {
+			return ErrPrint{error: err}
+		}
+	}
+	return c
+}
+
+func (c *Constructor) Printf(format string, a ...any) (int, error) {
+	return fmt.Fprintf(c, format, a...)
 }
