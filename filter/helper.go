@@ -97,3 +97,25 @@ func Nil[T comparable](v T) any {
 	}
 	return nil
 }
+
+type Injectable[T Projector] []T
+
+func (o Injectable[T]) Get() Projector {
+	var x T
+	return x.Copy()
+}
+
+func (o *Injectable[T]) Put(j Projector) {
+	switch v := j.(type) {
+	case T:
+		x := v.Copy()
+		switch t := x.(type) {
+		case T:
+			*o = append(*o, t)
+		default:
+			panic("invalid injection")
+		}
+	default:
+		panic("invalid injection")
+	}
+}

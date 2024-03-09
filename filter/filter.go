@@ -27,7 +27,7 @@ type Builder interface {
 type Fielder interface {
 	Names() []string
 	Values() []any
-	Value(int) (any, bool)
+	Value(int) (any, bool, bool)
 	Get(int) any
 }
 
@@ -36,8 +36,13 @@ type Injector interface {
 	Put(Projector)
 }
 
+type Copier interface {
+	Copy() Projector
+}
+
 type Projector interface {
 	Fielder
+	Copier
 	Table() string
 }
 

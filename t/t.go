@@ -15,20 +15,7 @@ import (
 	"github.com/pshvedko/dbx/request"
 )
 
-type ObjectList []Object
-
-func (o ObjectList) Get() filter.Projector {
-	return &Object{}
-}
-
-func (o *ObjectList) Put(j filter.Projector) {
-	switch v := j.(type) {
-	case *Object:
-		*o = append(*o, *v)
-	default:
-		panic("invalid injection")
-	}
-}
+type ObjectList = filter.Injectable[*Object]
 
 type Object struct {
 	ID      uint32     `json:"id"`
@@ -50,6 +37,14 @@ type Object struct {
 	Time2   *time.Time `json:"o_time_2,omitempty"`
 	Time3   *time.Time `json:"o_time_3,omitempty"`
 	Time4   time.Time  `json:"o_time_4,omitempty"`
+}
+
+func (o *Object) Copy() filter.Projector {
+	if o == nil {
+		return &Object{}
+	}
+	x := *o
+	return &x
 }
 
 func (o Object) Table() string {
@@ -74,13 +69,18 @@ func (o *Object) Values() []any {
 	}
 }
 
-func (o Object) Value(i int) (any, bool) {
+func (o Object) Value(i int) (any, bool, bool) {
+	v, ok := o.Auto(i)
+	return v, ok, v == nil
+}
+
+func (o Object) Auto(i int) (any, bool) {
 	v := o.Get(i)
 	switch i {
 	case 0:
-		return v, v != nil
-	default:
 		return v, true
+	default:
+		return v, false
 	}
 }
 
