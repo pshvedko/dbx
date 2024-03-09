@@ -76,7 +76,7 @@ func (o *Object) Values() []any {
 func (o Object) Value(i int) (any, bool, bool) {
 	v := o.Get(i)
 	switch i {
-	case 0, 9:
+	case 0, 7:
 		return v, v == nil, true
 	default:
 		return v, v == nil, false
@@ -100,7 +100,7 @@ func (o Object) Get(i int) any {
 	case 6:
 		return o.Null
 	case 7:
-		return o.String1
+		return filter.Nil(o.String1)
 	case 8:
 		return filter.Nil(o.String2)
 	case 9:

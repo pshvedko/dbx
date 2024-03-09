@@ -26,8 +26,6 @@ type Constructor struct {
 	Access
 	p Ranger
 	y Order
-	w int
-	m int
 }
 
 type Counter struct {
@@ -164,8 +162,17 @@ func (c *Constructor) Sort(y Order) *Constructor {
 	return c
 }
 
-func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
+func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	c.Grow(256)
+
+	return "FIXME", nil, nil, nil
+}
+
+func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, error) {
+	c.Grow(256)
+	if m == 2 {
+		return c.Update(j)
+	}
 	_, err := c.WriteString("INSERT INTO")
 	if err != nil {
 		return "", nil, nil, err
@@ -206,7 +213,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		return "", nil, nil, err
 	}
 	pk := j.PK()
-	if len(pk) > 0 {
+	if m == 0 && len(pk) > 0 {
 		_, err = c.Printf(" ON CONFLICT ( %v ) DO UPDATE SET", pk)
 		if err != nil {
 			return "", nil, nil, err

@@ -67,13 +67,30 @@ func (o WithDeleted) Apply(r *Request) error {
 
 type ReadDeleted int
 
+func (o ReadDeleted) Apply(r *Request) error {
+	r.m = o
+	return nil
+}
+
 const (
 	DeletedNone ReadDeleted = iota
 	DeletedOnly
 	DeletedFree
 )
 
-func (o ReadDeleted) Apply(r *Request) error {
-	r.m = o
+type PerformPut int
+
+func (o PerformPut) Apply(r *Request) error {
+	r.p = o
 	return nil
 }
+
+func (o PerformPut) Mode() int {
+	return int(o)
+}
+
+const (
+	PutModify PerformPut = iota
+	PutCreate
+	PutUpdate
+)

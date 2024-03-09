@@ -21,6 +21,7 @@ type Request struct {
 	u string
 	g string
 	m ReadDeleted
+	p PerformPut
 	x struct {
 		d string
 		u string
@@ -199,7 +200,7 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 }
 
 func (r *Request) Put(ctx context.Context, j filter.Projector) error {
-	q, aa, vv, err := r.Constructor().Insert(j)
+	q, aa, vv, err := r.Constructor().Insert(j, r.p.Mode())
 	if err != nil {
 		return err
 	}
