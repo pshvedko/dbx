@@ -33,6 +33,7 @@ type Object struct {
 	UUID2   *uuid.UUID `json:"o_uuid_2,omitempty"`
 	UUID3   *uuid.UUID `json:"o_uuid_3,omitempty"`
 	UUID4   uuid.UUID  `json:"o_uuid_4,omitempty"`
+	Time0   time.Time  `json:"o_time_0,omitempty"`
 	Time1   time.Time  `json:"o_time_1,omitempty"`
 	Time2   *time.Time `json:"o_time_2,omitempty"`
 	Time3   *time.Time `json:"o_time_3,omitempty"`
@@ -60,7 +61,7 @@ func (Object) Names() []string {
 		"id", "o_bool", "o_float_32", "o_float_64", "o_int", "o_int_16", "o_null", "o_string_1",
 		"o_string_2", "o_string_3", "o_uint_64",
 		"o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4",
-		"o_time_1", "o_time_2", "o_time_3", "o_time_4",
+		"o_time_0", "o_time_1", "o_time_2", "o_time_3", "o_time_4",
 	}
 }
 
@@ -69,7 +70,7 @@ func (o *Object) Values() []any {
 		&o.ID, &o.Bool, &o.Float32, &o.Float64, &o.Int, &o.Int16, &o.Null, &o.String1,
 		&String{x: &o.String2}, &String{x: &o.String3}, &o.Uint64,
 		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
-		&o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
+		&o.Time0, &o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
 	}
 }
 
@@ -116,12 +117,14 @@ func (o Object) Get(i int) any {
 	case 14:
 		return filter.Nil(o.UUID4)
 	case 15:
-		return o.Time1
+		return filter.Nil(o.Time0)
 	case 16:
-		return o.Time2
+		return filter.Nil(o.Time1)
 	case 17:
-		return o.Time3
+		return o.Time2
 	case 18:
+		return o.Time3
+	case 19:
 		return filter.Nil(o.Time4)
 	default:
 		panic("illegal index")

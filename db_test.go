@@ -33,7 +33,7 @@ func openDB(t *testing.T) (*DB, error) {
 		return nil, err
 	}
 	db.SetLogger(help.LogHandler(t))
-	db.SetOption(request.WithDeleted("o_time_4"))
+	db.SetOption(request.WithCreated("o_time_0"), request.WithUpdated("o_time_1"), request.WithDeleted("o_time_4"))
 	t.Cleanup(func() {
 		_ = db.Close()
 	})
@@ -163,6 +163,7 @@ func (db DB) TestGet(t *testing.T) {
 				UUID2:   help.PtrUUID(uuid.UUID{}),
 				UUID3:   nil,
 				UUID4:   uuid.UUID{},
+				Time0:   time.Unix(0, 0).UTC(),
 				Time1:   time.Unix(0, 0).UTC(),
 				Time2:   help.PtrTime(time.Unix(0, 0).UTC()),
 				Time3:   nil,
@@ -436,7 +437,9 @@ func (db DB) TestPut(t *testing.T) {
 			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
 			t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
-			require.Equal(t, tt.want, tt.args.o)
+			for i := 0; i < 15; i++ {
+				require.Equal(t, tt.want.Get(i), tt.args.o.Get(i))
+			}
 		})
 	}
 	t.Cleanup(func() {

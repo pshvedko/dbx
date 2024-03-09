@@ -28,6 +28,14 @@ type Modify struct {
 	Deleted
 }
 
+func (m Modify) HasCreated(n string) bool {
+	return m.Created == n
+}
+
+func (m Modify) HasUpdated(n string) bool {
+	return m.Updated == n
+}
+
 type Deleted interface {
 	Visibility(filter.And) filter.And
 	HasDeleted(string) bool

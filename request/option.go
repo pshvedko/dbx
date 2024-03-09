@@ -65,6 +65,20 @@ func (o WithDeleted) Apply(r *Request) error {
 	return nil
 }
 
+type WithUpdated string
+
+func (o WithUpdated) Apply(r *Request) error {
+	r.x.u = string(o)
+	return nil
+}
+
+type WithCreated string
+
+func (o WithCreated) Apply(r *Request) error {
+	r.x.c = string(o)
+	return nil
+}
+
 type ReadDeleted int
 
 func (o ReadDeleted) Apply(r *Request) error {

@@ -187,6 +187,9 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		vv[v] = vv[i]
 		nn[v] = nn[i]
 		v++
+		if c.HasCreated(n) || c.HasUpdated(n) || c.HasDeleted(n) {
+			continue
+		}
 		o, none, auto := j.Value(i)
 		if none && auto {
 			continue
@@ -218,9 +221,14 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		if err != nil {
 			return "", nil, nil, err
 		}
+		var d string
 		var i int
 		for _, n := range nn[:v] {
-			if pk.Have(n) || !c.Used(n) {
+			switch {
+			case c.HasDeleted(n):
+				d = n
+				continue
+			case pk.Have(n) || !c.Used(n) || c.HasCreated(n):
 				continue
 			}
 			_, err = c.WithComma(i).Printf(" %q = EXCLUDED.%q", n, n)
@@ -228,6 +236,12 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 				return "", nil, nil, err
 			}
 			i++
+		}
+		if len(d) > 0 {
+			_, err = c.Printf(" WHERE %q.%q IS NULL", j.Table(), d)
+			if err != nil {
+				return "", nil, nil, err
+			}
 		}
 	}
 	_, err = c.WriteString(" RETURNING")
