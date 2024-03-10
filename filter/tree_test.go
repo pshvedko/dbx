@@ -170,20 +170,20 @@ func TestLoop(t *testing.T) {
 			// 1-2-3-...-10-...-100-10
 			name: "",
 			list: func() list {
-				l := list{value: 100}
-				c := &l
+				l := &list{value: 100}
+				c := l
 				i := 100
 				for i > 10 {
 					i--
-					l = list{value: i, next: &l}
+					l = &list{value: i, next: l}
 				}
-				x := &l
+				x := l
 				for i > 1 {
 					i--
-					l = list{value: i, next: &l}
+					l = &list{value: i, next: l}
 				}
 				c.next = x
-				return l
+				return *l
 			}(),
 			want: true,
 		},
