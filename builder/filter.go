@@ -18,7 +18,7 @@ const (
 	Ni
 )
 
-var operation = [...][3]string{
+var operation = [...][3]string{ // TODO FORMATTER
 	Eq: {"=", " "},
 	Is: {"IS", " "},
 	Ne: {"<>", " "},
@@ -44,28 +44,28 @@ func (f *Filter) Values() []any {
 	return f.v
 }
 
-func (f *Filter) Hold(v any) string {
+func (f *Filter) Value(v any) fmt.Formatter {
 	f.v = append(f.v, v)
-	return fmt.Sprintf("$%d", len(f.v))
+	return Holder(len(f.v))
 }
 
 func (f *Filter) Op(k string, o int, v any) error {
-	var p string
+	var p fmt.Formatter
 	switch x := v.(type) {
 	case nil:
-		p = "NULL"
+		p = NULL
 		o++
 	case bool:
 		if x {
-			p = "TRUE"
+			p = TRUE
 		} else {
-			p = "FALSE"
+			p = FALSE
 		}
 		o++
 	default:
-		p = f.Hold(v)
+		p = f.Value(v)
 	}
-	_, err := fmt.Fprintf(f, "%q %s%s%s%s", k, operation[o][0], operation[o][1], p, operation[o][2])
+	_, err := fmt.Fprintf(f, "%q %s%s%v%s", k, operation[o][0], operation[o][1], p, operation[o][2])
 	return err
 }
 

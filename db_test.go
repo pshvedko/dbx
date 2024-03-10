@@ -33,7 +33,7 @@ func openDB(t *testing.T) (*DB, error) {
 		return nil, err
 	}
 	db.SetLogger(help.LogHandler(t))
-	db.SetOption(request.WithCreated("o_time_0"), request.WithUpdated("o_time_1"), request.WithDeleted("o_time_4"))
+	db.SetOption(request.WithCreated("o_time_0"), request.WithUpdated("o_time_1"), request.WithDeleted("o_time_4"), request.WithTx{})
 	t.Cleanup(func() {
 		_ = db.Close()
 	})
@@ -430,18 +430,59 @@ func (db DB) TestPut(t *testing.T) {
 			},
 			wantErr: nil,
 		},
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				o: &help.Object{
+					ID:      7,
+					Bool:    help.PtrBool(true),
+					Float64: help.PtrFloat64(1e3),
+					Int16:   help.PtrInt16(3),
+					String3: "green",
+				},
+				oo: []request.Option{},
+			},
+			want:    nil,
+			wantErr: sql.ErrNoRows,
+		},
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				o: &help.Object{
+					ID:      9,
+					Bool:    help.PtrBool(true),
+					Float64: help.PtrFloat64(1e4),
+					Int16:   help.PtrInt16(4),
+					String3: "orange",
+				},
+				oo: []request.Option{request.PutUpdate},
+			},
+			want: &help.Object{
+				ID:      9,
+				Bool:    help.PtrBool(true),
+				Float64: help.PtrFloat64(1e4),
+				Int16:   help.PtrInt16(4),
+				String1: help.PtrString("green"),
+				String3: "orange",
+			},
+			wantErr: nil,
+		},
 	}
 	var ids help.Map
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := db.Put(tt.args.ctx, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
-			t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
-			for i := 0; i < 15; i++ {
-				require.Equal(t, tt.want.Get(i), tt.args.o.Get(i))
+			if tt.wantErr == nil {
+				t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
+				for i := 0; i < 15; i++ {
+					require.Equal(t, tt.want.Get(i), tt.args.o.Get(i))
+				}
+				t.Log(tt.args.o.Get(15))
+				t.Log(tt.args.o.Get(16))
 			}
-			t.Log(tt.args.o.Get(15))
-			t.Log(tt.args.o.Get(16))
 		})
 	}
 	t.Cleanup(func() {

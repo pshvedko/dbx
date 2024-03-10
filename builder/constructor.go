@@ -60,7 +60,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	v, nn, vv := 0, j.Names(), j.Values()
 	for i, n := range nn {
 		switch {
-		case c.HasDeleted(n):
+		case c.IsDeleted(n):
 			a = c.Visibility(a)
 		}
 		if !c.Used(n) {
@@ -134,13 +134,13 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	}
 	z := c.Size()
 	if c.p.o != nil {
-		_, err = fmt.Fprintf(c, " OFFSET %s", c.Hold(*c.p.o))
+		_, err = fmt.Fprintf(c, " OFFSET %v", c.Value(*c.p.o))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
 	if c.p.l != nil {
-		_, err = fmt.Fprintf(c, " LIMIT %s", c.Hold(*c.p.l))
+		_, err = fmt.Fprintf(c, " LIMIT %v", c.Value(*c.p.l))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -162,51 +162,109 @@ func (c *Constructor) Sort(y Order) *Constructor {
 	return c
 }
 
-func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
+func (c *Constructor) Update(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
-
-	return "FIXME", nil, nil, nil
+	_, err := c.Printf("UPDATE %q SET", j.Table())
+	if err != nil {
+		return "", nil, nil, err
+	}
+	u, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
+	if len(pk) == 0 {
+		return "", nil, nil, fmt.Errorf("unknown primary key")
+	}
+	w := filter.Eq{}
+	switch f {
+	case nil:
+		f = w
+	default:
+		f = filter.And{f, w}
+	}
+	for i, n := range nn {
+		var v fmt.Formatter
+		switch {
+		case c.IsUpdated(n):
+			v = DEFAULT
+		case pk.Have(n):
+			o, none, auto := j.Value(i)
+			if none && auto {
+				return "", nil, nil, fmt.Errorf("invalid primary key")
+			}
+			w[n] = o
+			continue
+		case c.IsDeleted(n):
+			w[n] = nil
+			continue
+		case c.Unused(n) || c.IsCreated(n):
+			continue
+		default:
+			o, none, auto := j.Value(i)
+			if none && auto {
+				continue
+			}
+			v = c.Value(o)
+		}
+		_, err = c.Printf("%v %q = %v", Comma(u), n, v)
+		if err != nil {
+			return "", nil, nil, err
+		}
+		u++
+	}
+	_, err = c.WriteString(" WHERE ")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	err = f.To(c, j)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = c.WriteString(" RETURNING")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	for i, n := range nn {
+		_, err = c.Printf("%v %q", Comma(i), n)
+		if err != nil {
+			return "", nil, nil, err
+		}
+	}
+	return c.String(), c.Values(), vv, nil
 }
 
 func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, error) {
 	c.Grow(256)
 	if m == 2 {
-		return c.Update(j)
+		return c.Update(j, nil)
 	}
 	_, err := c.WriteString("INSERT INTO")
 	if err != nil {
 		return "", nil, nil, err
 	}
-	_, err = fmt.Fprintf(c, " %q (", j.Table())
+	_, err = c.Printf(" %q (", j.Table())
 	if err != nil {
 		return "", nil, nil, err
 	}
-	v, nn, vv := 0, j.Names(), j.Values()
-	a, aa := 0, make([]any, len(vv))
+	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	for i, n := range nn {
-		vv[v] = vv[i]
-		nn[v] = nn[i]
-		v++
-		if c.HasCreated(n) || c.HasUpdated(n) || c.HasDeleted(n) {
+		if c.IsCreated(n) || c.IsUpdated(n) || c.IsDeleted(n) {
 			continue
 		}
 		o, none, auto := j.Value(i)
 		if none && auto {
 			continue
 		}
-		_, err = c.WithComma(a).Printf(" %q", n)
+		_, err = c.Printf("%v %q", Comma(a), n)
 		if err != nil {
 			return "", nil, nil, err
 		}
-		aa[a] = o
+		c.Value(o)
 		a++
 	}
 	_, err = c.WriteString(" ) VALUES (")
 	if err != nil {
 		return "", nil, nil, err
 	}
-	for i := range aa[:a] {
-		_, err = c.WithComma(i).Printf(" $%d", i+1)
+	for i := 0; i < a; i++ {
+		_, err = c.Printf("%v %v", Comma(i), Holder(i+1))
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -215,32 +273,27 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	if err != nil {
 		return "", nil, nil, err
 	}
-	pk := j.PK()
 	if m == 0 && len(pk) > 0 {
 		_, err = c.Printf(" ON CONFLICT ( %v ) DO UPDATE SET", pk)
 		if err != nil {
 			return "", nil, nil, err
 		}
-		var d string
 		var i int
-		for _, n := range nn[:v] {
+		for _, n := range nn {
 			switch {
-			case c.HasUpdated(n):
+			case c.IsUpdated(n):
 				break
-			case c.HasDeleted(n):
-				d = n
-				fallthrough
-			case pk.Have(n) || !c.Used(n) || c.HasCreated(n):
+			case pk.Have(n) || c.Unused(n) || c.IsCreated(n) || c.IsDeleted(n):
 				continue
 			}
-			_, err = c.WithComma(i).Printf(" %q = EXCLUDED.%q", n, n)
+			_, err = c.Printf("%v %q = EXCLUDED.%q", Comma(i), n, n)
 			if err != nil {
 				return "", nil, nil, err
 			}
 			i++
 		}
-		if len(d) > 0 {
-			_, err = c.Printf(" WHERE %q.%q IS NULL", j.Table(), d)
+		if n, ok := c.HaveDeleted(); ok {
+			_, err = c.Printf(" WHERE %q.%q IS NULL", j.Table(), n)
 			if err != nil {
 				return "", nil, nil, err
 			}
@@ -250,35 +303,23 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	if err != nil {
 		return "", nil, nil, err
 	}
-	for i, n := range nn[:v] {
-		_, err = c.WithComma(i).Printf(" %q", n)
+	for i, n := range nn {
+		_, err = c.Printf("%v %q", Comma(i), n)
 		if err != nil {
 			return "", nil, nil, err
 		}
 	}
-	return c.String(), aa[:a], vv[:v], nil
-}
-
-type Printer interface {
-	Printf(string, ...any) (int, error)
-}
-
-type ErrPrint struct {
-	error
-}
-
-func (e ErrPrint) Printf(string, ...any) (int, error) { return 0, e }
-
-func (c *Constructor) WithComma(i int) Printer {
-	if i > 0 {
-		err := c.WriteByte(',')
-		if err != nil {
-			return ErrPrint{error: err}
-		}
-	}
-	return c
+	return c.String(), c.Values(), vv, nil
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
 	return fmt.Fprintf(c, format, a...)
+}
+
+func (c *Constructor) Unused(n string) bool {
+	return !c.Used(n)
+}
+
+func (c *Constructor) HaveDeleted() (string, bool) {
+	return c.Deleted.Name()
 }

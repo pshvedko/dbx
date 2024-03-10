@@ -28,22 +28,27 @@ type Modify struct {
 	Deleted
 }
 
-func (m Modify) HasCreated(n string) bool {
+func (m Modify) IsCreated(n string) bool {
 	return m.Created == n
 }
 
-func (m Modify) HasUpdated(n string) bool {
+func (m Modify) IsUpdated(n string) bool {
 	return m.Updated == n
 }
 
 type Deleted interface {
 	Visibility(filter.And) filter.And
-	HasDeleted(string) bool
+	IsDeleted(string) bool
+	Name() (string, bool)
 }
 
 type DeletedOnly string
 
-func (o DeletedOnly) HasDeleted(n string) bool {
+func (o DeletedOnly) Name() (string, bool) {
+	return string(o), len(o) > 0
+}
+
+func (o DeletedOnly) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
@@ -53,7 +58,11 @@ func (o DeletedOnly) Visibility(a filter.And) filter.And {
 
 type DeletedNone string
 
-func (o DeletedNone) HasDeleted(n string) bool {
+func (o DeletedNone) Name() (string, bool) {
+	return string(o), len(o) > 0
+}
+
+func (o DeletedNone) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
@@ -63,7 +72,11 @@ func (o DeletedNone) Visibility(a filter.And) filter.And {
 
 type DeletedFree string
 
-func (o DeletedFree) HasDeleted(n string) bool {
+func (o DeletedFree) Name() (string, bool) {
+	return string(o), len(o) > 0
+}
+
+func (o DeletedFree) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
