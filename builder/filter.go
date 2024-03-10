@@ -46,16 +46,16 @@ const (
 )
 
 var operation = [...]string{
-	Eq: "= %v",
-	Is: "IS %v",
-	Ne: "<> %v",
-	Si: "IS NOT %v",
-	Ge: ">= %v",
-	Gt: "> %v",
-	Le: "<= %v",
-	Lt: "< %v",
-	In: "= ANY(%v)",
-	Ni: "<> ALL(%v)",
+	Eq: " = %v",
+	Is: " IS %v",
+	Ne: " <> %v",
+	Si: " IS NOT %v",
+	Ge: " >= %v",
+	Gt: " > %v",
+	Le: " <= %v",
+	Lt: " < %v",
+	In: " = ANY(%v)",
+	Ni: " <> ALL(%v)",
 }
 
 type Filter struct {
@@ -92,7 +92,7 @@ func (f *Filter) Op(k fmt.Formatter, o int, v any) error {
 	default:
 		p = f.Value(v)
 	}
-	_, err := fmt.Fprintf(f, "%v ", k)
+	_, err := fmt.Fprint(f, k)
 	if err != nil {
 		return err
 	}
