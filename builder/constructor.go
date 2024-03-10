@@ -244,9 +244,17 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		return "", nil, nil, err
 	}
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
+	uu := make([]string, 0, len(vv)-len(pk))
 	for i, n := range nn {
-		if c.IsCreated(n) || c.IsUpdated(n) || c.IsDeleted(n) {
+		switch {
+		case c.IsUpdated(n):
+			uu = append(uu, n)
+			fallthrough
+		case c.IsCreated(n) || c.IsDeleted(n):
 			continue
+		case pk.Have(n) || c.Unused(n):
+		default:
+			uu = append(uu, n)
 		}
 		o, none, auto := j.Value(i)
 		if none && auto {
@@ -278,19 +286,11 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		if err != nil {
 			return "", nil, nil, err
 		}
-		var i int
-		for _, n := range nn {
-			switch {
-			case c.IsUpdated(n):
-				break
-			case pk.Have(n) || c.Unused(n) || c.IsCreated(n) || c.IsDeleted(n):
-				continue
-			}
-			_, err = c.Printf("%v %q = EXCLUDED.%q", Comma(i), n, n)
+		for i, u := range uu {
+			_, err = c.Printf("%v %q = EXCLUDED.%q", Comma(i), u, u)
 			if err != nil {
 				return "", nil, nil, err
 			}
-			i++
 		}
 		if n, ok := c.HaveDeleted(); ok {
 			_, err = c.Printf(" WHERE %q.%q IS NULL", j.Table(), n)
