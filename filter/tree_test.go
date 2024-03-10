@@ -1,11 +1,28 @@
-package filter
+package filter_test
 
-import "testing"
+import (
+	"testing"
 
-func TestTree_Height(t *testing.T) {
+	"github.com/pshvedko/dbx/filter"
+)
+
+type tree struct {
+	value       any
+	right, left *tree
+}
+
+func (t *tree) Left() *tree {
+	return t.left
+}
+
+func (t *tree) Right() *tree {
+	return t.right
+}
+
+func TestDeep(t *testing.T) {
 	tests := []struct {
 		name string
-		root Tree
+		tree tree
 		want int
 	}{
 		// TODO: Add test cases.
@@ -18,38 +35,142 @@ func TestTree_Height(t *testing.T) {
 			//    /
 			//   6
 			name: "",
-			root: Tree{
-				Right: &Tree{
-					Right: nil,
-					Left:  nil,
-					Value: 3,
+			tree: tree{
+				value: 1,
+				right: &tree{
+					value: 3,
+					right: nil,
+					left:  nil,
 				},
-				Left: &Tree{
-					Right: &Tree{
-						Right: nil,
-						Left: &Tree{
-							Right: nil,
-							Left:  nil,
-							Value: 6,
+				left: &tree{
+					value: 2,
+					right: &tree{
+						value: 4,
+						right: nil,
+						left: &tree{
+							value: 6,
+							right: nil,
+							left:  nil,
 						},
-						Value: 4,
 					},
-					Left: &Tree{
-						Right: nil,
-						Left:  nil,
-						Value: 5,
+					left: &tree{
+						value: 5,
+						right: nil,
+						left:  nil,
 					},
-					Value: 2,
 				},
-				Value: 1,
 			},
 			want: 4,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t1 *testing.T) {
-			if got := tt.root.Height(); got != tt.want {
-				t1.Errorf("Height() = %v, want %v", got, tt.want)
+			if got := filter.Deep(&tt.tree); got != tt.want {
+				t1.Errorf("Deep() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+type list struct {
+	value any
+	next  *list
+}
+
+func (l *list) Next() *list {
+	return l.next
+}
+
+func TestLoop(t *testing.T) {
+	tests := []struct {
+		name string
+		list list
+		want bool
+	}{
+		// TODO: Add test cases.
+		{
+			// 1
+			name: "",
+			list: list{
+				value: 1,
+				next:  nil,
+			},
+			want: false,
+		},
+		{
+			// 1-2-3-4-5
+			name: "",
+			list: list{
+				value: 1,
+				next: &list{
+					value: 2,
+					next: &list{
+						value: 3,
+						next: &list{
+							value: 4,
+							next: &list{
+								value: 5,
+								next:  nil,
+							},
+						},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			// 1-1
+			name: "",
+			list: func() list {
+				l := list{
+					value: 1,
+					next:  nil,
+				}
+				l.next = &l
+				return l
+			}(),
+			want: true,
+		},
+		{
+			// 1-2-1
+			name: "",
+			list: func() list {
+				l := list{
+					value: 1,
+					next: &list{
+						value: 2,
+						next:  nil,
+					},
+				}
+				l.next.next = &l
+				return l
+			}(),
+			want: true,
+		},
+		{
+			// 1-2-3-2
+			name: "",
+			list: func() list {
+				l := list{
+					value: 1,
+					next: &list{
+						value: 2,
+						next: &list{
+							value: 3,
+							next:  nil,
+						},
+					},
+				}
+				l.next.next.next = l.next
+				return l
+			}(),
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filter.Loop(&tt.list); got != tt.want {
+				t.Errorf("Loop() = %v, want %v", got, tt.want)
 			}
 		})
 	}

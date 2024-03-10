@@ -69,3 +69,12 @@ func (db *DB) Put(ctx context.Context, o filter.Projector, oo ...request.Option)
 	err = r.Put(ctx, o)
 	return r.End(err)
 }
+
+func (db *DB) Delete(ctx context.Context, f filter.Filter, oo ...request.Option) (uint, error) {
+	r, err := request.New(ctx, db, oo...)
+	if err != nil {
+		return 0, err
+	}
+	total, err := r.Delete(ctx, f)
+	return total, r.End(err)
+}

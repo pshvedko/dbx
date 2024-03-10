@@ -206,3 +206,7 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 	}
 	return r.c.QueryRow(ctx, q, aa...).Scan(vv...)
 }
+
+func (r *Request) Delete(ctx context.Context, f filter.Filter) (uint, error) {
+	return 0, sql.ErrNoRows
+}
