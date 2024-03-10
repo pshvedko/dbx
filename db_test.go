@@ -435,22 +435,6 @@ func (db DB) TestPut(t *testing.T) {
 			args: args{
 				ctx: context.TODO(),
 				o: &help.Object{
-					ID:      7,
-					Bool:    help.PtrBool(true),
-					Float64: help.PtrFloat64(1e3),
-					Int16:   help.PtrInt16(3),
-					String3: "green",
-				},
-				oo: []request.Option{},
-			},
-			want:    nil,
-			wantErr: sql.ErrNoRows,
-		},
-		{
-			name: "",
-			args: args{
-				ctx: context.TODO(),
-				o: &help.Object{
 					ID:      9,
 					Bool:    help.PtrBool(false),
 					Float64: help.PtrFloat64(1e4),
@@ -468,6 +452,38 @@ func (db DB) TestPut(t *testing.T) {
 				String3: "orange",
 			},
 			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				o: &help.Object{
+					ID:      7,
+					Bool:    help.PtrBool(true),
+					Float64: help.PtrFloat64(1e3),
+					Int16:   help.PtrInt16(3),
+					String3: "green",
+				},
+				oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
+			},
+			want:    nil,
+			wantErr: sql.ErrNoRows,
+		},
+		{
+			name: "",
+			args: args{
+				ctx: context.TODO(),
+				o: &help.Object{
+					ID:      7,
+					Bool:    help.PtrBool(false),
+					Float64: help.PtrFloat64(1e4),
+					Int16:   help.PtrInt16(4),
+					String3: "orange",
+				},
+				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+			},
+			want:    nil,
+			wantErr: sql.ErrNoRows,
 		},
 	}
 	var ids help.Map
