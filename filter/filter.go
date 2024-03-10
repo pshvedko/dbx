@@ -10,18 +10,24 @@ import (
 	"github.com/lib/pq"
 )
 
+type Column [2]string
+
+func (c Column) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprintf(f, "%q.%q", c[0], c[1])
+}
+
 type Builder interface {
 	io.Writer
 	fmt.Stringer
-	Eq(string, any) error
-	Ne(string, any) error
-	Ge(string, any) error
-	Gt(string, any) error
-	Le(string, any) error
-	Lt(string, any) error
-	As(string, any) error
-	In(string, any) error
-	Ni(string, any) error
+	Eq(fmt.Formatter, any) error
+	Ne(fmt.Formatter, any) error
+	Ge(fmt.Formatter, any) error
+	Gt(fmt.Formatter, any) error
+	Le(fmt.Formatter, any) error
+	Lt(fmt.Formatter, any) error
+	As(fmt.Formatter, any) error
+	In(fmt.Formatter, any) error
+	Ni(fmt.Formatter, any) error
 }
 
 type PK []string

@@ -162,7 +162,7 @@ func (c *Constructor) Sort(y Order) *Constructor {
 	return c
 }
 
-func (c *Constructor) Update(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
+func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	c.Grow(256)
 	_, err := c.Printf("UPDATE %q SET", j.Table())
 	if err != nil {
@@ -173,12 +173,6 @@ func (c *Constructor) Update(j filter.Projector, f filter.Filter) (string, []any
 		return "", nil, nil, fmt.Errorf("unknown primary key")
 	}
 	w := filter.Eq{}
-	switch f {
-	case nil:
-		f = w
-	default:
-		f = filter.And{f, w}
-	}
 	for i, n := range nn {
 		var v fmt.Formatter
 		switch {
@@ -213,7 +207,7 @@ func (c *Constructor) Update(j filter.Projector, f filter.Filter) (string, []any
 	if err != nil {
 		return "", nil, nil, err
 	}
-	err = f.To(c, j)
+	err = w.To(c, j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -230,10 +224,12 @@ func (c *Constructor) Update(j filter.Projector, f filter.Filter) (string, []any
 	return c.String(), c.Values(), vv, nil
 }
 
+type Field [2]string
+
 func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, error) {
 	c.Grow(256)
 	if m == 2 {
-		return c.Update(j, nil)
+		return c.Update(j)
 	}
 	_, err := c.WriteString("INSERT INTO")
 	if err != nil {
@@ -245,12 +241,16 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	}
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
+	w := filter.Eq{}
 	for i, n := range nn {
 		switch {
+		case c.IsCreated(n):
+			continue
 		case c.IsUpdated(n):
 			uu = append(uu, n)
-			fallthrough
-		case c.IsCreated(n) || c.IsDeleted(n):
+			continue
+		case c.IsDeleted(n):
+			w[n] = nil
 			continue
 		case pk.Have(n) || c.Unused(n):
 		default:
@@ -292,11 +292,12 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 				return "", nil, nil, err
 			}
 		}
-		if n, ok := c.HaveDeleted(); ok {
-			_, err = c.Printf(" WHERE %q.%q IS NULL", j.Table(), n)
+		if len(w) > 0 {
+			_, err = c.WriteString(" WHERE ")
 			if err != nil {
 				return "", nil, nil, err
 			}
+			err = w.To(c, j)
 		}
 	}
 	_, err = c.WriteString(" RETURNING")
@@ -318,8 +319,4 @@ func (c *Constructor) Printf(format string, a ...any) (int, error) {
 
 func (c *Constructor) Unused(n string) bool {
 	return !c.Used(n)
-}
-
-func (c *Constructor) HaveDeleted() (string, bool) {
-	return c.Deleted.Name()
 }

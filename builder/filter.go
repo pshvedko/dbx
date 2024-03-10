@@ -49,7 +49,7 @@ func (f *Filter) Value(v any) fmt.Formatter {
 	return Holder(len(f.v))
 }
 
-func (f *Filter) Op(k string, o int, v any) error {
+func (f *Filter) Op(k fmt.Formatter, o int, v any) error {
 	var p fmt.Formatter
 	switch x := v.(type) {
 	case nil:
@@ -65,7 +65,7 @@ func (f *Filter) Op(k string, o int, v any) error {
 	default:
 		p = f.Value(v)
 	}
-	_, err := fmt.Fprintf(f, "%q ", k)
+	_, err := fmt.Fprintf(f, "%v ", k)
 	if err != nil {
 		return err
 	}
@@ -73,39 +73,39 @@ func (f *Filter) Op(k string, o int, v any) error {
 	return err
 }
 
-func (f *Filter) Eq(k string, v any) error {
+func (f *Filter) Eq(k fmt.Formatter, v any) error {
 	return f.Op(k, Eq, v)
 }
 
-func (f *Filter) Ne(k string, v any) error {
+func (f *Filter) Ne(k fmt.Formatter, v any) error {
 	return f.Op(k, Ne, v)
 }
 
-func (f *Filter) Ge(k string, v any) error {
+func (f *Filter) Ge(k fmt.Formatter, v any) error {
 	return f.Op(k, Ge, v)
 }
 
-func (f *Filter) Gt(k string, v any) error {
+func (f *Filter) Gt(k fmt.Formatter, v any) error {
 	return f.Op(k, Gt, v)
 }
 
-func (f *Filter) Le(k string, v any) error {
+func (f *Filter) Le(k fmt.Formatter, v any) error {
 	return f.Op(k, Le, v)
 }
 
-func (f *Filter) Lt(k string, v any) error {
+func (f *Filter) Lt(k fmt.Formatter, v any) error {
 	return f.Op(k, Lt, v)
 }
 
-func (f *Filter) In(k string, v any) error {
+func (f *Filter) In(k fmt.Formatter, v any) error {
 	return f.Op(k, In, v)
 }
 
-func (f *Filter) Ni(k string, v any) error {
+func (f *Filter) Ni(k fmt.Formatter, v any) error {
 	return f.Op(k, Ni, v)
 }
 
-func (f *Filter) As(s string, a any) error {
+func (f *Filter) As(fmt.Formatter, any) error {
 	//TODO implement me
 	panic("implement me")
 }

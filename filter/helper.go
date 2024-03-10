@@ -32,7 +32,7 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	return
 }
 
-func Straight[T any](b Builder, j Projector, o string, oo map[string]T, t any) (err error) {
+func Straight[T any](b Builder, j Projector, o string, oo map[string]T, v any) (err error) {
 	ff := make([]string, 0, len(oo))
 	for _, k := range j.Names() {
 		_, ok := oo[k]
@@ -54,32 +54,33 @@ func Straight[T any](b Builder, j Projector, o string, oo map[string]T, t any) (
 			}
 		}()
 	}
-	for i, k := range ff {
+	t := j.Table()
+	for i, f := range ff {
 		if i > 0 {
 			_, err = fmt.Fprint(b, " ", o, " ")
 			if err != nil {
 				return
 			}
 		}
-		switch t.(type) {
+		switch v.(type) {
 		case Eq:
-			err = b.Eq(k, oo[k])
+			err = b.Eq(Column{t, f}, oo[f])
 		case Ne:
-			err = b.Ne(k, oo[k])
+			err = b.Ne(Column{t, f}, oo[f])
 		case Ge:
-			err = b.Ge(k, oo[k])
+			err = b.Ge(Column{t, f}, oo[f])
 		case Gt:
-			err = b.Gt(k, oo[k])
+			err = b.Gt(Column{t, f}, oo[f])
 		case Le:
-			err = b.Le(k, oo[k])
+			err = b.Le(Column{t, f}, oo[f])
 		case Lt:
-			err = b.Lt(k, oo[k])
+			err = b.Lt(Column{t, f}, oo[f])
 		case As:
-			err = b.As(k, oo[k])
+			err = b.As(Column{t, f}, oo[f])
 		case In:
-			err = b.In(k, oo[k])
+			err = b.In(Column{t, f}, oo[f])
 		case Ni:
-			err = b.Ni(k, oo[k])
+			err = b.Ni(Column{t, f}, oo[f])
 		default:
 			return io.EOF
 		}
