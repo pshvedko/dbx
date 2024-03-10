@@ -452,18 +452,18 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(true),
+					Bool:    help.PtrBool(false),
 					Float64: help.PtrFloat64(1e4),
 					Int16:   help.PtrInt16(4),
 					String3: "orange",
 				},
-				oo: []request.Option{request.PutUpdate},
+				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(true),
-				Float64: help.PtrFloat64(1e4),
-				Int16:   help.PtrInt16(4),
+				Bool:    help.PtrBool(false),
+				Float64: help.PtrFloat64(1e3),
+				Int16:   help.PtrInt16(3),
 				String1: help.PtrString("green"),
 				String3: "orange",
 			},
@@ -478,7 +478,7 @@ func (db DB) TestPut(t *testing.T) {
 			if tt.wantErr == nil {
 				t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
 				for i := 0; i < 15; i++ {
-					require.Equal(t, tt.want.Get(i), tt.args.o.Get(i))
+					require.Equal(t, tt.want.Get(i), tt.args.o.Get(i), i)
 				}
 				t.Log(tt.args.o.Get(15))
 				t.Log(tt.args.o.Get(16))

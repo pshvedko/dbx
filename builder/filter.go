@@ -18,17 +18,17 @@ const (
 	Ni
 )
 
-var operation = [...][3]string{ // TODO FORMATTER
-	Eq: {"=", " "},
-	Is: {"IS", " "},
-	Ne: {"<>", " "},
-	Si: {"IS NOT", " "},
-	Ge: {">=", " "},
-	Gt: {">", " "},
-	Le: {"<=", " "},
-	Lt: {"<", " "},
-	In: {"= ANY", "(", ")"},
-	Ni: {"<> ALL", "(", ")"},
+var operation = [...]string{
+	Eq: "= %v",
+	Is: "IS %v",
+	Ne: "<> %v",
+	Si: "IS NOT %v",
+	Ge: ">= %v",
+	Gt: "> %v",
+	Le: "<= %v",
+	Lt: "< %v",
+	In: "= ANY(%v)",
+	Ni: "<> ALL(%v)",
 }
 
 type Filter struct {
@@ -65,7 +65,11 @@ func (f *Filter) Op(k string, o int, v any) error {
 	default:
 		p = f.Value(v)
 	}
-	_, err := fmt.Fprintf(f, "%q %s%s%v%s", k, operation[o][0], operation[o][1], p, operation[o][2])
+	_, err := fmt.Fprintf(f, "%q ", k)
+	if err != nil {
+		return err
+	}
+	_, err = fmt.Fprintf(f, operation[o], p)
 	return err
 }
 
