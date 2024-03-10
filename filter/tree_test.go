@@ -166,6 +166,27 @@ func TestLoop(t *testing.T) {
 			}(),
 			want: true,
 		},
+		{
+			// 1-2-3-...-10-...-100-10
+			name: "",
+			list: func() list {
+				l := list{value: 100}
+				c := &l
+				i := 100
+				for i > 10 {
+					i--
+					l = list{value: i, next: &l}
+				}
+				x := &l
+				for i > 1 {
+					i--
+					l = list{value: i, next: &l}
+				}
+				c.next = x
+				return l
+			}(),
+			want: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
