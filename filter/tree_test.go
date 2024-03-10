@@ -195,4 +195,13 @@ func TestLoop(t *testing.T) {
 			}
 		})
 	}
+	if !filter.Loop(list100(1)) {
+		t.Errorf("Loop() = %v, want %v", false, true)
+	}
+}
+
+type list100 int
+
+func (l list100) Next() list100 {
+	return l%100 + 1
 }
