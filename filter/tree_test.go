@@ -64,12 +64,48 @@ func TestDeep(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t1 *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			if got := filter.Deep(&tt.tree); got != tt.want {
-				t1.Errorf("Deep() = %v, want %v", got, tt.want)
+				t.Errorf("Deep() = %v, want %v", got, tt.want)
 			}
 		})
 	}
+	var tr Tree = tree1{
+		r: &tree1{
+			r: &tree1{
+				r: &tree1{},
+				l: nil,
+			},
+			l: nil,
+		},
+		l: nil,
+	}
+	if got := filter.Deep(tr); got != 4 {
+		t.Errorf("Deep() = %v, want %v", got, 4)
+	}
+}
+
+type tree1 struct {
+	r, l *tree1
+}
+
+func (t tree1) Left() Tree {
+	if t.l != nil {
+		return t.l
+	}
+	return nil
+}
+
+func (t tree1) Right() Tree {
+	if t.r != nil {
+		return t.r
+	}
+	return nil
+}
+
+type Tree interface {
+	Left() Tree
+	Right() Tree
 }
 
 type list struct {
