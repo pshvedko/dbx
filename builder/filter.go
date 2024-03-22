@@ -92,6 +92,14 @@ func (f *Filter) Op(k fmt.Formatter, o int, v any) error {
 	default:
 		p = f.Value(v)
 	}
+	switch p.(type) {
+	case Keyword:
+		switch o {
+		case Si, Is:
+		default:
+			return fmt.Errorf("illegal operation")
+		}
+	}
 	_, err := fmt.Fprint(f, k)
 	if err != nil {
 		return err

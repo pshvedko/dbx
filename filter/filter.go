@@ -195,69 +195,69 @@ type Filter interface {
 
 type And []Filter
 
-func (f And) To(b Builder, j Projector) error {
-	return Conjunction(b, j, "AND", f)
-}
+func (f And) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f And) To(b Builder, j Projector) error { return Conjunction(b, j, "AND", f) }
 
 type Or []Filter
 
-func (f Or) To(b Builder, j Projector) error {
-	return Conjunction(b, j, "OR", f)
-}
+func (f Or) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Or) To(b Builder, j Projector) error { return Conjunction(b, j, "OR", f) }
 
 type Eq map[string]any
 
-func (f Eq) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Eq) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Eq) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Ne map[string]any
 
-func (f Ne) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Ne) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Ne) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Ge map[string]any
 
-func (f Ge) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Ge) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Ge) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Gt map[string]any
 
-func (f Gt) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Gt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Gt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Le map[string]any
 
-func (f Le) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Le) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Le) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Lt map[string]any
 
-func (f Lt) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Lt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type As map[string]any
 
-func (f As) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f As) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type In map[string]Array
 
-func (f In) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f In) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f In) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Ni map[string]Array
 
-func (f Ni) To(b Builder, j Projector) error {
-	return Straight(b, j, "AND", f, f)
-}
+func (f Ni) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Ni) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type Array []any
 
