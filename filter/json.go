@@ -73,13 +73,13 @@ func (e *Expression) UnmarshalJSON(b []byte) error {
 	}
 	switch n {
 	case 2:
-		return UnmarshalJSON(b, e, []Operation{})
+		return ExpressionJSON(b, e, []Operation{})
 	default:
-		return UnmarshalJSON(b, e, []Expression{})
+		return ExpressionJSON(b, e, []Expression{})
 	}
 }
 
-func UnmarshalJSON[T Filterer](b []byte, e *Expression, a []T) error {
+func ExpressionJSON[T Filterer](b []byte, e *Expression, a []T) error {
 	err := json.Unmarshal(b, &a)
 	if err != nil {
 		return err
