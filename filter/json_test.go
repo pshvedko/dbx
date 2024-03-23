@@ -2,6 +2,7 @@ package filter_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 	"time"
 
@@ -248,4 +249,56 @@ func TestOperation_Filter(t *testing.T) {
 			require.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func ExampleMarshalJSON() {
+	f := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
+
+	fmt.Printf("%#v\n", f)
+
+	b, err := filter.MarshalJSON(f)
+	if err != nil {
+		return
+	}
+
+	//  ( ( A || B ) && C )
+	//
+	//  A || B -> [[ A ] , [ B ]]
+	//
+	//  X && C -> [[ X , C ]]
+	//
+	//  [[[[ A ] , [ B ]] , C ]]
+	//
+	//  [[[[ [["f","GE",0]] ] , [ [["b","EQ",false]] ]] , [["f","LE",0]] ]]
+	//
+	//	[
+	//		[
+	//			[
+	//				[
+	//					[["f","GE",0]]
+	//				],
+	//				[
+	//					[["b","EQ",false]]
+	//				]
+	//			],
+	//			[["f","LE",0]]
+	//		]
+	//	]
+	//
+
+	fmt.Printf("%s\n", b)
+
+	var e filter.Expression
+	err = json.Unmarshal(b, &e)
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("%#v\n", e)
+
+	// Output:
+	//
+	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
+	// [[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]
+	// filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", 0}}}}
 }
