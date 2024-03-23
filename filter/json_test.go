@@ -251,6 +251,36 @@ func TestOperation_Filter(t *testing.T) {
 	}
 }
 
+func TestExpression_Filter(t *testing.T) {
+	tests := []struct {
+		name    string
+		ex      filter.Expression
+		want    filter.Filter
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "EQ", 3.14}},
+			want:    filter.Eq{"f": 3.14},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "EQ", 3.14}, filter.Operation{"b", "EQ", true}, filter.Operation{"n", "EQ", nil}},
+			want:    filter.Eq{"b": true, "f": 3.14, "n": nil},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.ex.Filter()
+			require.ErrorIs(t, tt.wantErr, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
 func ExampleMarshalJSON() {
 	f := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
 

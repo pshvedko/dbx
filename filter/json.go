@@ -9,48 +9,89 @@ import (
 
 type Operation [3]any
 
-func (f Operation) Filter() (Filter, error) {
-	switch k := f[0].(type) {
+type Operator interface {
+	Filter
+	Append(string, any)
+}
+
+func (o Operation) Filter() (Operator, error) {
+	switch k := o[0].(type) {
 	case string:
-		switch o := f[1].(type) {
+		switch v := o[1].(type) {
 		case string:
-			switch o {
+			switch v {
 			case "EQ":
-				return Eq{k: f[2]}, nil
+				return Eq{k: o[2]}, nil
 			case "NE":
-				return Ne{k: f[2]}, nil
+				return Ne{k: o[2]}, nil
 			case "GE":
-				return Ge{k: f[2]}, nil
+				return Ge{k: o[2]}, nil
 			case "GT":
-				return Gt{k: f[2]}, nil
+				return Gt{k: o[2]}, nil
 			case "LE":
-				return Le{k: f[2]}, nil
+				return Le{k: o[2]}, nil
 			case "LT":
-				return Lt{k: f[2]}, nil
+				return Lt{k: o[2]}, nil
 			}
 			return nil, fmt.Errorf("unknown operation")
 		}
 		return nil, fmt.Errorf("illegal operation")
 	}
-	return nil, fmt.Errorf("illegal field")
+	return nil, fmt.Errorf("malformed operation")
 }
 
 type Filterer interface {
-	Filter() (Filter, error)
+	Filter() (Operator, error)
 }
 
 type Expression []Filterer
 
-func (e Expression) Filter() (Filter, error) {
-	for _, v := range e {
-		switch x := v.(type) {
-		case Operation:
-		case Expression:
-			// FIXME
-			return x.Filter()
-		}
+var _ = Expression{
+	Expression{
+		Expression{
+			Expression{
+				Expression{Operation{"f", "GE", 0}},
+			},
+			Expression{
+				Expression{Operation{"b", "EQ", false}},
+			},
+		},
+		Expression{Operation{"f", "LE", 0}},
+	},
+}
+
+func (e Expression) Filter() (Operator, error) {
+	if len(e) == 0 {
+		return nil, fmt.Errorf("empty expression")
 	}
-	return nil, nil
+	switch x := e[0].(type) {
+	case Expression:
+		panic(2)
+	case Operation:
+		f, err := x.Filter()
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range e[1:] {
+			switch o := v.(type) {
+			case Operation:
+				if x[1] != o[1] {
+					return nil, fmt.Errorf("illegal operation")
+				}
+				switch k := o[0].(type) {
+				case string:
+					f.Append(k, o[2])
+				default:
+					return nil, fmt.Errorf("malformed operation")
+				}
+			default:
+				return nil, fmt.Errorf("illegal expression")
+			}
+		}
+		return f, nil
+	default:
+		return nil, fmt.Errorf("unknown expression")
+	}
 }
 
 func (e *Expression) UnmarshalJSON(b []byte) error {
