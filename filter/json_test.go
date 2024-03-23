@@ -263,9 +263,9 @@ func ExampleMarshalJSON() {
 
 	//  ( ( A || B ) && C )
 	//
-	//  A || B -> [[ A ] , [ B ]]
-	//
-	//  X && C -> [[ X , C ]]
+	//  X = A || B -> [[ A ] , [ B ]] : Nx1 - OR	   M
+	//												  +--
+	//  X && C -> [[ X , C ]]         :	1xM - AND	N |
 	//
 	//  [[ [[ A ] , [ B ]] , C ]]
 	//   \  \____OR_____/      /
