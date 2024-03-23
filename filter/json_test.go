@@ -169,3 +169,57 @@ func TestUnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestOperation_Filter(t *testing.T) {
+	tests := []struct {
+		name    string
+		op      filter.Operation
+		want    filter.Filter
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name:    "",
+			op:      filter.Operation{"f", "EQ", 1},
+			want:    filter.Eq{"f": 1},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "NE", 1e1},
+			want:    filter.Ne{"f": 10.0},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "GT", 0},
+			want:    filter.Gt{"f": 0},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "GE", 1.},
+			want:    filter.Ge{"f": 1.},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "LE", .0},
+			want:    filter.Le{"f": .0},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "LT", 1},
+			want:    filter.Lt{"f": 1},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.op.Filter()
+			require.ErrorIs(t, tt.wantErr, err)
+			require.Equal(t, tt.want, got)
+		})
+	}
+}

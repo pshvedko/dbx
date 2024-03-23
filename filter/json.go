@@ -3,18 +3,75 @@ package filter
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 )
 
 type Operation [3]any
 
+func (f Operation) Filter() (Filter, error) {
+	switch k := f[0].(type) {
+	case string:
+		switch o := f[1].(type) {
+		case string:
+			switch o {
+			case "EQ":
+				return Eq{k: f[2]}, nil
+			case "NE":
+				return Ne{k: f[2]}, nil
+			case "GE":
+				return Ge{k: f[2]}, nil
+			case "GT":
+				return Gt{k: f[2]}, nil
+			case "LE":
+				return Le{k: f[2]}, nil
+			case "LT":
+				return Lt{k: f[2]}, nil
+			}
+			return nil, fmt.Errorf("unknown operation")
+		}
+		return nil, fmt.Errorf("illegal operation")
+	}
+	return nil, fmt.Errorf("illegal field")
+}
+
 type Expression []any
 
-func (f *Expression) UnmarshalJSON(b []byte) error {
-	switch {
-	case len(b) > 2 && bytes.Equal(b[:3], []byte{'[', '[', '"'}):
-		return UnmarshalJSON(f, b, []Operation{})
+func (e Expression) Filter() (Filter, error) {
+	for _, v := range e {
+		switch x := v.(type) {
+		case Operation:
+		case Expression:
+			// FIXME
+			return x.Filter()
+		}
+	}
+	return nil, nil
+}
+
+func (e *Expression) UnmarshalJSON(b []byte) error {
+	j := json.NewDecoder(bytes.NewReader(b))
+	n := 0
+	for n < 3 {
+		t, err := j.Token()
+		switch err {
+		case nil:
+			switch t {
+			case json.Delim('['):
+				n++
+				continue
+			}
+		case io.EOF:
+		default:
+			return err
+		}
+		break
+	}
+	switch n {
+	case 2:
+		return UnmarshalJSON(e, b, []Operation{})
 	default:
-		return UnmarshalJSON(f, b, []Expression{})
+		return UnmarshalJSON(e, b, []Expression{})
 	}
 }
 
@@ -26,11 +83,6 @@ func UnmarshalJSON[T interface{ Expression | Operation }](f *Expression, b []byt
 	for _, x := range a {
 		*f = append(*f, x)
 	}
-	return nil
-}
-
-func (f Expression) Filter() Filter {
-
 	return nil
 }
 
