@@ -1,34 +1,36 @@
 package filter
 
 import (
+	"bytes"
 	"encoding/json"
 )
 
-type ProtoFilter []any
+type Operation [3]any
 
-func (f *ProtoFilter) UnmarshalJSON(b []byte) error {
-	var a []any
-	err := json.Unmarshal(b, &a)
-	switch e := err.(type) {
-	case nil:
-		*f = append(*f, a...)
-	case *json.UnmarshalTypeError:
-		if e.Type != nil {
-			return &json.UnmarshalTypeError{}
-		}
-		var v [3]any
-		err = json.Unmarshal(b, &v)
-		switch e := err.(type) {
-		case nil:
-			*f = append(*f, v)
-		case *json.UnmarshalTypeError:
-			return &json.UnsupportedTypeError{Type: e.Type}
-		default:
-			return err
-		}
+type Expression []any
+
+func (f *Expression) UnmarshalJSON(b []byte) error {
+	switch {
+	case len(b) > 2 && bytes.Equal(b[:3], []byte{'[', '[', '"'}):
+		return UnmarshalJSON(f, b, []Operation{})
 	default:
+		return UnmarshalJSON(f, b, []Expression{})
+	}
+}
+
+func UnmarshalJSON[T interface{ Expression | Operation }](f *Expression, b []byte, a []T) error {
+	err := json.Unmarshal(b, &a)
+	if err != nil {
 		return err
 	}
+	for _, x := range a {
+		*f = append(*f, x)
+	}
+	return nil
+}
+
+func (f Expression) Filter() Filter {
+
 	return nil
 }
 

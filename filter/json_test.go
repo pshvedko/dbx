@@ -89,6 +89,24 @@ func TestMarshalJSON(t *testing.T) {
 			want:    []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[[[["f","LE",0]],[["b","NE",false]]]]]]`),
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			args:    args{f: filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Or{filter.Le{"f": 0}, filter.Ne{"b": false}}}},
+			want:    []byte(`[[[[[["f","GE",0]]],[[["b","EQ",false]]]],[[[["f","LE",0]]],[[["b","NE",false]]]]]]`),
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{f: filter.Or{filter.And{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}},
+			want:    []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[["f","LE",0]]]]`),
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{f: filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}},
+			want:    []byte(`[[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]`),
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -102,44 +120,52 @@ func TestMarshalJSON(t *testing.T) {
 func TestUnmarshalJSON(t *testing.T) {
 	type args struct {
 		b []byte
-		f filter.ProtoFilter
 	}
 	tests := []struct {
 		name    string
 		args    args
+		want    filter.Expression
 		wantErr error
 	}{
 		// TODO: Add test cases.
 		{
-			name: "",
-			args: args{
-				b: []byte(`[[[["f","GE",0]],[["b","EQ",false]]]]`),
-				f: filter.ProtoFilter{},
-			},
+			name:    "",
+			args:    args{b: []byte(`[["f","EQ",3.14]]`)},
+			want:    filter.Expression{filter.Operation{"f", "EQ", 3.14}},
 			wantErr: nil,
 		},
 		{
-			name: "",
-			args: args{
-				b: []byte(`[[[["f","GE",0]]],[[["b","EQ",false]]]]`),
-				f: filter.ProtoFilter{},
-			},
+			name:    "",
+			args:    args{b: []byte(`[[[["f","GE",0]],[["b","EQ",false]]]]`)},
+			want:    filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}, filter.Expression{filter.Operation{"b", "EQ", false}}}},
 			wantErr: nil,
 		},
 		{
-			name: "",
-			args: args{
-				b: []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[[[["f","LE",0]],[["b","NE",false]]]]]]`),
-				f: filter.ProtoFilter{},
-			},
+			name:    "",
+			args:    args{b: []byte(`[[[["f","GE",0]]],[[["b","EQ",false]]]]`)},
+			want:    filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{b: []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[[[["f","LE",0]],[["b","NE",false]]]]]]`)},
+			want:    filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}, filter.Expression{filter.Operation{"b", "EQ", false}}}}}, filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "LE", .0}}, filter.Expression{filter.Operation{"b", "NE", false}}}}}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{b: []byte(`[[[[[["f","GE",0]]],[[["b","EQ",false]]]],[[[["f","LE",0]]],[[["b","NE",false]]]]]]`)},
+			want:    filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "LE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "NE", false}}}}}},
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := json.Unmarshal(tt.args.b, &tt.args.f)
+			var f filter.Expression
+			err := json.Unmarshal(tt.args.b, &f)
 			require.ErrorIs(t, tt.wantErr, err)
-			t.Log(tt.args.f)
+			t.Logf("%v", f)
+			require.EqualValues(t, tt.want, f)
 		})
 	}
 }
