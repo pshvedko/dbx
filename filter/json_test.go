@@ -158,6 +158,32 @@ func TestUnmarshalJSON(t *testing.T) {
 			want:    filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "LE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "NE", false}}}}}},
 			wantErr: nil,
 		},
+		{
+			// ( f >= 0 OR b == f ) AND f <= 0
+			// filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
+			name: "",
+			args: args{b: []byte(`[[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]`)},
+			want: filter.Expression{
+				filter.Expression{
+					filter.Expression{
+						filter.Expression{
+							filter.Expression{
+								filter.Operation{"f", "GE", .0},
+							},
+						},
+						filter.Expression{
+							filter.Expression{
+								filter.Operation{"b", "EQ", false},
+							},
+						},
+					},
+					filter.Expression{
+						filter.Operation{"f", "LE", .0},
+					},
+				},
+			},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

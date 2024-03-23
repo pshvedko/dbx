@@ -35,7 +35,11 @@ func (f Operation) Filter() (Filter, error) {
 	return nil, fmt.Errorf("illegal field")
 }
 
-type Expression []any
+type Filterer interface {
+	Filter() (Filter, error)
+}
+
+type Expression []Filterer
 
 func (e Expression) Filter() (Filter, error) {
 	for _, v := range e {
@@ -69,19 +73,19 @@ func (e *Expression) UnmarshalJSON(b []byte) error {
 	}
 	switch n {
 	case 2:
-		return UnmarshalJSON(e, b, []Operation{})
+		return UnmarshalJSON(b, e, []Operation{})
 	default:
-		return UnmarshalJSON(e, b, []Expression{})
+		return UnmarshalJSON(b, e, []Expression{})
 	}
 }
 
-func UnmarshalJSON[T interface{ Expression | Operation }](f *Expression, b []byte, a []T) error {
+func UnmarshalJSON[T Filterer](b []byte, e *Expression, a []T) error {
 	err := json.Unmarshal(b, &a)
 	if err != nil {
 		return err
 	}
-	for _, x := range a {
-		*f = append(*f, x)
+	for i := range a {
+		*e = append(*e, a[i])
 	}
 	return nil
 }
