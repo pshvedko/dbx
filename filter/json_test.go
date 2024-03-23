@@ -1,6 +1,7 @@
 package filter_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -82,12 +83,63 @@ func TestMarshalJSON(t *testing.T) {
 			want:    []byte(`[[[["f","GE",0]]],[[["b","EQ",false]]]]`),
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			args:    args{f: filter.Or{filter.And{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.And{filter.Le{"f": 0}, filter.Ne{"b": false}}}},
+			want:    []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[[[["f","LE",0]],[["b","NE",false]]]]]]`),
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := filter.MarshalJSON(tt.args.f)
 			require.ErrorIs(t, tt.wantErr, err)
 			require.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func TestUnmarshalJSON(t *testing.T) {
+	type args struct {
+		b []byte
+		f filter.ProtoFilter
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				b: []byte(`[[[["f","GE",0]],[["b","EQ",false]]]]`),
+				f: filter.ProtoFilter{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				b: []byte(`[[[["f","GE",0]]],[[["b","EQ",false]]]]`),
+				f: filter.ProtoFilter{},
+			},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				b: []byte(`[[[[[["f","GE",0]],[["b","EQ",false]]]]],[[[[["f","LE",0]],[["b","NE",false]]]]]]`),
+				f: filter.ProtoFilter{},
+			},
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := json.Unmarshal(tt.args.b, &tt.args.f)
+			require.ErrorIs(t, tt.wantErr, err)
+			t.Log(tt.args.f)
 		})
 	}
 }
