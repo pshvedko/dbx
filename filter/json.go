@@ -12,9 +12,9 @@ type Operation [3]any
 func (o Operation) Filter() (Filter, error) {
 	switch k := o[0].(type) {
 	case string:
-		switch v := o[1].(type) {
+		switch x := o[1].(type) {
 		case string:
-			switch v {
+			switch x {
 			case "EQ":
 				return Eq{k: o[2]}, nil
 			case "NE":
@@ -192,6 +192,32 @@ func ExpressionJSON[T Filterer](b []byte, e *Expression, a []T) error {
 	}
 	return nil
 }
+
+//func normalize(v Filterer) Filterer {
+//	switch o := v.(type) {
+//	case Operation:
+//		switch x := o[2].(type) {
+//		case float64:
+//			i, f := math.Modf(x)
+//			if f == 0 {
+//				o[2] = int(i)
+//			}
+//			return o
+//		case string:
+//			// 1970-01-01T00:00:00+00:00
+//			if len(x) >= 20 && x[4] == '-' && x[7] == '-' && x[10] == 'T' && x[13] == ':' && x[16] == ':' {
+//				if x[19] == 'Z' || x[19] == '+' {
+//					t, err := time.Parse(time.RFC3339, x)
+//					if err == nil {
+//						o[2] = t
+//						return o
+//					}
+//				}
+//			}
+//		}
+//	}
+//	return v
+//}
 
 func MarshalJSON(f Filter) ([]byte, error) {
 	switch x := f.(type) {
