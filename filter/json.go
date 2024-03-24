@@ -43,6 +43,25 @@ type Filterer interface {
 
 type Expression []Filterer
 
+// Filter
+// ...
+//
+//	( ( A || B ) && C )
+//
+//	     M=1
+//	    +---+             2
+//	    | A |         +---+---+            M
+//	 OR +---+ 2       | A | B | N=1       +- NxM
+//	    | B |         +---+---+         N |
+//	    +---+            AND
+//
+//	Nx1 - OR:  A || B -> [[ A ] , [ B ]] = D
+//
+//	1xM - AND: D && C -> [[ D , C ]]
+//
+//	[[ [[ A ] , [ B ]] , C ]]
+//	 \  \____OR_____/      /
+//	  \______AND__________/
 func (e Expression) Filter() (Filter, error) {
 	if len(e) == 0 {
 		return nil, fmt.Errorf("empty expression")

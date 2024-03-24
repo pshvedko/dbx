@@ -274,48 +274,14 @@ func TestExpression_Filter(t *testing.T) {
 }
 
 func ExampleMarshalJSON() {
-	f := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
+	a := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
 
-	fmt.Printf("%#v\n", f)
+	fmt.Printf("%#v\n", a)
 
-	b, err := filter.MarshalJSON(f)
+	b, err := filter.MarshalJSON(a)
 	if err != nil {
 		return
 	}
-
-	//  ( ( A || B ) && C )
-	//
-	//       M=1
-	//      +---+             2
-	//      | A |         +---+---+
-	//   OR +---+ 2       | A | B | N=1
-	//      | B |         +---+---+
-	//      +---+            AND
-	//
-	//  X = A || B -> [[ A ] , [ B ]] : Nx1 - OR	   M
-	//												  +- NxM
-	//  X && C -> [[ X , C ]]         :	1xM - AND	N |
-	//
-	//  [[ [[ A ] , [ B ]] , C ]]
-	//   \  \____OR_____/      /
-	//    \______AND__________/
-	//
-	//  [[[[ [["f","GE",0]] ] , [ [["b","EQ",false]] ]] , [["f","LE",0]] ]]
-	//
-	//	[
-	//		[
-	//			[
-	//				[
-	//					[["f","GE",0]]
-	//				],
-	//				[
-	//					[["b","EQ",false]]
-	//				]
-	//			],
-	//			[["f","LE",0]]
-	//		]
-	//	]
-	//
 
 	fmt.Printf("%s\n", b)
 
@@ -327,9 +293,17 @@ func ExampleMarshalJSON() {
 
 	fmt.Printf("%#v\n", e)
 
+	f, err := e.Filter()
+	if err != nil {
+		return
+	}
+
+	fmt.Printf("%#v\n", f)
+
 	// Output:
 	//
 	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
 	// [[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]
 	// filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", 0}}}}
+	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
 }
