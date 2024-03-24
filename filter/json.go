@@ -233,6 +233,8 @@ func MarshalJSON(f Filter) ([]byte, error) {
 		return OperationJSON(x, "LE")
 	case Lt:
 		return OperationJSON(x, "LT")
+	case As:
+		return OperationJSON(x, "AS")
 	case And:
 		// [[a,b]]
 		a := make([]any, 0, len(x))

@@ -211,15 +211,11 @@ func (f Eq) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Eq) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
-func (f Eq) Append(k string, v any) { f[k] = v }
-
 type Ne map[string]any
 
 func (f Ne) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Ne) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
-
-func (f Ne) Append(k string, v any) { f[k] = v }
 
 type Ge map[string]any
 
@@ -227,15 +223,11 @@ func (f Ge) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Ge) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
-func (f Ge) Append(k string, v any) { f[k] = v }
-
 type Gt map[string]any
 
 func (f Gt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Gt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
-
-func (f Gt) Append(k string, v any) { f[k] = v }
 
 type Le map[string]any
 
@@ -243,23 +235,17 @@ func (f Le) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Le) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
-func (f Le) Append(k string, v any) { f[k] = v }
-
 type Lt map[string]any
 
 func (f Lt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
-func (f Lt) Append(k string, v any) { f[k] = v }
-
 type As map[string]any
 
 func (f As) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
-
-func (f As) Append(k string, v any) { f[k] = v }
 
 type In map[string]Array
 
