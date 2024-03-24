@@ -43,8 +43,7 @@ type Filterer interface {
 
 type Expression []Filterer
 
-// Filter
-// ...
+// Filter ...
 //
 //	( ( A || B ) && C )
 //
