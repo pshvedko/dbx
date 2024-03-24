@@ -51,7 +51,20 @@ func (e Expression) Filter() (Filter, error) {
 	case Expression:
 		switch len(e) {
 		case 1:
-			panic(1)
+			var a And
+			switch v := e[0].(type) {
+			case Expression:
+				for _, o := range v {
+					f, err := o.Filter()
+					if err != nil {
+						return nil, err
+					}
+					a = append(a, f)
+				}
+			default:
+				return nil, fmt.Errorf("illegal expression")
+			}
+			return a, nil
 		default:
 			var a Or
 			for _, v := range e {

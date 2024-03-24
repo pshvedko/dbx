@@ -257,6 +257,12 @@ func TestExpression_Filter(t *testing.T) {
 			want:    filter.Or{filter.Ge{"f": 3.14}, filter.Eq{"b": true}},
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 3.14}}, filter.Expression{filter.Operation{"b", "EQ", false}}}},
+			want:    filter.And{filter.Ge{"f": 3.14}, filter.Eq{"b": false}},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
