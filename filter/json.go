@@ -74,11 +74,16 @@ func (e Expression) Filter() (Filter, error) {
 			switch v := e[0].(type) {
 			case Expression:
 				for _, o := range v {
-					f, err := o.Filter()
-					if err != nil {
-						return nil, err
+					switch o.(type) {
+					case Expression:
+						f, err := o.Filter()
+						if err != nil {
+							return nil, err
+						}
+						a = append(a, f)
+					default:
+						return nil, fmt.Errorf("malformed expression")
 					}
-					a = append(a, f)
 				}
 			default:
 				return nil, fmt.Errorf("illegal expression")
