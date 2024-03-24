@@ -9,12 +9,7 @@ import (
 
 type Operation [3]any
 
-type Operator interface {
-	Filter
-	Append(string, any)
-}
-
-func (o Operation) Filter() (Operator, error) {
+func (o Operation) Filter() (Filter, error) {
 	switch k := o[0].(type) {
 	case string:
 		switch v := o[1].(type) {
@@ -32,6 +27,8 @@ func (o Operation) Filter() (Operator, error) {
 				return Le{k: o[2]}, nil
 			case "LT":
 				return Lt{k: o[2]}, nil
+			case "AS":
+				return As{k: o[2]}, nil
 			}
 			return nil, fmt.Errorf("unknown operation")
 		}
@@ -41,32 +38,39 @@ func (o Operation) Filter() (Operator, error) {
 }
 
 type Filterer interface {
-	Filter() (Operator, error)
+	Filter() (Filter, error)
 }
 
 type Expression []Filterer
 
-var _ = Expression{
-	Expression{
-		Expression{
-			Expression{
-				Expression{Operation{"f", "GE", 0}},
-			},
-			Expression{
-				Expression{Operation{"b", "EQ", false}},
-			},
-		},
-		Expression{Operation{"f", "LE", 0}},
-	},
-}
-
-func (e Expression) Filter() (Operator, error) {
+func (e Expression) Filter() (Filter, error) {
 	if len(e) == 0 {
 		return nil, fmt.Errorf("empty expression")
 	}
 	switch x := e[0].(type) {
 	case Expression:
-		panic(2)
+		switch len(e) {
+		case 1:
+			panic(1)
+		default:
+			var a Or
+			for _, v := range e {
+				switch o := v.(type) {
+				case Expression:
+					if len(o) != 1 {
+						return nil, fmt.Errorf("malformed expression")
+					}
+					f, err := o[0].Filter()
+					if err != nil {
+						return nil, err
+					}
+					a = append(a, f)
+				default:
+					return nil, fmt.Errorf("illegal expression")
+				}
+			}
+			return a, nil
+		}
 	case Operation:
 		f, err := x.Filter()
 		if err != nil {
@@ -80,7 +84,7 @@ func (e Expression) Filter() (Operator, error) {
 				}
 				switch k := o[0].(type) {
 				case string:
-					f.Append(k, o[2])
+					f = Append(f, k, o[2])
 				default:
 					return nil, fmt.Errorf("malformed operation")
 				}
@@ -92,6 +96,28 @@ func (e Expression) Filter() (Operator, error) {
 	default:
 		return nil, fmt.Errorf("unknown expression")
 	}
+}
+
+func Append(f Filter, k string, v any) Filter {
+	switch m := f.(type) {
+	case Eq:
+		m[k] = v
+	case Ne:
+		m[k] = v
+	case Ge:
+		m[k] = v
+	case Gt:
+		m[k] = v
+	case Le:
+		m[k] = v
+	case Lt:
+		m[k] = v
+	case As:
+		m[k] = v
+	default:
+		panic(m)
+	}
+	return f
 }
 
 func (e *Expression) UnmarshalJSON(b []byte) error {
