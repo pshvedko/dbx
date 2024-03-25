@@ -135,6 +135,7 @@ func (o *Injectable[T]) Put(j Projector) {
 type Valuer interface {
 	Size() int
 	Value(any) fmt.Formatter
+	Values() []any
 }
 
 type Builder interface {

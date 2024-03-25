@@ -30,7 +30,7 @@ func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
 		for _, s := range w[1:] {
 			if len(s) > 0 && s[0] == '$' {
 				if i, err := strconv.Atoi(s[1:]); err == nil && i > 0 {
-					s = fmt.Sprint('$', i+n)
+					s = fmt.Sprint("$", i+n)
 				}
 			}
 			_, err = b.Write([]byte{' '})
@@ -50,4 +50,8 @@ func NewPermanent(f filter.Filter, j filter.Projector) (filter.Filter, error) {
 		return nil, err
 	}
 	return &p, nil
+}
+
+func NewBuilder() filter.Builder {
+	return &Filter{}
 }
