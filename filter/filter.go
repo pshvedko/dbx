@@ -132,8 +132,14 @@ func (o *Injectable[T]) Put(j Projector) {
 	}
 }
 
+type Valuer interface {
+	Size() int
+	Value(any) fmt.Formatter
+}
+
 type Builder interface {
 	io.Writer
+	io.StringWriter
 	fmt.Stringer
 	Eq(fmt.Formatter, any) error
 	Ne(fmt.Formatter, any) error
@@ -144,6 +150,7 @@ type Builder interface {
 	As(fmt.Formatter, any) error
 	In(fmt.Formatter, any) error
 	Ni(fmt.Formatter, any) error
+	Valuer
 }
 
 type PK []string
