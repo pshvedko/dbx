@@ -320,10 +320,32 @@ func ExampleMarshalJSON() {
 
 	fmt.Printf("%#v\n", f)
 
+	var o struct {
+		Expression filter.Expression
+	}
+	err = json.Unmarshal([]byte(`{"expression":null}`), &o)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("%#v\n", o)
+
+	err = json.Unmarshal([]byte(`{"expression":[]}`), &o)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("%#v\n", o)
+
 	// Output:
 	//
 	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
 	// [[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]
 	// filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", 0}}}}
 	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
+	// struct { Expression filter.Expression }{Expression:filter.Expression(nil)}
+	// struct { Expression filter.Expression }{Expression:filter.Expression(nil)}
+
 }
