@@ -59,7 +59,6 @@ func (o Operation) Join(t Filter) error {
 	if err != nil {
 		return err
 	}
-
 	switch a := t.(type) {
 	case Eq:
 		switch b := f.(type) {
