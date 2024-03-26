@@ -47,66 +47,68 @@ func (o Operation) Filter() (Filter, error) {
 	return nil, fmt.Errorf("malformedd operation")
 }
 
-func Append[M ~map[K]V, K comparable, V any](t M, f M) error {
+func Append[M interface {
+	~map[K]V
+	Filter
+}, K string, V any](t M, f M) M {
 	for k, v := range f {
 		t[k] = v
 	}
-	return nil
+	return t
 }
 
-func (o Operation) Join(t Filter) error {
-	f, err := o.Filter()
-	if err != nil {
-		return err
+func Join(t Filter, f ...Filter) (Filter, error) {
+	if len(f) == 0 {
+		return t, nil
 	}
 	switch a := t.(type) {
 	case Eq:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Eq:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Ne:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Ne:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Ge:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Ge:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Gt:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Gt:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Le:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Le:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Lt:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Lt:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case As:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case As:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case In:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case In:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	case Ni:
-		switch b := f.(type) {
+		switch b := f[0].(type) {
 		case Ni:
-			return Append(a, b)
+			return Join(Append(a, b), f[1:]...)
 		}
 	}
-	return fmt.Errorf("inopportune operation")
+	return nil, fmt.Errorf("inopportune operation")
 }
 
 type Filterer interface {
@@ -151,6 +153,9 @@ func (e Expression) Filter() (Filter, error) {
 						if err != nil {
 							return nil, err
 						}
+						if f == nil {
+							return nil, fmt.Errorf("empty expression")
+						}
 						a = append(a, f)
 					default:
 						return nil, fmt.Errorf("malformed expression")
@@ -172,6 +177,9 @@ func (e Expression) Filter() (Filter, error) {
 					if err != nil {
 						return nil, err
 					}
+					if f == nil {
+						return nil, fmt.Errorf("empty expression")
+					}
 					a = append(a, f)
 				default:
 					return nil, fmt.Errorf("illegal expression")
@@ -180,14 +188,19 @@ func (e Expression) Filter() (Filter, error) {
 			return a, nil
 		}
 	case Operation:
-		f, err := x.Filter()
+		t, err := x.Filter()
 		if err != nil {
 			return nil, err
 		}
 		for _, v := range e[1:] {
 			switch o := v.(type) {
 			case Operation:
-				err = o.Join(f)
+				var f Filter
+				f, err = o.Filter()
+				if err != nil {
+					return nil, err
+				}
+				t, err = Join(t, f)
 				if err != nil {
 					return nil, err
 				}
@@ -195,7 +208,7 @@ func (e Expression) Filter() (Filter, error) {
 				return nil, fmt.Errorf("illegal expression")
 			}
 		}
-		return f, nil
+		return t, nil
 	default:
 		return nil, fmt.Errorf("unknown expression")
 	}
