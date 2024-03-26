@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 )
 
 type Operation [3]any
@@ -44,7 +45,68 @@ func (o Operation) Filter() (Filter, error) {
 		}
 		return nil, fmt.Errorf("illegal operation")
 	}
-	return nil, fmt.Errorf("malformed operation")
+	return nil, fmt.Errorf("malformedd operation")
+}
+
+func Append[M ~map[K]V, K comparable, V any](t M, f M) error {
+	maps.Copy(t, f)
+	return nil
+}
+
+func (o Operation) Join(t Filter) error {
+	f, err := o.Filter()
+	if err != nil {
+		return err
+	}
+
+	switch a := t.(type) {
+	case Eq:
+		switch b := f.(type) {
+		case Eq:
+			return Append(a, b)
+		}
+	case Ne:
+		switch b := f.(type) {
+		case Ne:
+			return Append(a, b)
+		}
+	case Ge:
+		switch b := f.(type) {
+		case Ge:
+			return Append(a, b)
+		}
+	case Gt:
+		switch b := f.(type) {
+		case Gt:
+			return Append(a, b)
+		}
+	case Le:
+		switch b := f.(type) {
+		case Le:
+			return Append(a, b)
+		}
+	case Lt:
+		switch b := f.(type) {
+		case Lt:
+			return Append(a, b)
+		}
+	case As:
+		switch b := f.(type) {
+		case As:
+			return Append(a, b)
+		}
+	case In:
+		switch b := f.(type) {
+		case In:
+			return Append(a, b)
+		}
+	case Ni:
+		switch b := f.(type) {
+		case Ni:
+			return Append(a, b)
+		}
+	}
+	return fmt.Errorf("inopportune operation")
 }
 
 type Filterer interface {
@@ -73,7 +135,7 @@ type Expression []Filterer
 //	  \______AND__________/
 func (e Expression) Filter() (Filter, error) {
 	if len(e) == 0 {
-		return nil, fmt.Errorf("empty expression")
+		return nil, nil
 	}
 	switch x := e[0].(type) {
 	case Expression:
@@ -125,14 +187,9 @@ func (e Expression) Filter() (Filter, error) {
 		for _, v := range e[1:] {
 			switch o := v.(type) {
 			case Operation:
-				if x[1] != o[1] {
-					return nil, fmt.Errorf("illegal operation")
-				}
-				switch k := o[0].(type) {
-				case string:
-					f = Append(f, k, o[2])
-				default:
-					return nil, fmt.Errorf("malformed operation")
+				err = o.Join(f)
+				if err != nil {
+					return nil, err
 				}
 			default:
 				return nil, fmt.Errorf("illegal expression")
@@ -142,28 +199,6 @@ func (e Expression) Filter() (Filter, error) {
 	default:
 		return nil, fmt.Errorf("unknown expression")
 	}
-}
-
-func Append(f Filter, k string, v any) Filter {
-	switch m := f.(type) {
-	case Eq:
-		m[k] = v
-	case Ne:
-		m[k] = v
-	case Ge:
-		m[k] = v
-	case Gt:
-		m[k] = v
-	case Le:
-		m[k] = v
-	case Lt:
-		m[k] = v
-	case As:
-		m[k] = v
-	default:
-		panic(m)
-	}
-	return f
 }
 
 func (e *Expression) UnmarshalJSON(b []byte) error {

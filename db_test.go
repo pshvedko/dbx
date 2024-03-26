@@ -122,6 +122,11 @@ func (db DB) TestListIn(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+	oo = nil
+	total, err = db.List(context.TODO(), &oo, filter.In{"o_time_0": {"1970-01-01T00:00:00Z"}}, nil, nil, nil, request.WithField{"id"})
+	require.NoError(t, err)
+	require.EqualValues(t, 5, total)
+	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {
