@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"maps"
 )
 
 type Operation [3]any
@@ -49,7 +48,9 @@ func (o Operation) Filter() (Filter, error) {
 }
 
 func Append[M ~map[K]V, K comparable, V any](t M, f M) error {
-	maps.Copy(t, f)
+	for k, v := range f {
+		t[k] = v
+	}
 	return nil
 }
 
