@@ -14,21 +14,31 @@ func (o Operation) Filter() (Filter, error) {
 	case string:
 		switch x := o[1].(type) {
 		case string:
-			switch x {
-			case "EQ":
-				return Eq{k: o[2]}, nil
-			case "NE":
-				return Ne{k: o[2]}, nil
-			case "GE":
-				return Ge{k: o[2]}, nil
-			case "GT":
-				return Gt{k: o[2]}, nil
-			case "LE":
-				return Le{k: o[2]}, nil
-			case "LT":
-				return Lt{k: o[2]}, nil
-			case "AS":
-				return As{k: o[2]}, nil
+			switch v := o[2].(type) {
+			case []any:
+				switch x {
+				case "IN":
+					return In{k: v}, nil
+				case "NI":
+					return Ni{k: v}, nil
+				}
+			default:
+				switch x {
+				case "EQ":
+					return Eq{k: v}, nil
+				case "NE":
+					return Ne{k: v}, nil
+				case "GE":
+					return Ge{k: v}, nil
+				case "GT":
+					return Gt{k: v}, nil
+				case "LE":
+					return Le{k: v}, nil
+				case "LT":
+					return Lt{k: v}, nil
+				case "AS":
+					return As{k: v}, nil
+				}
 			}
 			return nil, fmt.Errorf("unknown operation")
 		}
@@ -235,6 +245,10 @@ func MarshalJSON(f Filter) ([]byte, error) {
 		return OperationJSON(x, "LT")
 	case As:
 		return OperationJSON(x, "AS")
+	case In:
+		return OperationJSON(x, "IN")
+	case Ni:
+		return OperationJSON(x, "NI")
 	case And:
 		// [[a,b]]
 		a := make([]any, 0, len(x))
@@ -254,7 +268,7 @@ func MarshalJSON(f Filter) ([]byte, error) {
 	}
 }
 
-func OperationJSON(x map[string]any, o string) ([]byte, error) {
+func OperationJSON[T any](x map[string]T, o string) ([]byte, error) {
 	a := make([][]any, 0, len(x))
 	for k, v := range x {
 		a = append(a, []any{k, o, v})

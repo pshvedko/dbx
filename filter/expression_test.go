@@ -123,6 +123,13 @@ func TestMarshalJSON(t *testing.T) {
 			want1:   filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", .0}}}},
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			args:    args{f: filter.And{filter.In{"f": []any{1, 2}}, filter.Ni{"f": []any{"a", "b"}}}},
+			want:    []byte(`[[[["f","IN",[1,2]]],[["f","NI",["a","b"]]]]]`),
+			want1:   filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "IN", []any{1., 2.}}}, filter.Expression{filter.Operation{"f", "NI", []any{"a", "b"}}}}},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -241,11 +248,23 @@ func TestOperation_Filter(t *testing.T) {
 			want:    filter.Lt{"f": 1.},
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "IN", []any{"green", "yellow"}},
+			want:    filter.In{"f": {"green", "yellow"}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "NI", []any{"green", "yellow"}},
+			want:    filter.Ni{"f": {"green", "yellow"}},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.op.Filter()
-			require.ErrorIs(t, tt.wantErr, err)
+			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
 	}
@@ -294,7 +313,7 @@ func TestExpression_Filter(t *testing.T) {
 }
 
 func ExampleMarshalJSON() {
-	a := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.Le{"f": 0}}
+	a := filter.And{filter.Or{filter.Ge{"f": 0}, filter.Eq{"b": false}}, filter.In{"t": {"1970-01-01T00:00:00Z"}}}
 
 	fmt.Printf("%#v\n", a)
 
@@ -321,17 +340,9 @@ func ExampleMarshalJSON() {
 	fmt.Printf("%#v\n", f)
 
 	var o struct {
-		Expression filter.Expression
+		E []filter.Expression
 	}
-	err = json.Unmarshal([]byte(`{"expression":null}`), &o)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	fmt.Printf("%#v\n", o)
-
-	err = json.Unmarshal([]byte(`{"expression":[]}`), &o)
+	err = json.Unmarshal([]byte(`{"e":[null,[]]}`), &o)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -341,11 +352,9 @@ func ExampleMarshalJSON() {
 
 	// Output:
 	//
-	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
-	// [[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]
-	// filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", 0}}}}
-	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.Le{"f":0}}
-	// struct { Expression filter.Expression }{Expression:filter.Expression(nil)}
-	// struct { Expression filter.Expression }{Expression:filter.Expression(nil)}
-
+	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.In{"t":filter.Array{"1970-01-01T00:00:00Z"}}}
+	// [[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["t","IN",["1970-01-01T00:00:00Z"]]]]]
+	// filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"t", "IN", []interface {}{"1970-01-01T00:00:00Z"}}}}}
+	// filter.And{filter.Or{filter.Ge{"f":0}, filter.Eq{"b":false}}, filter.In{"t":filter.Array{"1970-01-01T00:00:00Z"}}}
+	// struct { E []filter.Expression }{E:[]filter.Expression{filter.Expression(nil), filter.Expression(nil)}}
 }
