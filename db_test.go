@@ -128,6 +128,11 @@ func (db DB) TestListIn(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+	oo = nil
+	total, err = db.List(context.TODO(), &oo, filter.In{"o_time_0": {"YESTERDAY", filter.Now(), time.Now(), time.UnixMicro(0)}}, nil, nil, nil, request.WithField{"id"})
+	require.NoError(t, err)
+	require.EqualValues(t, 5, total)
+	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 }
 
 func (db DB) TestListLike(t *testing.T) {
@@ -217,7 +222,7 @@ func (db DB) TestGet(t *testing.T) {
 			args: args{
 				ctx: ctx,
 				o:   &help.Object{},
-				f:   filter.Eq{"id": 1},
+				f:   filter.And{filter.Eq{"id": 1}, filter.Le{"o_time_0": "YESTERDAY"}},
 				oo:  []request.Option{request.WithoutField(help.Object{}.Names())},
 			},
 			want:    &help.Object{},

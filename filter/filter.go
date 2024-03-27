@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
-
-	"github.com/lib/pq"
 )
 
 type Column [2]string
@@ -286,6 +283,12 @@ func (f Ni) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Ni) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
+const RFC3339MICRO = "2006-01-02T15:04:05.999999Z07:00"
+
+type Time interface {
+	AppendFormat([]byte, string) []byte
+}
+
 type Array []any
 
 func (a Array) Value() (driver.Value, error) {
@@ -308,8 +311,9 @@ func (a Array) Value() (driver.Value, error) {
 			case false:
 				_, err = b.WriteString("FALSE")
 			}
-		case time.Time:
-			_, err = b.Write(pq.FormatTimestamp(x))
+		case Time:
+			var t [len(RFC3339MICRO)]byte
+			_, err = b.Write(x.AppendFormat(t[:0], RFC3339MICRO))
 		case string, fmt.Stringer:
 			_, err = fmt.Fprintf(&b, "%q", v)
 		default:
