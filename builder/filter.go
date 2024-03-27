@@ -3,6 +3,8 @@ package builder
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Comma int
@@ -105,7 +107,7 @@ func (f *Filter) Op(k fmt.Formatter, o int, v any) error {
 		switch o {
 		case Si, Is:
 		default:
-			return fmt.Errorf("illegal operation")
+			return filter.ErrIllegalOperation
 		}
 	}
 	_, err := fmt.Fprint(f, k)
