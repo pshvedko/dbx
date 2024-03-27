@@ -88,12 +88,14 @@ func Straight[T any](b Builder, j Projector, o string, oo map[string]T, v any) (
 			err = b.Lt(Column{t, f}, oo[f])
 		case As:
 			err = b.As(Column{t, f}, oo[f])
+		case Na:
+			err = b.Na(Column{t, f}, oo[f])
 		case In:
 			err = b.In(Column{t, f}, oo[f])
 		case Ni:
 			err = b.Ni(Column{t, f}, oo[f])
 		default:
-			return io.EOF
+			panic(v)
 		}
 		if err != nil {
 			return
@@ -149,6 +151,7 @@ type Builder interface {
 	Le(fmt.Formatter, any) error
 	Lt(fmt.Formatter, any) error
 	As(fmt.Formatter, any) error
+	Na(fmt.Formatter, any) error
 	In(fmt.Formatter, any) error
 	Ni(fmt.Formatter, any) error
 	Valuer
@@ -249,11 +252,17 @@ func (f Lt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
-type As map[string]any
+type As map[string]string
 
 func (f As) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
+
+type Na map[string]string
+
+func (f Na) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
+
+func (f Na) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, f) }
 
 type In map[string]Array
 

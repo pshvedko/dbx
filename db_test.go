@@ -49,6 +49,7 @@ func TestDB(t *testing.T) {
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
+	t.Run("ListLike", db.TestListLike)
 	t.Run("Put", db.TestPut)
 }
 
@@ -127,6 +128,14 @@ func (db DB) TestListIn(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+}
+
+func (db DB) TestListLike(t *testing.T) {
+	var oo help.ObjectList
+	total, err := db.List(context.TODO(), &oo, filter.As{"o_string_1": "%a%"}, nil, nil, nil, request.WithField{"id", "o_string_1"}, request.DeletedOnly)
+	require.NoError(t, err)
+	require.EqualValues(t, 1, total)
+	require.ElementsMatch(t, help.ObjectList{{ID: 7, String1: help.PtrString("gray")}}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {

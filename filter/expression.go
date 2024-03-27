@@ -47,8 +47,16 @@ func (o Operation) Filter() (Filter, error) {
 					return Le{k: v}, nil
 				case "LT":
 					return Lt{k: v}, nil
-				case "AS":
-					return As{k: v}, nil
+				default:
+					switch s := v.(type) {
+					case string:
+						switch x {
+						case "AS":
+							return As{k: s}, nil
+						case "NA":
+							return Na{k: s}, nil
+						}
+					}
 				}
 			}
 			return nil, ErrUnknownOperation
@@ -256,32 +264,6 @@ func ExpressionJSON[T Filterer](b []byte, e *Expression, a []T) error {
 	}
 	return nil
 }
-
-//func normalize(v Filterer) Filterer {
-//	switch o := v.(type) {
-//	case Operation:
-//		switch x := o[2].(type) {
-//		case float64:
-//			i, f := math.Modf(x)
-//			if f == 0 {
-//				o[2] = int(i)
-//			}
-//			return o
-//		case string:
-//			// 1970-01-01T00:00:00+00:00
-//			if len(x) >= 20 && x[4] == '-' && x[7] == '-' && x[10] == 'T' && x[13] == ':' && x[16] == ':' {
-//				if x[19] == 'Z' || x[19] == '+' {
-//					t, err := time.Parse(time.RFC3339, x)
-//					if err == nil {
-//						o[2] = t
-//						return o
-//					}
-//				}
-//			}
-//		}
-//	}
-//	return v
-//}
 
 func MarshalJSON(f Filter) ([]byte, error) {
 	switch x := f.(type) {

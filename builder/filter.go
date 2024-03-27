@@ -43,6 +43,8 @@ const (
 	Lt
 	In
 	Ni
+	As
+	Na
 )
 
 var operation = [...]string{
@@ -56,6 +58,8 @@ var operation = [...]string{
 	Lt: " < %v",
 	In: " = ANY(%v)",
 	Ni: " <> ALL(%v)",
+	As: " LIKE %v",
+	Na: " NOT LIKE %v",
 }
 
 type Filter struct {
@@ -140,7 +144,10 @@ func (f *Filter) Ni(k fmt.Formatter, v any) error {
 	return f.Op(k, Ni, v)
 }
 
-func (f *Filter) As(fmt.Formatter, any) error {
-	//TODO implement me
-	panic("implement me")
+func (f *Filter) As(k fmt.Formatter, v any) error {
+	return f.Op(k, As, v)
+}
+
+func (f *Filter) Na(k fmt.Formatter, v any) error {
+	return f.Op(k, Na, v)
 }

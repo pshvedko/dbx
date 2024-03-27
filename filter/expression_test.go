@@ -262,6 +262,18 @@ func TestOperation_Filter(t *testing.T) {
 		},
 		{
 			name:    "",
+			op:      filter.Operation{"f", "AS", "%123%"},
+			want:    filter.As{"f": "%123%"},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "NA", "%123%"},
+			want:    filter.Na{"f": "%123%"},
+			wantErr: nil,
+		},
+		{
+			name:    "",
 			op:      filter.Operation{},
 			want:    nil,
 			wantErr: filter.ErrMalformedOperation,
