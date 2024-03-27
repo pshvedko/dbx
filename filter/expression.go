@@ -3,8 +3,19 @@ package filter
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io"
+)
+
+var (
+	ErrMalformedExpression = errors.New("malformed expression")
+	ErrIllegalExpression   = errors.New("illegal expression")
+	ErrUnknownExpression   = errors.New("unknown expression")
+	ErrEmptyExpression     = errors.New("empty expression")
+	ErrUnsuitableOperation = errors.New("unsuitable operation")
+	ErrMalformedOperation  = errors.New("malformed operation")
+	ErrIllegalOperation    = errors.New("illegal operation")
+	ErrUnknownOperation    = errors.New("unknown operation")
 )
 
 type Operation [3]any
@@ -40,11 +51,11 @@ func (o Operation) Filter() (Filter, error) {
 					return As{k: v}, nil
 				}
 			}
-			return nil, fmt.Errorf("unknown operation")
+			return nil, ErrUnknownOperation
 		}
-		return nil, fmt.Errorf("illegal operation")
+		return nil, ErrIllegalOperation
 	}
-	return nil, fmt.Errorf("malformedd operation")
+	return nil, ErrMalformedOperation
 }
 
 func Append[M interface {
@@ -108,7 +119,7 @@ func Join(t Filter, f ...Filter) (Filter, error) {
 			return Join(Append(a, b), f[1:]...)
 		}
 	}
-	return nil, fmt.Errorf("inopportune operation")
+	return nil, ErrUnsuitableOperation
 }
 
 type Filterer interface {
@@ -144,25 +155,20 @@ func (e Expression) Filter() (Filter, error) {
 		switch len(e) {
 		case 1:
 			var a And
-			switch v := e[0].(type) {
-			case Expression:
-				for _, o := range v {
-					switch o.(type) {
-					case Expression:
-						f, err := o.Filter()
-						if err != nil {
-							return nil, err
-						}
-						if f == nil {
-							return nil, fmt.Errorf("empty expression")
-						}
-						a = append(a, f)
-					default:
-						return nil, fmt.Errorf("malformed expression")
+			for _, o := range x {
+				switch o.(type) {
+				case Expression:
+					f, err := o.Filter()
+					if err != nil {
+						return nil, err
 					}
+					if f == nil {
+						return nil, ErrEmptyExpression
+					}
+					a = append(a, f)
+				default:
+					return nil, ErrIllegalExpression
 				}
-			default:
-				return nil, fmt.Errorf("illegal expression")
 			}
 			return a, nil
 		default:
@@ -171,18 +177,18 @@ func (e Expression) Filter() (Filter, error) {
 				switch o := v.(type) {
 				case Expression:
 					if len(o) != 1 {
-						return nil, fmt.Errorf("malformed expression")
+						return nil, ErrMalformedExpression
 					}
 					f, err := o[0].Filter()
 					if err != nil {
 						return nil, err
 					}
 					if f == nil {
-						return nil, fmt.Errorf("empty expression")
+						return nil, ErrEmptyExpression
 					}
 					a = append(a, f)
 				default:
-					return nil, fmt.Errorf("illegal expression")
+					return nil, ErrIllegalExpression
 				}
 			}
 			return a, nil
@@ -205,12 +211,12 @@ func (e Expression) Filter() (Filter, error) {
 					return nil, err
 				}
 			default:
-				return nil, fmt.Errorf("illegal expression")
+				return nil, ErrIllegalExpression
 			}
 		}
 		return t, nil
 	default:
-		return nil, fmt.Errorf("unknown expression")
+		return nil, ErrUnknownExpression
 	}
 }
 

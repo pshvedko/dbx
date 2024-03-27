@@ -260,6 +260,24 @@ func TestOperation_Filter(t *testing.T) {
 			want:    filter.Ni{"f": {"green", "yellow"}},
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			op:      filter.Operation{},
+			want:    nil,
+			wantErr: filter.ErrMalformedOperation,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", 11},
+			want:    nil,
+			wantErr: filter.ErrIllegalOperation,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "XX"},
+			want:    nil,
+			wantErr: filter.ErrUnknownOperation,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -304,6 +322,12 @@ func TestExpression_Filter(t *testing.T) {
 		},
 		{
 			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "GE", 3.14}},
+			want:    filter.Ge{"f": 3.14},
+			wantErr: nil,
+		},
+		{
+			name:    "",
 			ex:      filter.Expression{},
 			want:    nil,
 			wantErr: nil,
@@ -314,11 +338,47 @@ func TestExpression_Filter(t *testing.T) {
 			want:    nil,
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Expression{filter.Expression{}}},
+			want:    nil,
+			wantErr: filter.ErrEmptyExpression,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{nil},
+			want:    nil,
+			wantErr: filter.ErrUnknownExpression,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "LE", 3.14}},
+			want:    nil,
+			wantErr: filter.ErrUnsuitableOperation,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, nil},
+			want:    nil,
+			wantErr: filter.ErrIllegalExpression,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Expression{nil}},
+			want:    nil,
+			wantErr: filter.ErrIllegalExpression,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Expression{}}}, nil},
+			want:    nil,
+			wantErr: filter.ErrIllegalExpression,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := tt.ex.Filter()
-			require.ErrorIs(t, tt.wantErr, err)
+			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 		})
 	}
