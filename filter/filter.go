@@ -312,8 +312,7 @@ func (a Array) Value() (driver.Value, error) {
 				_, err = b.WriteString("FALSE")
 			}
 		case Time:
-			var t [len(RFC3339MICRO)]byte
-			_, err = b.Write(x.AppendFormat(t[:0], RFC3339MICRO))
+			_, err = b.Write(x.AppendFormat(make([]byte, 0, len(RFC3339MICRO)), RFC3339MICRO))
 		case string, fmt.Stringer:
 			_, err = fmt.Fprintf(&b, "%q", v)
 		default:
