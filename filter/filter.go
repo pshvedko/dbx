@@ -104,6 +104,16 @@ func Straight[T any](b Builder, j Projector, o string, oo map[string]T, v any) (
 	return
 }
 
+type Special string
+
+func (s Special) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprint(f, string(s))
+}
+
+func Now() Special {
+	return "NOW()"
+}
+
 func Nil[T comparable](v T) any {
 	var z T
 	if v != z {

@@ -102,6 +102,13 @@ func TestFilter_To(t *testing.T) {
 			want:  `( "objects"."o_bool" IS NOT TRUE AND "objects"."o_float_64" <> $1 AND "objects"."o_int" <> $2 AND "objects"."o_null" IS NOT NULL AND "objects"."o_string_1" <> $3 )`,
 			want1: []any{3.14, 0, "one"},
 		},
+		{
+			name:    "",
+			f:       filter.Ge{"o_time_1": filter.Now()},
+			want:    `"objects"."o_time_1" >= NOW()`,
+			want1:   nil,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

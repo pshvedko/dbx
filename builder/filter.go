@@ -76,6 +76,10 @@ func (f *Filter) Values() []any {
 }
 
 func (f *Filter) Value(v any) fmt.Formatter {
+	switch x := v.(type) {
+	case fmt.Formatter:
+		return x
+	}
 	f.v = append(f.v, v)
 	return Holder(len(f.v))
 }

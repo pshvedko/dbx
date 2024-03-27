@@ -132,7 +132,10 @@ func (db DB) TestListIn(t *testing.T) {
 
 func (db DB) TestListLike(t *testing.T) {
 	var oo help.ObjectList
-	total, err := db.List(context.TODO(), &oo, filter.As{"o_string_1": "%a%"}, nil, nil, nil, request.WithField{"id", "o_string_1"}, request.DeletedOnly)
+	total, err := db.List(context.TODO(), &oo, filter.And{
+		filter.As{"o_string_1": "%a%"},
+		filter.Lt{"o_time_1": filter.Now()},
+	}, nil, nil, nil, request.WithField{"id", "o_string_1"}, request.DeletedOnly)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, total)
 	require.ElementsMatch(t, help.ObjectList{{ID: 7, String1: help.PtrString("gray")}}, oo)
