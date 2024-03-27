@@ -374,6 +374,12 @@ func TestExpression_Filter(t *testing.T) {
 			want:    nil,
 			wantErr: filter.ErrIllegalExpression,
 		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Expression{}, filter.Expression{}}}, nil},
+			want:    nil,
+			wantErr: filter.ErrMalformedExpression,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
