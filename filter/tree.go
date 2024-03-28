@@ -38,3 +38,15 @@ func Loop[I interface {
 	}
 	return false
 }
+
+func Sqrt(f, a, b float64) float64 {
+	if b-a < .000000000000001 {
+		return b
+	}
+	if a == b {
+		return b
+	}
+	b += a
+	b /= 2
+	return Sqrt(f, f/b, b)
+}

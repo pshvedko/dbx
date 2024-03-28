@@ -241,3 +241,33 @@ type list100 int
 func (l list100) Next() list100 {
 	return l%100 + 1
 }
+
+func TestSqrt(t *testing.T) {
+	type args struct {
+		f float64
+	}
+	tests := []struct {
+		name string
+		args args
+		want float64
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{f: 2},
+			want: 1.414213562373095,
+		},
+		{
+			name: "",
+			args: args{f: 9},
+			want: 3,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := filter.Sqrt(tt.args.f, 1, tt.args.f); got != tt.want {
+				t.Errorf("Sqrt() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
