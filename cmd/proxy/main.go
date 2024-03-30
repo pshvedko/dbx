@@ -5,10 +5,8 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"strings"
 )
 
 //go:embed pem/cert.pem
@@ -25,54 +23,55 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%+v", r)
 	switch r.Method {
 	case http.MethodConnect:
-		switch x := w.(type) {
-		case http.Hijacker:
-			conn, _, err := x.Hijack()
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				log.Print(err)
-				return
-			}
+		conn3, err := tls.Dial("tcp", r.Host, &tls.Config{})
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			log.Print(err)
+			return
+		}
+		defer conn3.Close()
 
-			fmt.Fprintln(conn, "HTTP/1.1 200 Connection established")
-			fmt.Fprintln(conn)
-
-			conn2 := tls.Server(conn, &tls.Config{
-				GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
-					return &p.Certificate, nil
-				},
-			})
-			defer conn2.Close()
-
-			err = conn2.HandshakeContext(r.Context())
-			if err != nil {
-				log.Print(err)
-				return
-			}
-
-			r1 := bufio.NewReader(conn2)
-			for {
-				req, err := http.ReadRequest(r1)
-				if err != nil {
-					log.Print(err)
-					return
-				}
-				log.Printf("%+v", req)
-
-				res := http.Response{
-					Status:        "OK",
-					StatusCode:    http.StatusOK,
-					Proto:         r.Proto,
-					ProtoMajor:    r.ProtoMajor,
-					ProtoMinor:    r.ProtoMinor,
-					Body:          io.NopCloser(strings.NewReader("OK\n")),
-					ContentLength: 3,
-					Close:         true,
-				}
-				res.Write(conn2)
-			}
-		default:
+		conn1, _, err := http.NewResponseController(w).Hijack()
+		if err != nil {
 			w.WriteHeader(http.StatusTeapot)
+			log.Print(err)
+			return
+		}
+
+		fmt.Fprintln(conn1, "HTTP/1.1 200 Connection established")
+		fmt.Fprintln(conn1)
+
+		conn2 := tls.Server(conn1, &tls.Config{
+			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				return &p.Certificate, nil
+			},
+		})
+		defer conn2.Close()
+
+		err = conn2.HandshakeContext(r.Context())
+		if err != nil {
+			log.Print(err)
+			return
+		}
+
+		r2 := bufio.NewReader(conn2)
+		r3 := bufio.NewReader(conn3)
+		for {
+			req, err := http.ReadRequest(r2)
+			if err != nil {
+				log.Print(err)
+				return
+			}
+
+			req.Write(conn3)
+
+			res, err := http.ReadResponse(r3, req)
+			if err != nil {
+				log.Print(err)
+				return
+			}
+
+			res.Write(conn2)
 		}
 	default:
 		w.WriteHeader(http.StatusMethodNotAllowed)
