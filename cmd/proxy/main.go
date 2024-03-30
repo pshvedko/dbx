@@ -6,7 +6,6 @@ import (
 	_ "embed"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 )
 
@@ -18,13 +17,14 @@ var key []byte
 
 type Proxy struct {
 	tls.Certificate
+	tls.Dialer
 }
 
 func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%+v", r)
 	switch r.Method {
 	case http.MethodConnect:
-		conn3, err := tls.DialWithDialer(&net.Dialer{Cancel: r.Context().Done()}, "tcp", r.Host, &tls.Config{})
+		conn3, err := p.DialContext(r.Context(), "tcp", r.Host)
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			log.Print(err)
