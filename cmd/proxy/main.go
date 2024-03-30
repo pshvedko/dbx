@@ -2,11 +2,15 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	_ "embed"
 	"fmt"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 //go:embed pem/cert.pem
@@ -22,6 +26,7 @@ type Proxy struct {
 
 func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%+v", r)
+
 	switch r.Method {
 	case http.MethodConnect:
 		conn3, err := p.DialContext(r.Context(), "tcp", r.Host)
@@ -64,6 +69,8 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			log.Printf("%+v", req)
+
 			req.Write(conn3)
 
 			res, err := http.ReadResponse(r3, req)
@@ -85,8 +92,27 @@ func main() {
 		log.Print(err)
 		return
 	}
-	err = http.ListenAndServe(":8080", Proxy{Certificate: certificate})
-	if err != nil {
+
+	s := http.Server{
+		Addr:    ":8080",
+		Handler: Proxy{Certificate: certificate},
+	}
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	context.AfterFunc(ctx, func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+		err := s.Shutdown(ctx)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+	})
+
+	err = s.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
 		log.Print(err)
 		return
 	}
