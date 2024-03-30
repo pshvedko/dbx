@@ -45,6 +45,7 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fmt.Fprintln(conn1, "HTTP/1.1 200 Connection established")
+		fmt.Fprintln(conn1, "Proxy-Connection: close")
 		fmt.Fprintln(conn1)
 
 		conn2 := tls.Server(conn1, &tls.Config{
