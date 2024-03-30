@@ -22,10 +22,18 @@ var key []byte
 type Proxy struct {
 	tls.Certificate
 	tls.Dialer
+	http.Client
 }
 
 func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Printf("%+v", r)
+	log.Printf("=== %+v", r)
+
+	conn1, _, err := http.NewResponseController(w).Hijack()
+	if err != nil {
+		w.WriteHeader(http.StatusTeapot)
+		log.Print(err)
+		return
+	}
 
 	switch r.Method {
 	case http.MethodConnect:
@@ -36,13 +44,6 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer conn3.Close()
-
-		conn1, _, err := http.NewResponseController(w).Hijack()
-		if err != nil {
-			w.WriteHeader(http.StatusTeapot)
-			log.Print(err)
-			return
-		}
 
 		fmt.Fprintln(conn1, "HTTP/1.1 200 Connection established")
 		fmt.Fprintln(conn1, "Proxy-Connection: close")
@@ -70,7 +71,7 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			log.Printf("%+v", req)
+			log.Printf("--> %+v", req)
 
 			req.Write(conn3)
 
@@ -80,10 +81,42 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			log.Printf("<-- %+v", res)
+
 			res.Write(conn2)
 		}
 	default:
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		res, err := p.Do(&http.Request{
+			Method:           r.Method,
+			URL:              r.URL,
+			Proto:            r.Proto,
+			ProtoMajor:       r.ProtoMajor,
+			ProtoMinor:       r.ProtoMinor,
+			Header:           r.Header,
+			Body:             r.Body,
+			GetBody:          r.GetBody,
+			ContentLength:    r.ContentLength,
+			TransferEncoding: r.TransferEncoding,
+			Close:            r.Close,
+			Host:             r.Host,
+			Form:             nil,
+			PostForm:         nil,
+			MultipartForm:    nil,
+			Trailer:          r.Trailer,
+			RemoteAddr:       "",
+			RequestURI:       "",
+			TLS:              nil,
+			Cancel:           nil,
+			Response:         nil,
+		})
+		if err != nil {
+			log.Print(err)
+			return
+		}
+
+		log.Printf("<-- %+v", res)
+
+		res.Write(conn1)
 	}
 }
 
