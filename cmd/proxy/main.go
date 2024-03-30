@@ -5,8 +5,10 @@ import (
 	"crypto/tls"
 	_ "embed"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"strings"
 )
 
 //go:embed pem/cert.pem
@@ -16,7 +18,7 @@ var cert []byte
 var key []byte
 
 type Proxy struct {
-	Certificates []tls.Certificate
+	tls.Certificate
 }
 
 func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -25,19 +27,20 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case http.MethodConnect:
 		switch x := w.(type) {
 		case http.Hijacker:
-			conn, rw, err := x.Hijack()
+			conn, _, err := x.Hijack()
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				log.Print(err)
 				return
 			}
 
-			fmt.Fprintln(rw, "HTTP/1.1 200 Connection established")
-			fmt.Fprintln(rw)
-			rw.Flush()
+			fmt.Fprintln(conn, "HTTP/1.1 200 Connection established")
+			fmt.Fprintln(conn)
 
 			conn2 := tls.Server(conn, &tls.Config{
-				Certificates: p.Certificates,
+				GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+					return &p.Certificate, nil
+				},
 			})
 			defer conn2.Close()
 
@@ -47,19 +50,26 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			r, _ := bufio.NewReader(conn2), bufio.NewWriter(conn2)
+			r1 := bufio.NewReader(conn2)
 			for {
-				req, err := http.ReadRequest(r)
+				req, err := http.ReadRequest(r1)
 				if err != nil {
 					log.Print(err)
 					return
 				}
 				log.Printf("%+v", req)
 
-				fmt.Fprintln(conn2, "HTTP/1.1 200 OK")
-				fmt.Fprintln(conn2, "Content-Length: 3")
-				fmt.Fprintln(conn2)
-				fmt.Fprintln(conn2, "OK")
+				res := http.Response{
+					Status:        "OK",
+					StatusCode:    http.StatusOK,
+					Proto:         r.Proto,
+					ProtoMajor:    r.ProtoMajor,
+					ProtoMinor:    r.ProtoMinor,
+					Body:          io.NopCloser(strings.NewReader("OK\n")),
+					ContentLength: 3,
+					Close:         true,
+				}
+				res.Write(conn2)
 			}
 		default:
 			w.WriteHeader(http.StatusTeapot)
@@ -75,7 +85,7 @@ func main() {
 		log.Print(err)
 		return
 	}
-	err = http.ListenAndServe(":8080", Proxy{Certificates: []tls.Certificate{certificate}})
+	err = http.ListenAndServe(":8080", Proxy{Certificate: certificate})
 	if err != nil {
 		log.Print(err)
 		return
