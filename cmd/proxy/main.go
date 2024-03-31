@@ -118,6 +118,8 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			r.RemoteAddr = conn1.RemoteAddr().String()
+
 			log.Printf("--> %+v", r)
 		}
 	}
