@@ -86,37 +86,40 @@ func (p Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			res.Write(conn2)
 		}
 	default:
-		res, err := p.Do(&http.Request{
-			Method:           r.Method,
-			URL:              r.URL,
-			Proto:            r.Proto,
-			ProtoMajor:       r.ProtoMajor,
-			ProtoMinor:       r.ProtoMinor,
-			Header:           r.Header,
-			Body:             r.Body,
-			GetBody:          r.GetBody,
-			ContentLength:    r.ContentLength,
-			TransferEncoding: r.TransferEncoding,
-			Close:            r.Close,
-			Host:             r.Host,
-			Form:             nil,
-			PostForm:         nil,
-			MultipartForm:    nil,
-			Trailer:          r.Trailer,
-			RemoteAddr:       "",
-			RequestURI:       "",
-			TLS:              nil,
-			Cancel:           nil,
-			Response:         nil,
-		})
-		if err != nil {
-			log.Print(err)
-			return
+		r1 := bufio.NewReader(conn1)
+		for {
+			res, err := p.Do(&http.Request{
+				Method:           r.Method,
+				URL:              r.URL,
+				Proto:            r.Proto,
+				ProtoMajor:       r.ProtoMajor,
+				ProtoMinor:       r.ProtoMinor,
+				Header:           r.Header,
+				Body:             r.Body,
+				GetBody:          r.GetBody,
+				ContentLength:    r.ContentLength,
+				TransferEncoding: r.TransferEncoding,
+				Close:            r.Close,
+				Host:             r.Host,
+				Trailer:          r.Trailer,
+			})
+			if err != nil {
+				log.Print(err)
+				return
+			}
+
+			log.Printf("<-- %+v", res)
+
+			res.Write(conn1)
+
+			r, err = http.ReadRequest(r1)
+			if err != nil {
+				log.Print(err)
+				return
+			}
+
+			log.Printf("--> %+v", r)
 		}
-
-		log.Printf("<-- %+v", res)
-
-		res.Write(conn1)
 	}
 }
 
