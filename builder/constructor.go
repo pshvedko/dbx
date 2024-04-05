@@ -134,13 +134,13 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	}
 	z := c.Size()
 	if c.p.o != nil {
-		_, err = fmt.Fprintf(c, " OFFSET %v", c.Value(*c.p.o))
+		_, err = fmt.Fprintf(c, " OFFSET %v", c.Add(*c.p.o))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
 	if c.p.l != nil {
-		_, err = fmt.Fprintf(c, " LIMIT %v", c.Value(*c.p.l))
+		_, err = fmt.Fprintf(c, " LIMIT %v", c.Add(*c.p.l))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -195,7 +195,7 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 			if none && auto {
 				continue
 			}
-			v = c.Value(o)
+			v = c.Add(o)
 		}
 		_, err = c.Printf("%v %q = %v", Comma(u), n, v)
 		if err != nil {
@@ -264,7 +264,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		if err != nil {
 			return "", nil, nil, err
 		}
-		c.Value(o)
+		c.Add(o)
 		a++
 	}
 	_, err = c.WriteString(" ) VALUES (")

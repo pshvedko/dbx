@@ -3,8 +3,6 @@ package builder
 import (
 	"fmt"
 	"strings"
-
-	"github.com/pshvedko/dbx/filter"
 )
 
 type Comma int
@@ -34,39 +32,23 @@ const (
 	DEFAULT Keyword = "DEFAULT"
 )
 
-const (
-	Eq = iota
-	Is
-	Ne
-	Si
-	Ge
-	Gt
-	Le
-	Lt
-	In
-	Ni
-	As
-	Na
-)
-
-var operation = [...]string{
-	Eq: " = %v",
-	Is: " IS %v",
-	Ne: " <> %v",
-	Si: " IS NOT %v",
-	Ge: " >= %v",
-	Gt: " > %v",
-	Le: " <= %v",
-	Lt: " < %v",
-	In: " = ANY(%v)",
-	Ni: " <> ALL(%v)",
-	As: " LIKE %v",
-	Na: " NOT LIKE %v",
-}
-
 type Filter struct {
 	strings.Builder
 	v []any
+}
+
+func (f *Filter) Value(v any) fmt.Formatter {
+	switch x := v.(type) {
+	case nil:
+		return NULL
+	case bool:
+		if x {
+			return TRUE
+		}
+		return FALSE
+	default:
+		return f.Add(v)
+	}
 }
 
 func (f *Filter) Size() int {
@@ -77,7 +59,7 @@ func (f *Filter) Values() []any {
 	return f.v
 }
 
-func (f *Filter) Value(v any) fmt.Formatter {
+func (f *Filter) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
@@ -86,43 +68,34 @@ func (f *Filter) Value(v any) fmt.Formatter {
 	return Holder(len(f.v))
 }
 
-func (f *Filter) Op(k fmt.Formatter, o int, v any) error {
-	var p fmt.Formatter
-	switch x := v.(type) {
-	case nil:
-		p = NULL
-		o++
-	case bool:
-		if x {
-			p = TRUE
-		} else {
-			p = FALSE
-		}
-		o++
-	default:
-		p = f.Value(v)
-	}
-	switch p.(type) {
-	case Keyword:
-		switch o {
-		case Si, Is:
-		default:
-			return filter.ErrIllegalOperation
-		}
-	}
-	_, err := fmt.Fprint(f, k)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(f, operation[o], p)
-	return err
-}
+const (
+	Eq = "%v = %v"
+	Is = "%v IS %v"
+	Ne = "%v <> %v"
+	Si = "%v IS NOT %v"
+	Ge = "%v >= %v"
+	Gt = "%v > %v"
+	Le = "%v <= %v"
+	Lt = "%v < %v"
+	In = "%v = ANY(%v)"
+	Ni = "%v <> ALL(%v)"
+	As = "%v LIKE %v"
+	Na = "%v NOT LIKE %v"
+)
 
 func (f *Filter) Eq(k fmt.Formatter, v any) error {
+	switch v.(type) {
+	case nil, bool:
+		return f.Op(k, Is, v)
+	}
 	return f.Op(k, Eq, v)
 }
 
 func (f *Filter) Ne(k fmt.Formatter, v any) error {
+	switch v.(type) {
+	case nil, bool:
+		return f.Op(k, Si, v)
+	}
 	return f.Op(k, Ne, v)
 }
 
@@ -156,4 +129,9 @@ func (f *Filter) As(k fmt.Formatter, v any) error {
 
 func (f *Filter) Na(k fmt.Formatter, v any) error {
 	return f.Op(k, Na, v)
+}
+
+func (f *Filter) Op(k fmt.Formatter, o string, v any) error {
+	_, err := fmt.Fprintf(f, o, k, f.Value(v))
+	return err
 }
