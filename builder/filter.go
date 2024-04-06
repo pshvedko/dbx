@@ -83,55 +83,50 @@ const (
 	Na = "%v NOT LIKE %v"
 )
 
-func (f *Filter) Eq(k fmt.Formatter, v any) error {
+func (f *Filter) Eq(k, v any) (int, error) {
 	switch v.(type) {
 	case nil, bool:
-		return f.Op(k, Is, v)
+		return fmt.Fprintf(f, Is, k, f.Value(v))
 	}
-	return f.Op(k, Eq, v)
+	return fmt.Fprintf(f, Eq, k, f.Value(v))
 }
 
-func (f *Filter) Ne(k fmt.Formatter, v any) error {
+func (f *Filter) Ne(k, v any) (int, error) {
 	switch v.(type) {
 	case nil, bool:
-		return f.Op(k, Si, v)
+		return fmt.Fprintf(f, Si, k, f.Value(v))
 	}
-	return f.Op(k, Ne, v)
+	return fmt.Fprintf(f, Ne, k, f.Value(v))
 }
 
-func (f *Filter) Ge(k fmt.Formatter, v any) error {
-	return f.Op(k, Ge, v)
+func (f *Filter) Ge(k, v any) (int, error) {
+	return fmt.Fprintf(f, Ge, k, f.Value(v))
 }
 
-func (f *Filter) Gt(k fmt.Formatter, v any) error {
-	return f.Op(k, Gt, v)
+func (f *Filter) Gt(k, v any) (int, error) {
+	return fmt.Fprintf(f, Gt, k, f.Value(v))
 }
 
-func (f *Filter) Le(k fmt.Formatter, v any) error {
-	return f.Op(k, Le, v)
+func (f *Filter) Le(k, v any) (int, error) {
+	return fmt.Fprintf(f, Le, k, f.Value(v))
 }
 
-func (f *Filter) Lt(k fmt.Formatter, v any) error {
-	return f.Op(k, Lt, v)
+func (f *Filter) Lt(k, v any) (int, error) {
+	return fmt.Fprintf(f, Lt, k, f.Value(v))
 }
 
-func (f *Filter) In(k fmt.Formatter, v any) error {
-	return f.Op(k, In, v)
+func (f *Filter) In(k, v any) (int, error) {
+	return fmt.Fprintf(f, In, k, f.Value(v))
 }
 
-func (f *Filter) Ni(k fmt.Formatter, v any) error {
-	return f.Op(k, Ni, v)
+func (f *Filter) Ni(k, v any) (int, error) {
+	return fmt.Fprintf(f, Ni, k, f.Value(v))
 }
 
-func (f *Filter) As(k fmt.Formatter, v any) error {
-	return f.Op(k, As, v)
+func (f *Filter) As(k, v any) (int, error) {
+	return fmt.Fprintf(f, As, k, f.Value(v))
 }
 
-func (f *Filter) Na(k fmt.Formatter, v any) error {
-	return f.Op(k, Na, v)
-}
-
-func (f *Filter) Op(k fmt.Formatter, o string, v any) error {
-	_, err := fmt.Fprintf(f, o, k, f.Value(v))
-	return err
+func (f *Filter) Na(k, v any) (int, error) {
+	return fmt.Fprintf(f, Na, k, f.Value(v))
 }
