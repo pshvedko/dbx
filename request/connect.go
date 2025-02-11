@@ -36,19 +36,19 @@ type Conn struct {
 }
 
 func (c Conn) Query(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.DebugContext(ctx, query, placeholder(args)...)
+	c.LogAttrs(ctx, slog.LevelDebug, query, PlaceHolderAttrs(args)...)
 	return c.QueryxContext(ctx, query, args...)
 }
 
 func (c Conn) QueryRow(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.DebugContext(ctx, query, placeholder(args)...)
+	c.LogAttrs(ctx, slog.LevelDebug, query, PlaceHolderAttrs(args)...)
 	return c.QueryRowxContext(ctx, query, args...)
 }
 
-func placeholder(vv []any) []any {
-	aa := make([]any, 0, 2*len(vv))
+func PlaceHolderAttrs(vv []any) []slog.Attr {
+	aa := make([]slog.Attr, 0, len(vv))
 	for i, v := range vv {
-		aa = append(aa, fmt.Sprint("$", i+1), v)
+		aa = append(aa, slog.Any(fmt.Sprint("$", i+1), v))
 	}
 	return aa
 }
@@ -64,12 +64,12 @@ type Tx struct {
 }
 
 func (c Tx) Query(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	c.DebugContext(ctx, query, placeholder(args)...)
+	c.LogAttrs(ctx, slog.LevelDebug, query, PlaceHolderAttrs(args)...)
 	return c.QueryxContext(ctx, query, args...)
 }
 
 func (c Tx) QueryRow(ctx context.Context, query string, args ...any) *sqlx.Row {
-	c.DebugContext(ctx, query, placeholder(args)...)
+	c.LogAttrs(ctx, slog.LevelDebug, query, PlaceHolderAttrs(args)...)
 	return c.QueryRowxContext(ctx, query, args...)
 }
 
