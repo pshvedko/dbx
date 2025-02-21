@@ -40,7 +40,7 @@ type Object struct {
 	Time4   time.Time  `json:"o_time_4,omitempty"`
 }
 
-func (*Object) PK() filter.PK {
+func (Object) PK() filter.PK {
 	return []string{"id"}
 }
 
@@ -68,9 +68,9 @@ func (Object) Names() []string {
 func (o *Object) Values() []any {
 	return []any{
 		&o.ID, &o.Bool, &o.Float32, &o.Float64, &o.Int, &o.Int16, &o.Null, &o.String1,
-		&String{x: &o.String2}, &String{x: &o.String3}, &o.Uint64,
+		filter.Scan(&o.String2), filter.Scan(&o.String3), &o.Uint64,
 		&o.UUID1, &o.UUID2, &o.UUID3, &o.UUID4,
-		&o.Time0, &o.Time1, &o.Time2, &o.Time3, &Time{x: &o.Time4},
+		&o.Time0, &o.Time1, &o.Time2, &o.Time3, filter.Scan(&o.Time4),
 	}
 }
 
@@ -87,7 +87,7 @@ func (o Object) Value(i int) (any, bool, bool) {
 func (o Object) Get(i int) any {
 	switch i {
 	case 0:
-		return filter.Nil(o.ID)
+		return filter.Zero(o.ID)
 	case 1:
 		return o.Bool
 	case 2:
@@ -101,11 +101,11 @@ func (o Object) Get(i int) any {
 	case 6:
 		return o.Null
 	case 7:
-		return filter.Nil(o.String1)
+		return filter.Zero(o.String1)
 	case 8:
-		return filter.Nil(o.String2)
+		return filter.Zero(o.String2)
 	case 9:
-		return filter.Nil(o.String3)
+		return filter.Zero(o.String3)
 	case 10:
 		return o.Uint64
 	case 11:
@@ -115,74 +115,20 @@ func (o Object) Get(i int) any {
 	case 13:
 		return o.UUID3
 	case 14:
-		return filter.Nil(o.UUID4)
+		return filter.Zero(o.UUID4)
 	case 15:
-		return filter.Nil(o.Time0)
+		return filter.Zero(o.Time0)
 	case 16:
-		return filter.Nil(o.Time1)
+		return filter.Zero(o.Time1)
 	case 17:
 		return o.Time2
 	case 18:
 		return o.Time3
 	case 19:
-		return filter.Nil(o.Time4)
+		return filter.Zero(o.Time4)
 	default:
 		panic("illegal index")
 	}
-}
-
-type String struct {
-	x *string
-}
-
-func (s *String) Scan(v any) error {
-	switch x := v.(type) {
-	case nil:
-	case string:
-		*s.x = x
-	}
-	return nil
-}
-
-type Time struct {
-	x *time.Time
-}
-
-func (t *Time) Scan(v any) error {
-	switch x := v.(type) {
-	case nil:
-	case time.Time:
-		*t.x = x
-	}
-	return nil
-}
-
-func PtrBool(v bool) *bool {
-	return &v
-}
-
-func PtrFloat64(v float64) *float64 {
-	return &v
-}
-
-func PtrInt16(v int16) *int16 {
-	return &v
-}
-
-func PtrUint(v uint) *uint {
-	return &v
-}
-
-func PtrString(v string) *string {
-	return &v
-}
-
-func PtrUUID(v uuid.UUID) *uuid.UUID {
-	return &v
-}
-
-func PtrTime(v time.Time) *time.Time {
-	return &v
 }
 
 type logHandler testing.T

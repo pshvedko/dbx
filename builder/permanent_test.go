@@ -2,10 +2,12 @@ package builder_test
 
 import (
 	"fmt"
+
 	"github.com/google/uuid"
+
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/t"
+	"github.com/pshvedko/dbx/internal/help"
 )
 
 func ExampleNewPermanent() {

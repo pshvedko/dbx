@@ -13,8 +13,9 @@ import (
 
 	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/internal/help"
 	"github.com/pshvedko/dbx/request"
-	"github.com/pshvedko/dbx/t"
+	"github.com/pshvedko/dbx/util"
 )
 
 type DB struct {
@@ -143,7 +144,7 @@ func (db DB) TestListLike(t *testing.T) {
 	}, nil, nil, nil, request.WithField{"id", "o_string_1"}, request.DeletedOnly)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, total)
-	require.ElementsMatch(t, help.ObjectList{{ID: 7, String1: help.PtrString("gray")}}, oo)
+	require.ElementsMatch(t, help.ObjectList{{ID: 7, String1: util.PtrString("gray")}}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {
@@ -171,23 +172,23 @@ func (db DB) TestGet(t *testing.T) {
 			},
 			want: &help.Object{
 				ID:      1,
-				Bool:    help.PtrBool(true),
+				Bool:    util.PtrBool(true),
 				Float32: 1e2,
-				Float64: help.PtrFloat64(3.14),
+				Float64: util.PtrFloat64(3.14),
 				Int:     0,
-				Int16:   help.PtrInt16(16),
+				Int16:   util.PtrInt16(16),
 				Null:    nil,
-				String1: help.PtrString("red"),
+				String1: util.PtrString("red"),
 				String2: "hello",
 				String3: "",
 				Uint64:  nil,
 				UUID1:   uuid.UUID{},
-				UUID2:   help.PtrUUID(uuid.UUID{}),
+				UUID2:   util.PtrUUID(uuid.UUID{}),
 				UUID3:   nil,
 				UUID4:   uuid.UUID{},
 				Time0:   time.Unix(0, 0),
 				Time1:   time.Unix(0, 0),
-				Time2:   help.PtrTime(time.Unix(0, 0)),
+				Time2:   util.PtrTime(time.Unix(0, 0)),
 				Time3:   nil,
 				Time4:   time.Time{},
 			},
@@ -209,7 +210,7 @@ func (db DB) TestGet(t *testing.T) {
 				Int:     0,
 				Int16:   nil,
 				Null:    nil,
-				String1: help.PtrString("red"),
+				String1: util.PtrString("red"),
 				Uint64:  nil,
 				UUID1:   uuid.UUID{},
 				UUID2:   nil,
@@ -249,7 +250,7 @@ func (db DB) TestGet(t *testing.T) {
 	}
 }
 
-func (db *DB) TestList(t *testing.T) {
+func (db DB) TestList(t *testing.T) {
 	type args struct {
 		ctx context.Context
 		i   filter.Injector
@@ -318,8 +319,8 @@ func (db *DB) TestList(t *testing.T) {
 				ctx: context.TODO(),
 				i:   &help.ObjectList{},
 				f:   filter.Eq{"o_time_1": time.Unix(0, 0), "o_uint_64": nil},
-				o:   help.PtrUint(1),
-				l:   help.PtrUint(3),
+				o:   util.PtrUint(1),
+				l:   util.PtrUint(3),
 				y:   []string{"-id"},
 				oo:  []request.Option{request.WithField{"id", "o_absent_0", "o_string_1"}},
 			},
@@ -327,13 +328,13 @@ func (db *DB) TestList(t *testing.T) {
 			want1: &help.ObjectList{
 				{
 					ID:      3,
-					String1: help.PtrString("white"),
+					String1: util.PtrString("white"),
 				}, {
 					ID:      2,
-					String1: help.PtrString("black"),
+					String1: util.PtrString("black"),
 				}, {
 					ID:      1,
-					String1: help.PtrString("red"),
+					String1: util.PtrString("red"),
 				},
 			},
 			wantErr: nil,
@@ -352,23 +353,23 @@ func (db *DB) TestList(t *testing.T) {
 			want: 1,
 			want1: &help.ObjectList{{
 				ID:      1,
-				Bool:    help.PtrBool(true),
+				Bool:    util.PtrBool(true),
 				Float32: 100,
-				Float64: help.PtrFloat64(3.14),
+				Float64: util.PtrFloat64(3.14),
 				Int:     0,
-				Int16:   help.PtrInt16(16),
+				Int16:   util.PtrInt16(16),
 				Null:    nil,
-				String1: help.PtrString("red"),
+				String1: util.PtrString("red"),
 				String2: "hello",
 				String3: "",
 				Uint64:  nil,
 				UUID1:   uuid.UUID{},
-				UUID2:   help.PtrUUID(uuid.UUID{}),
+				UUID2:   util.PtrUUID(uuid.UUID{}),
 				UUID3:   nil,
 				UUID4:   uuid.UUID{},
 				Time0:   time.Unix(0, 0),
 				Time1:   time.Unix(0, 0),
-				Time2:   help.PtrTime(time.Unix(0, 0)),
+				Time2:   util.PtrTime(time.Unix(0, 0)),
 				Time3:   nil,
 				Time4:   time.Time{},
 			}},
@@ -404,18 +405,18 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(false),
-					Float64: help.PtrFloat64(0),
-					Int16:   help.PtrInt16(0),
+					Bool:    util.PtrBool(false),
+					Float64: util.PtrFloat64(0),
+					Int16:   util.PtrInt16(0),
 				},
 				oo: []request.Option{request.PutCreate},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(false),
-				Float64: help.PtrFloat64(0),
-				Int16:   help.PtrInt16(0),
-				String1: help.PtrString("green"),
+				Bool:    util.PtrBool(false),
+				Float64: util.PtrFloat64(0),
+				Int16:   util.PtrInt16(0),
+				String1: util.PtrString("green"),
 			},
 			wantErr: nil,
 		},
@@ -425,19 +426,19 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(true),
-					Float64: help.PtrFloat64(1e1),
-					Int16:   help.PtrInt16(1),
+					Bool:    util.PtrBool(true),
+					Float64: util.PtrFloat64(1e1),
+					Int16:   util.PtrInt16(1),
 					String3: "orange",
 				},
 				oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(true),
-				Float64: help.PtrFloat64(1e1),
-				Int16:   help.PtrInt16(1),
-				String1: help.PtrString("green"),
+				Bool:    util.PtrBool(true),
+				Float64: util.PtrFloat64(1e1),
+				Int16:   util.PtrInt16(1),
+				String1: util.PtrString("green"),
 				String3: "orange",
 			},
 			wantErr: nil,
@@ -448,19 +449,19 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(true),
-					Float64: help.PtrFloat64(1e2),
-					Int16:   help.PtrInt16(2),
-					String1: help.PtrString("orange"),
+					Bool:    util.PtrBool(true),
+					Float64: util.PtrFloat64(1e2),
+					Int16:   util.PtrInt16(2),
+					String1: util.PtrString("orange"),
 				},
 				oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(true),
-				Float64: help.PtrFloat64(1e2),
-				Int16:   help.PtrInt16(2),
-				String1: help.PtrString("orange"),
+				Bool:    util.PtrBool(true),
+				Float64: util.PtrFloat64(1e2),
+				Int16:   util.PtrInt16(2),
+				String1: util.PtrString("orange"),
 				String3: "orange",
 			},
 			wantErr: nil,
@@ -471,19 +472,19 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(true),
-					Float64: help.PtrFloat64(1e3),
-					Int16:   help.PtrInt16(3),
+					Bool:    util.PtrBool(true),
+					Float64: util.PtrFloat64(1e3),
+					Int16:   util.PtrInt16(3),
 					String3: "green",
 				},
 				oo: []request.Option{},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(true),
-				Float64: help.PtrFloat64(1e3),
-				Int16:   help.PtrInt16(3),
-				String1: help.PtrString("green"),
+				Bool:    util.PtrBool(true),
+				Float64: util.PtrFloat64(1e3),
+				Int16:   util.PtrInt16(3),
+				String1: util.PtrString("green"),
 				String3: "green",
 			},
 			wantErr: nil,
@@ -494,19 +495,19 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      9,
-					Bool:    help.PtrBool(false),
-					Float64: help.PtrFloat64(1e4),
-					Int16:   help.PtrInt16(4),
+					Bool:    util.PtrBool(false),
+					Float64: util.PtrFloat64(1e4),
+					Int16:   util.PtrInt16(4),
 					String3: "orange",
 				},
 				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
 			},
 			want: &help.Object{
 				ID:      9,
-				Bool:    help.PtrBool(false),
-				Float64: help.PtrFloat64(1e3),
-				Int16:   help.PtrInt16(3),
-				String1: help.PtrString("green"),
+				Bool:    util.PtrBool(false),
+				Float64: util.PtrFloat64(1e3),
+				Int16:   util.PtrInt16(3),
+				String1: util.PtrString("green"),
 				String3: "orange",
 			},
 			wantErr: nil,
@@ -517,9 +518,9 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      7,
-					Bool:    help.PtrBool(true),
-					Float64: help.PtrFloat64(1e3),
-					Int16:   help.PtrInt16(3),
+					Bool:    util.PtrBool(true),
+					Float64: util.PtrFloat64(1e3),
+					Int16:   util.PtrInt16(3),
 					String3: "green",
 				},
 				oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
@@ -533,9 +534,9 @@ func (db DB) TestPut(t *testing.T) {
 				ctx: context.TODO(),
 				o: &help.Object{
 					ID:      7,
-					Bool:    help.PtrBool(false),
-					Float64: help.PtrFloat64(1e4),
-					Int16:   help.PtrInt16(4),
+					Bool:    util.PtrBool(false),
+					Float64: util.PtrFloat64(1e4),
+					Int16:   util.PtrInt16(4),
 					String3: "orange",
 				},
 				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},

@@ -88,12 +88,29 @@ func Now() Special {
 	return "NOW()"
 }
 
-func Nil[T comparable](v T) any {
+func Zero[T comparable](v T) any {
 	var z T
 	if v != z {
 		return v
 	}
 	return nil
+}
+
+type Nil[T comparable] struct {
+	v *T
+}
+
+func (n Nil[T]) Scan(v any) error {
+	switch x := v.(type) {
+	case nil:
+	case T:
+		*n.v = x
+	}
+	return nil
+}
+
+func Scan[T comparable](v *T) *Nil[T] {
+	return &Nil[T]{v: v}
 }
 
 type Injectable[T Projector] []T
@@ -165,7 +182,7 @@ type Fielder interface {
 	PK() PK
 	Names() []string
 	Values() []any
-	Value(int) (any, bool, bool)
+	Value(int) (any, bool, bool) // value, is nil, has default
 	Get(int) any
 }
 

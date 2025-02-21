@@ -6,7 +6,7 @@ import (
 
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/t"
+	"github.com/pshvedko/dbx/internal/help"
 )
 
 func TestFilter_To(t *testing.T) {

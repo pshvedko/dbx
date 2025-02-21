@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/t"
+	"github.com/pshvedko/dbx/util"
 )
 
 func TestMarshalJSON(t *testing.T) {
@@ -62,7 +62,7 @@ func TestMarshalJSON(t *testing.T) {
 		},
 		{
 			name:    "",
-			args:    args{f: filter.Eq{"f": help.PtrTime(time.Unix(0, 0))}},
+			args:    args{f: filter.Eq{"f": util.PtrTime(time.Unix(0, 0))}},
 			want:    []byte(`[["f","EQ","1970-01-01T03:00:00+03:00"]]`),
 			want1:   filter.Expression{filter.Operation{"f", "EQ", "1970-01-01T03:00:00+03:00"}},
 			wantErr: nil,
