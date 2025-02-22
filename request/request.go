@@ -56,7 +56,7 @@ func (r *Request) makeTx(ctx context.Context) error {
 	if r.o != nil && !r.t && ctx != nil {
 		t, err := r.c.BeginTxx(ctx, r.o)
 		if err != nil {
-			return err
+			return r.End(err)
 		}
 		r.c = Tx{Tx: t, Logger: slog.New(r.c.Handler()), Closer: r.closer()}
 		r.e = true
@@ -70,7 +70,7 @@ func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
 	for _, o := range append(db.Option(), append(oo, makeConnect(ctx, db))...) {
 		err := o.Apply(&r)
 		if err != nil {
-			return nil, err
+			return nil, r.End(err)
 		}
 	}
 	return &r, nil

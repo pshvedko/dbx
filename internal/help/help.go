@@ -9,10 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
-
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/request"
 )
 
 type ObjectList = filter.Injectable[*Object]
@@ -131,11 +128,13 @@ func (o Object) Get(i int) any {
 	}
 }
 
-type logHandler testing.T
+type logHandler struct {
+	testing.TB
+}
 
-func (h *logHandler) Enabled(context.Context, slog.Level) bool { return true }
+func (h logHandler) Enabled(context.Context, slog.Level) bool { return true }
 
-func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
+func (h logHandler) Handle(_ context.Context, r slog.Record) error {
 	h.Log(r.Level, r.Message)
 	r.Attrs(func(a slog.Attr) bool {
 		h.Log(r.Level, a)
@@ -144,20 +143,11 @@ func (h *logHandler) Handle(_ context.Context, r slog.Record) error {
 	return nil
 }
 
-func (h *logHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h logHandler) WithAttrs([]slog.Attr) slog.Handler { return h }
 
-func (h *logHandler) WithGroup(string) slog.Handler { return h }
+func (h logHandler) WithGroup(string) slog.Handler { return h }
 
-func LogHandler(t *testing.T) slog.Handler { return (*logHandler)(t) }
-
-type DB struct {
-	*sqlx.DB
-	*slog.Logger
-}
-
-func (DB) Connect(context.Context) (*sqlx.Conn, error) { return nil, nil }
-
-func (DB) Option() []request.Option { return nil }
+func LogHandler(t *testing.T) slog.Handler { return logHandler{TB: t} }
 
 type Map struct {
 	sync.Mutex

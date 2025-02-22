@@ -20,30 +20,39 @@ type DB struct {
 	oo []request.Option
 }
 
-func Open(name string) (*DB, error) {
-	db, err := sqlx.Open("pgx", name)
-	if err != nil {
-		return nil, err
-	}
+func New(db *sqlx.DB) *DB {
 	return &DB{
 		DB:     db,
 		Logger: slog.New(logHandler{}),
-	}, nil
+	}
 }
 
 func (db *DB) Option() []request.Option {
 	return db.oo
 }
 
-func (db *DB) SetOption(oo ...request.Option) {
+func (db *DB) WithOption(oo ...request.Option) *DB {
 	db.oo = append(db.oo, oo...)
+	return db
 }
 
 func (db *DB) Connect(ctx context.Context) (*sqlx.Conn, error) {
 	return db.Connx(ctx)
 }
 
-func (db *DB) Get(ctx context.Context, o filter.Projector, f filter.Filter, oo ...request.Option) error {
+type logHandler struct{}
+
+func (h logHandler) Enabled(context.Context, slog.Level) bool  { return false }
+func (h logHandler) Handle(context.Context, slog.Record) error { return nil }
+func (h logHandler) WithAttrs([]slog.Attr) slog.Handler        { return h }
+func (h logHandler) WithGroup(string) slog.Handler             { return h }
+
+func (db *DB) WithLogger(h slog.Handler) *DB {
+	db.Logger = slog.New(h)
+	return db
+}
+
+func Get(ctx context.Context, db request.Connector, o filter.Projector, f filter.Filter, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return err
@@ -52,7 +61,7 @@ func (db *DB) Get(ctx context.Context, o filter.Projector, f filter.Filter, oo .
 	return r.End(err)
 }
 
-func (db *DB) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y []string, oo ...request.Option) (uint, error) {
+func List(ctx context.Context, db request.Connector, i filter.Injector, f filter.Filter, o, l *uint, y []string, oo ...request.Option) (uint, error) {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return 0, err
@@ -61,7 +70,7 @@ func (db *DB) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l
 	return total, r.End(err)
 }
 
-func (db *DB) Put(ctx context.Context, o filter.Projector, oo ...request.Option) error {
+func Put(ctx context.Context, db request.Connector, o filter.Projector, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return err
@@ -70,7 +79,7 @@ func (db *DB) Put(ctx context.Context, o filter.Projector, oo ...request.Option)
 	return r.End(err)
 }
 
-func (db *DB) Delete(ctx context.Context, f filter.Filter, oo ...request.Option) (uint, error) {
+func Delete(ctx context.Context, db request.Connector, f filter.Filter, oo ...request.Option) (uint, error) {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return 0, err

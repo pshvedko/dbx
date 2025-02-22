@@ -40,7 +40,7 @@ func (o WithoutField) Apply(r *Request) error {
 type WithTx sql.TxOptions
 
 func (o WithTx) Apply(r *Request) error {
-	r.o = (*sql.TxOptions)(&o)
+	r.o = &sql.TxOptions{Isolation: o.Isolation, ReadOnly: o.ReadOnly}
 	return nil
 }
 
