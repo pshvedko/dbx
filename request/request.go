@@ -65,15 +65,21 @@ func (r *Request) makeTx(ctx context.Context) error {
 	return nil
 }
 
-func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
+func NewWithOption(options ...[]Option) (*Request, error) {
 	var r Request
-	for _, o := range append(db.Option(), append(oo, makeConnect(ctx, db))...) {
-		err := o.Apply(&r)
-		if err != nil {
-			return nil, r.End(err)
+	for _, option := range options {
+		for _, o := range option {
+			err := o.Apply(&r)
+			if err != nil {
+				return nil, r.End(err)
+			}
 		}
 	}
 	return &r, nil
+}
+
+func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
+	return NewWithOption(db.Option(), oo, []Option{makeConnect(ctx, db)})
 }
 
 func (r *Request) Apply(a *Request) error {
