@@ -62,6 +62,7 @@ func TestDB(t *testing.T) {
 	t.Run("ListAny", db.TestListAny)
 	t.Run("ListLike", db.TestListLike)
 	t.Run("Put", db.TestPut)
+
 }
 
 const selectPidStmt = `SELECT pg_backend_pid()`

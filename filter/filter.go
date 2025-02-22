@@ -88,7 +88,7 @@ func Now() Special {
 	return "NOW()"
 }
 
-func Zero[T comparable](v T) any {
+func NilIfZero[T comparable](v T) any {
 	var z T
 	if v != z {
 		return v
@@ -96,11 +96,11 @@ func Zero[T comparable](v T) any {
 	return nil
 }
 
-type Nil[T comparable] struct {
+type Nullable[T comparable] struct {
 	v *T
 }
 
-func (n Nil[T]) Scan(v any) error {
+func (n Nullable[T]) Scan(v any) error {
 	switch x := v.(type) {
 	case nil:
 	case T:
@@ -109,8 +109,8 @@ func (n Nil[T]) Scan(v any) error {
 	return nil
 }
 
-func Scan[T comparable](v *T) *Nil[T] {
-	return &Nil[T]{v: v}
+func Nil[T comparable](v *T) *Nullable[T] {
+	return &Nullable[T]{v: v}
 }
 
 type Injectable[T Projector] []T
