@@ -387,7 +387,7 @@ func TestExpression_Filter(t *testing.T) {
 		{
 			name:    "",
 			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 3.14}}, filter.Expression{filter.Operation{"b", "EQ", false}}, filter.Expression{filter.Operation{"n", "EQ", nil}}}},
-			want:    filter.And{filter.Ge{"f": 3.14}, filter.Eq{"b": false, "n": nil}},
+			want:    filter.And{filter.Ge{"f": 3.14}, filter.Eq{"b": false}, filter.Eq{"n": nil}},
 			wantErr: nil,
 		},
 		{

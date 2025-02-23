@@ -189,7 +189,10 @@ func (e Expression) Filter() (Filter, error) {
 					return nil, ErrIllegalExpression
 				}
 			}
-			return Collapse(a), nil
+			if len(a) == 1 {
+				return a[0], nil
+			}
+			return a, nil
 		default:
 			var a Or
 			for _, v := range e {
@@ -209,6 +212,9 @@ func (e Expression) Filter() (Filter, error) {
 				default:
 					return nil, ErrIllegalExpression
 				}
+			}
+			if len(a) == 1 {
+				return a[0], nil
 			}
 			return a, nil
 		}

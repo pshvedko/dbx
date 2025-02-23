@@ -1,7 +1,5 @@
 package filter
 
-import "fmt"
-
 type True struct{}
 
 func (f True) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
@@ -98,9 +96,4 @@ func Expand(t Filter) Filter {
 	default:
 		return f
 	}
-}
-
-func Collapse(a And) Filter {
-	println("Collapse", fmt.Sprintf("%#v", a))
-	return a
 }
