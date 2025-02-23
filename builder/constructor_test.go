@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/help"
+	"github.com/pshvedko/dbx/internal/test"
 	"github.com/pshvedko/dbx/request"
 )
 
@@ -15,7 +15,7 @@ func TestConstructor_Select(t *testing.T) {
 		f filter.Filter
 		o []request.Option
 	}
-	o := help.Object{}
+	o := test.Object{}
 	tests := []struct {
 		name    string
 		args    args

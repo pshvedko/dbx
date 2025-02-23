@@ -22,6 +22,17 @@ type Operation [3]any
 
 func (o Operation) Filter() (Filter, error) {
 	switch k := o[0].(type) {
+	case nil:
+		switch o[1].(type) {
+		case nil:
+			switch v := o[2].(type) {
+			case bool:
+				if v {
+					return True{}, nil
+				}
+				return False{}, nil
+			}
+		}
 	case string:
 		switch x := o[1].(type) {
 		case string:
@@ -178,7 +189,7 @@ func (e Expression) Filter() (Filter, error) {
 					return nil, ErrIllegalExpression
 				}
 			}
-			return a, nil
+			return Collapse(a), nil
 		default:
 			var a Or
 			for _, v := range e {
@@ -281,6 +292,8 @@ func MarshalJSON(f Filter) ([]byte, error) {
 		return OperationJSON(x, "LT")
 	case As:
 		return OperationJSON(x, "AS")
+	case Na:
+		return OperationJSON(x, "NA")
 	case In:
 		return OperationJSON(x, "IN")
 	case Ni:
@@ -299,6 +312,10 @@ func MarshalJSON(f Filter) ([]byte, error) {
 			a = append(a, []any{v})
 		}
 		return json.Marshal(a)
+	case True:
+		return json.Marshal([1][3]any{{nil, nil, true}})
+	case False:
+		return json.Marshal([1][3]any{{nil, nil, false}})
 	default:
 		panic(x)
 	}

@@ -1,4 +1,4 @@
-package help
+package test
 
 import (
 	"sync"

@@ -132,15 +132,30 @@ func TestMarshalJSON(t *testing.T) {
 		},
 		{
 			name:    "",
-			args:    args{f: filter.Eq{"n": nil}},
-			want:    nil,
-			want1:   nil,
+			args:    args{f: filter.Ne{"n": nil}},
+			want:    []byte(`[["n","NE",null]]`),
+			want1:   filter.Expression{filter.Operation{"n", "NE", nil}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{f: filter.True{}},
+			want:    []byte(`[[null,null,true]]`),
+			want1:   filter.Expression{filter.Operation{nil, nil, true}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{f: filter.False{}},
+			want:    []byte(`[[null,null,false]]`),
+			want1:   filter.Expression{filter.Operation{nil, nil, false}},
 			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := filter.MarshalJSON(tt.args.f)
+			//got, err := filter.MarshalJSON(tt.args.f)
+			got, err := json.Marshal(tt.args.f)
 			require.ErrorIs(t, tt.wantErr, err)
 			require.Equal(t, tt.want, got)
 			var e filter.Expression
@@ -178,8 +193,8 @@ func TestUnmarshalJSON(t *testing.T) {
 		},
 		{
 			name:    "",
-			args:    args{b: []byte(`[[[["f","GE",0]]],[[["b","EQ",false]]]]`)},
-			want:    filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}},
+			args:    args{b: []byte(`[[[["f","GE",0]]],[[["b","NE",null]]]]`)},
+			want:    filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "NE", nil}}}},
 			wantErr: nil,
 		},
 		{
@@ -198,6 +213,18 @@ func TestUnmarshalJSON(t *testing.T) {
 			name:    "",
 			args:    args{b: []byte(`[[[[[["f","GE",0]]],[[["b","EQ",false]]]],[["f","LE",0]]]]`)},
 			want:    filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", .0}}}, filter.Expression{filter.Expression{filter.Operation{"b", "EQ", false}}}}, filter.Expression{filter.Operation{"f", "LE", .0}}}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{b: []byte(`[[null,null,true]]`)},
+			want:    filter.Expression{filter.Operation{nil, nil, true}},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			args:    args{b: []byte(`[[null,null,false]]`)},
+			want:    filter.Expression{filter.Operation{nil, nil, false}},
 			wantErr: nil,
 		},
 	}
@@ -219,6 +246,30 @@ func TestOperation_Filter(t *testing.T) {
 		wantErr error
 	}{
 		// TODO: Add test cases.
+		{
+			name:    "",
+			op:      filter.Operation{nil, nil, true},
+			want:    filter.True{},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{nil, nil, false},
+			want:    filter.False{},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "EQ", nil},
+			want:    filter.Eq{"f": nil},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			op:      filter.Operation{"f", "EQ", true},
+			want:    filter.Eq{"f": true},
+			wantErr: nil,
+		},
 		{
 			name:    "",
 			op:      filter.Operation{"f", "EQ", 1},
@@ -324,7 +375,7 @@ func TestExpression_Filter(t *testing.T) {
 		{
 			name:    "",
 			ex:      filter.Expression{filter.Operation{"f", "EQ", 3.14}, filter.Operation{"b", "EQ", true}, filter.Operation{"n", "EQ", nil}},
-			want:    filter.Eq{"b": true, "f": 3.14, "n": nil},
+			want:    filter.Eq{"f": 3.14, "b": true, "n": nil},
 			wantErr: nil,
 		},
 		{
@@ -335,14 +386,26 @@ func TestExpression_Filter(t *testing.T) {
 		},
 		{
 			name:    "",
-			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 3.14}}, filter.Expression{filter.Operation{"b", "EQ", false}}}},
-			want:    filter.And{filter.Ge{"f": 3.14}, filter.Eq{"b": false}},
+			ex:      filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "GE", 3.14}}, filter.Expression{filter.Operation{"b", "EQ", false}}, filter.Expression{filter.Operation{"n", "EQ", nil}}}},
+			want:    filter.And{filter.Ge{"f": 3.14}, filter.Eq{"b": false, "n": nil}},
 			wantErr: nil,
 		},
 		{
 			name:    "",
 			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "GE", 3.14}},
 			want:    filter.Ge{"f": 3.14},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "GE", .0}},
+			want:    filter.Ge{"f": 0.0},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"g", "GE", .0}},
+			want:    filter.Ge{"f": 3.14, "g": 0.0},
 			wantErr: nil,
 		},
 		{
@@ -355,6 +418,18 @@ func TestExpression_Filter(t *testing.T) {
 			name:    "",
 			ex:      nil,
 			want:    nil,
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{nil, nil, true}},
+			want:    filter.True{},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{nil, nil, false}},
+			want:    filter.False{},
 			wantErr: nil,
 		},
 		{

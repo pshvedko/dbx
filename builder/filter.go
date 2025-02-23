@@ -86,6 +86,9 @@ const (
 func (f *Filter) Eq(k, v any) (int, error) {
 	switch v.(type) {
 	case nil, bool:
+		if k == nil {
+			return fmt.Fprint(f, f.Value(v))
+		}
 		return fmt.Fprintf(f, Is, k, f.Value(v))
 	}
 	return fmt.Fprintf(f, Eq, k, f.Value(v))

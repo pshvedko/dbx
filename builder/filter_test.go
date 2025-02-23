@@ -6,7 +6,7 @@ import (
 
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/help"
+	"github.com/pshvedko/dbx/internal/test"
 )
 
 func TestFilter_To(t *testing.T) {
@@ -109,11 +109,25 @@ func TestFilter_To(t *testing.T) {
 			want1:   nil,
 			wantErr: false,
 		},
+		{
+			name:    "",
+			f:       filter.True{},
+			want:    `TRUE`,
+			want1:   nil,
+			wantErr: false,
+		},
+		{
+			name:    "",
+			f:       filter.False{},
+			want:    `FALSE`,
+			want1:   nil,
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := builder.Filter{}
-			if err := tt.f.To(&b, &help.Object{}); (err != nil) != tt.wantErr {
+			if err := tt.f.To(&b, &test.Object{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()

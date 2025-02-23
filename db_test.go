@@ -16,7 +16,7 @@ import (
 
 	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/help"
+	"github.com/pshvedko/dbx/internal/test"
 	"github.com/pshvedko/dbx/request"
 	"github.com/pshvedko/dbx/util"
 
@@ -45,7 +45,7 @@ func Open(t *testing.T) (*DB, error) {
 	})
 	return &DB{
 		DB: dbx.New(db).
-			WithLogger(help.LogHandler(t)).
+			WithLogger(test.LogHandler(t)).
 			WithOption(
 				request.WithCreated("o_time_0"),
 				request.WithUpdated("o_time_1"),
@@ -120,7 +120,7 @@ func (db DB) TestConn(t *testing.T) {
 }
 
 func (db DB) TestListAny(t *testing.T) {
-	var oo []help.Object
+	var oo []test.Object
 	err := db.SelectContext(context.TODO(), &oo, `--
 			SELECT "id" 
 			FROM "objects" 
@@ -138,11 +138,11 @@ func (db DB) TestListAny(t *testing.T) {
 		filter.Array{time.Time{}},
 	)
 	require.NoError(t, err)
-	require.ElementsMatch(t, []help.Object{{ID: 1}, {ID: 2}, {ID: 3}}, oo)
+	require.ElementsMatch(t, []test.Object{{ID: 1}, {ID: 2}, {ID: 3}}, oo)
 }
 
 func (db DB) TestListIn(t *testing.T) {
-	var oo help.ObjectList
+	var oo test.ObjectList
 	total, err := dbx.List(context.TODO(), db, &oo,
 		filter.And{
 			filter.In{"id": {1, 2, 3, 4, 5}, "o_string_1": {"red", "black", "white", "green", "yellow"}},
@@ -150,23 +150,23 @@ func (db DB) TestListIn(t *testing.T) {
 		}, nil, nil, nil, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
-	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+	require.ElementsMatch(t, test.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 	oo = nil
 	total, err = dbx.List(context.TODO(), db, &oo,
 		filter.In{"o_time_0": {"1970-01-01T00:00:00Z"}}, nil, nil, nil, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
-	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+	require.ElementsMatch(t, test.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 	oo = nil
 	total, err = dbx.List(context.TODO(), db, &oo,
 		filter.In{"o_time_0": {"YESTERDAY", filter.Now(), time.Now(), time.UnixMicro(0)}}, nil, nil, nil, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
-	require.ElementsMatch(t, help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
+	require.ElementsMatch(t, test.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}}, oo)
 }
 
 func (db DB) TestListLike(t *testing.T) {
-	var oo help.ObjectList
+	var oo test.ObjectList
 	total, err := dbx.List(context.TODO(), db, &oo,
 		filter.And{
 			filter.As{"o_string_1": "%a%"},
@@ -174,7 +174,7 @@ func (db DB) TestListLike(t *testing.T) {
 		}, nil, nil, nil, request.WithField{"id", "o_string_1"}, request.DeletedOnly)
 	require.NoError(t, err)
 	require.EqualValues(t, 1, total)
-	require.ElementsMatch(t, help.ObjectList{{ID: 7, String1: util.PtrString("gray")}}, oo)
+	require.ElementsMatch(t, test.ObjectList{{ID: 7, String1: util.PtrString("gray")}}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {
@@ -194,11 +194,11 @@ func (db DB) TestGet(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o:  &help.Object{},
+				o:  &test.Object{},
 				f:  filter.Eq{"id": 1},
 				oo: nil,
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      1,
 				Bool:    util.PtrBool(true),
 				Float32: 1e2,
@@ -225,11 +225,11 @@ func (db DB) TestGet(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o:  &help.Object{},
+				o:  &test.Object{},
 				f:  filter.Eq{"id": 1},
 				oo: []request.Option{request.WithField{"id", "o_string_1"}},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      1,
 				Bool:    nil,
 				Float32: 0,
@@ -248,21 +248,21 @@ func (db DB) TestGet(t *testing.T) {
 		}, {
 			name: "",
 			args: args{
-				o:  &help.Object{},
+				o:  &test.Object{},
 				f:  filter.And{filter.Eq{"id": 1}, filter.Le{"o_time_0": "YESTERDAY"}},
-				oo: []request.Option{request.WithoutField(help.Object{}.Names())},
+				oo: []request.Option{request.WithoutField(test.Object{}.Names())},
 			},
-			want:    &help.Object{},
+			want:    &test.Object{},
 			wantErr: nil,
 		},
 		{
 			name: "",
 			args: args{
-				o:  &help.Object{},
+				o:  &test.Object{},
 				f:  filter.Eq{"id": nil},
 				oo: nil,
 			},
-			want:    &help.Object{},
+			want:    &test.Object{},
 			wantErr: sql.ErrNoRows,
 		},
 	}
@@ -296,7 +296,7 @@ func (db DB) TestList(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				i:  &help.ObjectList{},
+				i:  &test.ObjectList{},
 				f:  nil,
 				o:  nil,
 				l:  nil,
@@ -304,13 +304,13 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}},
 			},
 			want:    5,
-			want1:   &help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}},
+			want1:   &test.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}},
 			wantErr: nil,
 		},
 		{
 			name: "",
 			args: args{
-				i:  &help.ObjectList{},
+				i:  &test.ObjectList{},
 				f:  nil,
 				o:  nil,
 				l:  nil,
@@ -318,13 +318,13 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}, request.DeletedOnly},
 			},
 			want:    2,
-			want1:   &help.ObjectList{{ID: 6}, {ID: 7}},
+			want1:   &test.ObjectList{{ID: 6}, {ID: 7}},
 			wantErr: nil,
 		},
 		{
 			name: "",
 			args: args{
-				i:  &help.ObjectList{},
+				i:  &test.ObjectList{},
 				f:  nil,
 				o:  nil,
 				l:  nil,
@@ -332,13 +332,13 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}, request.DeletedFree},
 			},
 			want:    7,
-			want1:   &help.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}, {ID: 6}, {ID: 7}},
+			want1:   &test.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}, {ID: 6}, {ID: 7}},
 			wantErr: nil,
 		},
 		{
 			name: "",
 			args: args{
-				i:  &help.ObjectList{},
+				i:  &test.ObjectList{},
 				f:  filter.Eq{"o_time_1": time.Unix(0, 0), "o_uint_64": nil},
 				o:  util.PtrUint(1),
 				l:  util.PtrUint(3),
@@ -346,7 +346,7 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id", "o_absent_0", "o_string_1"}},
 			},
 			want: 4,
-			want1: &help.ObjectList{
+			want1: &test.ObjectList{
 				{
 					ID:      3,
 					String1: util.PtrString("white"),
@@ -363,7 +363,7 @@ func (db DB) TestList(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				i:  &help.ObjectList{},
+				i:  &test.ObjectList{},
 				f:  filter.Eq{"o_float_32": "100", "o_float_64": "3.14", "o_int_16": "16", "o_string_1": "red", "o_string_2": "hello", "o_time_0": "1970-01-01T00:00:00Z", "o_bool": "true", "o_null": nil},
 				o:  nil,
 				l:  nil,
@@ -371,7 +371,7 @@ func (db DB) TestList(t *testing.T) {
 				oo: nil,
 			},
 			want: 1,
-			want1: &help.ObjectList{{
+			want1: &test.ObjectList{{
 				ID:      1,
 				Bool:    util.PtrBool(true),
 				Float32: 100,
@@ -422,7 +422,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      9,
 					Bool:    util.PtrBool(false),
 					Float64: util.PtrFloat64(0),
@@ -430,7 +430,7 @@ func (db DB) TestPut(t *testing.T) {
 				},
 				oo: []request.Option{request.PutCreate},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      9,
 				Bool:    util.PtrBool(false),
 				Float64: util.PtrFloat64(0),
@@ -442,7 +442,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e1),
@@ -451,7 +451,7 @@ func (db DB) TestPut(t *testing.T) {
 				},
 				oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      9,
 				Bool:    util.PtrBool(true),
 				Float64: util.PtrFloat64(1e1),
@@ -464,7 +464,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e2),
@@ -473,7 +473,7 @@ func (db DB) TestPut(t *testing.T) {
 				},
 				oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      9,
 				Bool:    util.PtrBool(true),
 				Float64: util.PtrFloat64(1e2),
@@ -486,7 +486,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e3),
@@ -495,7 +495,7 @@ func (db DB) TestPut(t *testing.T) {
 				},
 				oo: []request.Option{},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      9,
 				Bool:    util.PtrBool(true),
 				Float64: util.PtrFloat64(1e3),
@@ -508,7 +508,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      9,
 					Bool:    util.PtrBool(false),
 					Float64: util.PtrFloat64(1e4),
@@ -517,7 +517,7 @@ func (db DB) TestPut(t *testing.T) {
 				},
 				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
 			},
-			want: &help.Object{
+			want: &test.Object{
 				ID:      9,
 				Bool:    util.PtrBool(false),
 				Float64: util.PtrFloat64(1e3),
@@ -530,7 +530,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      7,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e3),
@@ -545,7 +545,7 @@ func (db DB) TestPut(t *testing.T) {
 		{
 			name: "",
 			args: args{
-				o: &help.Object{
+				o: &test.Object{
 					ID:      7,
 					Bool:    util.PtrBool(false),
 					Float64: util.PtrFloat64(1e4),
@@ -558,7 +558,7 @@ func (db DB) TestPut(t *testing.T) {
 			wantErr: sql.ErrNoRows,
 		},
 	}
-	var ids help.Map
+	var ids test.Map
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
@@ -605,7 +605,7 @@ func (db DB) TestScan(t *testing.T) {
 
 	x.Reset()
 
-	var o help.Object
+	var o test.Object
 	err = json.NewEncoder(&x).Encode(o)
 	require.NoError(t, err)
 	require.Equal(t, "", x.String())

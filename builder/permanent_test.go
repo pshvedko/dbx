@@ -7,11 +7,11 @@ import (
 
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/help"
+	"github.com/pshvedko/dbx/internal/test"
 )
 
 func ExampleNewPermanent() {
-	o := help.Object{}
+	o := test.Object{}
 	q := filter.Eq{"o_string_1": "red", "o_time_4": nil}
 
 	p, err := builder.NewPermanent(q, &o)
