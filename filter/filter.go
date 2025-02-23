@@ -7,6 +7,15 @@ import (
 	"strings"
 )
 
+type Table struct {
+	Projector
+	Alias string
+}
+
+func (t Table) Table() string {
+	return t.Alias
+}
+
 type Column [2]string
 
 func (c Column) Format(f fmt.State, _ rune) {
@@ -88,12 +97,58 @@ func Now() Special {
 	return "NOW()"
 }
 
-func NilIfZero[T comparable](v T) any {
+//type Joiner interface {
+//	To() Projector
+//}
+//
+//type To[T Projector] struct {
+//	v T
+//	k []string
+//}
+//
+//func (j To[T]) To() Projector {
+//	var t T
+//	return t
+//}
+//
+//func JoinTo[T Projector](v T, k ...string) Joiner {
+//	return To[T]{v: v, k: k}
+//}
+//
+//type Ref[T Projector] struct {
+//	v *T
+//	k []string
+//}
+//
+//func (j Ref[T]) To() Projector {
+//	var t T
+//	return t
+//}
+//
+//func JoinAny[T Projector](v *T, k ...string) Joiner {
+//	return Ref[T]{v: v, k: k}
+//}
+//
+//type Many[T Projector] struct {
+//	v *[]T
+//	k []string
+//}
+//
+//func (j Many[T]) To() Projector {
+//	var t T
+//	return t
+//}
+//
+//func JoinMany[T Projector](v *[]T, k ...string) Joiner {
+//	return Many[T]{v: v, k: k}
+//}
+
+func NilIfZero[T comparable](v T) (any, bool) {
 	var z T
 	if v != z {
-		return v
+		return v, false
 	}
-	return nil
+	return nil, true
 }
 
 type Nullable[T comparable] struct {
@@ -109,8 +164,8 @@ func (n Nullable[T]) Scan(v any) error {
 	return nil
 }
 
-func Nil[T comparable](v *T) *Nullable[T] {
-	return &Nullable[T]{v: v}
+func Nil[T comparable](v *T) Nullable[T] {
+	return Nullable[T]{v: v}
 }
 
 type Injectable[T Projector] []T
@@ -182,8 +237,8 @@ type Fielder interface {
 	PK() PK
 	Names() []string
 	Values() []any
-	Value(int) (any, bool, bool) // value, is nil, has default
-	Get(int) any
+	Value(int) (any, bool, bool) // value, none, auto
+	Get(int) (any, bool)         // value, none
 }
 
 type Injector interface {

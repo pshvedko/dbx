@@ -9,20 +9,13 @@ import (
 	"github.com/pshvedko/dbx/request"
 )
 
-type Object struct {
-	help.Object
-}
-
-func (o Object) Names() []string { return o.Object.Names()[:8] }
-func (o Object) Values() []any   { return o.Object.Values()[:8] }
-
 func TestConstructor_Select(t *testing.T) {
 	type args struct {
 		j filter.Projector
 		f filter.Filter
 		o []request.Option
 	}
-	o := Object{}
+	o := help.Object{}
 	tests := []struct {
 		name    string
 		args    args
@@ -39,9 +32,10 @@ func TestConstructor_Select(t *testing.T) {
 				f: filter.Eq{"o_int": 1, "o_bool": true},
 				o: []request.Option{
 					request.WithField{"o_bool", "o_float_32", "o_int", "o_null", "o_string_1"},
+					request.WithDeleted("o_time_4"),
 				},
 			},
-			want:    `SELECT "o_bool", "o_float_32", "o_int", "o_null", "o_string_1" FROM "objects" WHERE ( "objects"."o_bool" IS TRUE AND "objects"."o_int" = $1 )`,
+			want:    `SELECT "o"."o_bool", "o"."o_float_32", "o"."o_int", "o"."o_null", "o"."o_string_1" FROM "objects" AS "o" WHERE ( ( "o"."o_bool" IS TRUE AND "o"."o_int" = $1 ) AND "o"."o_time_4" IS NULL )`,
 			want1:   []any{1},
 			want2:   []any{&o.Bool, &o.Float32, &o.Int, &o.Null, &o.String1},
 			wantErr: false,
@@ -52,10 +46,16 @@ func TestConstructor_Select(t *testing.T) {
 				j: &o,
 				f: filter.Eq{"o_int": 1, "o_bool": true},
 				o: []request.Option{
-					request.WithoutField{"o_bool", "o_float_32", "o_int", "o_null", "o_string_1"},
+					request.WithoutField{
+						"o_bool", "o_float_32", "o_int", "o_null", "o_uint_64",
+						"o_uuid_1", "o_uuid_2", "o_uuid_3", "o_uuid_4",
+						"o_time_0", "o_time_1", "o_time_2", "o_time_3", "o_time_4",
+						"o_string_2", "o_string_3", "o_string_1"},
+					request.DeletedFree,
+					request.WithDeleted("o_time_4"),
 				},
 			},
-			want:    `SELECT "id", "o_float_64", "o_int_16" FROM "objects" WHERE ( "objects"."o_bool" IS TRUE AND "objects"."o_int" = $1 )`,
+			want:    `SELECT "o"."id", "o"."o_float_64", "o"."o_int_16" FROM "objects" AS "o" WHERE ( "o"."o_bool" IS TRUE AND "o"."o_int" = $1 )`,
 			want1:   []any{1},
 			want2:   []any{&o.ID, &o.Float64, &o.Int16},
 			wantErr: false,

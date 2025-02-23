@@ -2,9 +2,9 @@ package builder
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/pshvedko/dbx/filter"
+	"strconv"
+	"strings"
 )
 
 type Order []string
@@ -19,11 +19,31 @@ type Access struct {
 	Owner string
 }
 
+type Aliases map[rune]int
+
+func (a Aliases) Alias(t string) string {
+	var i int
+	var r, k rune
+	for i, r = range t {
+		if i > 0 {
+			break
+		}
+		k = r
+	}
+	n := a[k]
+	a[k]++
+	if n == 0 {
+		return t[:i]
+	}
+	return t[:i] + strconv.Itoa(n)
+}
+
 type Constructor struct {
 	Filter
 	Column
 	Modify
 	Access
+	Aliases
 	p Ranger
 	y Order
 }
@@ -57,10 +77,9 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if f != nil {
 		a = append(a, f)
 	}
-	v, nn, vv := 0, j.Names(), j.Values()
+	v, nn, vv, t := 0, j.Names(), j.Values(), c.Alias(j.Table())
 	for i, n := range nn {
-		switch {
-		case c.IsDeleted(n):
+		if c.IsDeleted(n) {
 			a = c.Visibility(a)
 		}
 		if !c.Used(n) {
@@ -72,7 +91,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 				return nil, "", nil, nil, err
 			}
 		}
-		_, err = fmt.Fprintf(c, " %q", n)
+		_, err = fmt.Fprintf(c, " %q", filter.Column{t, n})
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -80,7 +99,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		v++
 	}
 	n := c.Len()
-	_, err = fmt.Fprintf(c, " FROM %q", j.Table())
+	_, err = fmt.Fprintf(c, " FROM %q AS %q", j.Table(), t)
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -89,7 +108,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	w := c.Len()
-	err = a.To(c, j)
+	err = a.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
 		return nil, "", nil, nil, err
 	}

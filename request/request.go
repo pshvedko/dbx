@@ -139,6 +139,7 @@ func (r *Request) Constructor() *builder.Constructor {
 			Owner: r.u,
 			Group: r.g,
 		},
+		Aliases: builder.Aliases{},
 		Modify: builder.Modify{
 			Created: r.x.c,
 			Updated: r.x.u,

@@ -66,7 +66,7 @@ func (o Operation) Filter() (Filter, error) {
 	return nil, ErrMalformedOperation
 }
 
-func Append[M interface {
+func Merge[M interface {
 	~map[K]V
 	Filter
 }, K string, V any](t M, f M) M {
@@ -76,7 +76,7 @@ func Append[M interface {
 	return t
 }
 
-func Join(t Filter, f ...Filter) (Filter, error) {
+func Unite(t Filter, f ...Filter) (Filter, error) {
 	if len(f) == 0 {
 		return t, nil
 	}
@@ -84,47 +84,47 @@ func Join(t Filter, f ...Filter) (Filter, error) {
 	case Eq:
 		switch b := f[0].(type) {
 		case Eq:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Ne:
 		switch b := f[0].(type) {
 		case Ne:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Ge:
 		switch b := f[0].(type) {
 		case Ge:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Gt:
 		switch b := f[0].(type) {
 		case Gt:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Le:
 		switch b := f[0].(type) {
 		case Le:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Lt:
 		switch b := f[0].(type) {
 		case Lt:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case As:
 		switch b := f[0].(type) {
 		case As:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case In:
 		switch b := f[0].(type) {
 		case In:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	case Ni:
 		switch b := f[0].(type) {
 		case Ni:
-			return Join(Append(a, b), f[1:]...)
+			return Unite(Merge(a, b), f[1:]...)
 		}
 	}
 	return nil, ErrUnsuitableOperation
@@ -214,7 +214,7 @@ func (e Expression) Filter() (Filter, error) {
 				if err != nil {
 					return nil, err
 				}
-				t, err = Join(t, f)
+				t, err = Unite(t, f)
 				if err != nil {
 					return nil, err
 				}

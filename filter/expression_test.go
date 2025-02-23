@@ -130,6 +130,13 @@ func TestMarshalJSON(t *testing.T) {
 			want1:   filter.Expression{filter.Expression{filter.Expression{filter.Operation{"f", "IN", []any{1., 2.}}}, filter.Expression{filter.Operation{"f", "NI", []any{"a", "b"}}}}},
 			wantErr: nil,
 		},
+		{
+			name:    "",
+			args:    args{f: filter.Eq{"n": nil}},
+			want:    nil,
+			want1:   nil,
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

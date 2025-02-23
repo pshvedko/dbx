@@ -1,8 +1,10 @@
 package dbx_test
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -56,6 +58,7 @@ func TestDB(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	t.Run("Connect", db.TestConn)
+	t.Run("TestScan", db.TestScan)
 	t.Run("Get", db.TestGet)
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
@@ -561,9 +564,13 @@ func (db DB) TestPut(t *testing.T) {
 			err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
 			require.ErrorIs(t, err, tt.wantErr)
 			if tt.wantErr == nil {
-				t.Log(ids.Add(tt.args.o.Table(), tt.args.o.Get(0)))
-				for i := 0; i < 15; i++ {
-					require.Equal(t, tt.want.Get(i), tt.args.o.Get(i), i)
+				id, _ := tt.args.o.Get(0)
+				t.Log(ids.Add(tt.args.o.Table(), id))
+				for i, n := range tt.args.o.Names() {
+					v1, n1 := tt.want.Get(i)
+					v2, n2 := tt.args.o.Get(i)
+					require.Equal(t, v1, v2, n)
+					require.Equal(t, n1, n2, n)
 				}
 				t.Log(tt.args.o.Get(15))
 				t.Log(tt.args.o.Get(16))
@@ -576,4 +583,30 @@ func (db DB) TestPut(t *testing.T) {
 			_, _ = db.Exec(s, v)
 		}
 	})
+}
+
+type Scan struct {
+	bytes.Buffer
+}
+
+func (s *Scan) Scan(v any) error {
+	_, _ = fmt.Fprintf(&s.Buffer, "%T::[%v],", v, v)
+	return nil
+}
+
+var _ sql.Scanner = &Scan{}
+
+func (db DB) TestScan(t *testing.T) {
+	var x Scan
+	row := db.QueryRow(`SELECT 0::int2, '11d7c4b2-9546-4296-b97b-f93a068f3d72'::uuid, '2025-02-23 05:32:48.899094'::timestamp, '123'::bytea`)
+	err := row.Scan(&x, &x, &x, &x)
+	require.NoError(t, err)
+	require.Equal(t, "int64::[0],string::[11d7c4b2-9546-4296-b97b-f93a068f3d72],time.Time::[2025-02-23 05:32:48.899094 +0000 UTC],[]uint8::[[49 50 51]],", x.String())
+
+	x.Reset()
+
+	var o help.Object
+	err = json.NewEncoder(&x).Encode(o)
+	require.NoError(t, err)
+	require.Equal(t, "", x.String())
 }
