@@ -26,7 +26,7 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	if len(ff) > 1 {
 		_, err = fmt.Fprint(b, "( ")
 		if err != nil {
-			return
+			return err
 		}
 		defer func() {
 			if err == nil {
@@ -38,27 +38,42 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 		if i > 0 {
 			_, err = fmt.Fprint(b, " ", o, " ")
 			if err != nil {
-				return
+				return err
 			}
 		}
 		err = f.To(b, j)
 		if err != nil {
-			return
+			return err
 		}
 	}
-	return
+	return err
+}
+
+type ErrNoSuchField map[string]struct{}
+
+func (e ErrNoSuchField) Error() string {
+	ff := make([]string, 0, len(e))
+	for f := range e {
+		ff = append(ff, f)
+	}
+	return fmt.Sprintln("no field:", ff)
 }
 
 func Straight[T any](b Builder, j Projector, o string, oo map[string]T, ooo func(any, any) (int, error)) (err error) {
+	nn := make(ErrNoSuchField, len(oo))
+	for k := range oo {
+		nn[k] = struct{}{}
+	}
 	ff := make([]string, 0, len(oo))
 	for _, k := range j.Names() {
 		_, ok := oo[k]
 		if ok {
 			ff = append(ff, k)
+			delete(nn, k)
 		}
 	}
-	if len(ff) != cap(ff) {
-		return io.EOF
+	if len(nn) > 0 {
+		return nn
 	}
 	if len(oo) > 1 {
 		_, err = fmt.Fprint(b, "( ")
