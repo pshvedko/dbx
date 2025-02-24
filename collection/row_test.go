@@ -11,8 +11,8 @@ import (
 func TestRow(t *testing.T) {
 	const N = 5
 	var tx [N]Tx
-	var row [N]Row
-	rowN := make(map[*Row]int, N)
+	var row [N]Row[int]
+	rowN := make(map[*Row[int]]int, N)
 	txN := make(map[*Tx]int, N)
 	for i := 0; i < N; i++ {
 		rowN[&row[i]], txN[&tx[i]] = i, i
@@ -95,7 +95,7 @@ func TestRow(t *testing.T) {
 	require.Zero(t, row[3].tx)
 }
 
-func txRow(t *testing.T, row *Row, tx *Tx, rows map[*Row]int, txs map[*Tx]int, ok bool) {
+func txRow[T any](t *testing.T, row *Row[T], tx *Tx, rows map[*Row[T]]int, txs map[*Tx]int, ok bool) {
 	t.Helper()
 	if ok {
 		t.Logf("row%d + tx%d = %t", rows[row], txs[tx], row.acquire(tx))
@@ -105,7 +105,7 @@ func txRow(t *testing.T, row *Row, tx *Tx, rows map[*Row]int, txs map[*Tx]int, o
 	}
 }
 
-func rowTx(t *testing.T, row *Row, rows map[*Row]int, txs map[*Tx]int) {
+func rowTx[T any](t *testing.T, row *Row[T], rows map[*Row[T]]int, txs map[*Tx]int) {
 	t.Helper()
 	var b strings.Builder
 	_, _ = fmt.Fprintf(&b, "row%d :", rows[row])

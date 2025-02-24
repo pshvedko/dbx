@@ -12,7 +12,6 @@ var (
 	ErrIllegalExpression   = errors.New("illegal expression")
 	ErrUnknownExpression   = errors.New("unknown expression")
 	ErrEmptyExpression     = errors.New("empty expression")
-	ErrUnsuitableOperation = errors.New("unsuitable operation")
 	ErrMalformedOperation  = errors.New("malformed operation")
 	ErrIllegalOperation    = errors.New("illegal operation")
 	ErrUnknownOperation    = errors.New("unknown operation")
@@ -75,70 +74,6 @@ func (o Operation) Filter() (Filter, error) {
 		return nil, ErrIllegalOperation
 	}
 	return nil, ErrMalformedOperation
-}
-
-func Merge[M interface {
-	~map[K]V
-	Filter
-}, K string, V any](t M, f M) M {
-	for k, v := range f {
-		t[k] = v
-	}
-	return t
-}
-
-func Unite(t Filter, f ...Filter) (Filter, error) {
-	if len(f) == 0 {
-		return t, nil
-	}
-	switch a := t.(type) {
-	case Eq:
-		switch b := f[0].(type) {
-		case Eq:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Ne:
-		switch b := f[0].(type) {
-		case Ne:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Ge:
-		switch b := f[0].(type) {
-		case Ge:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Gt:
-		switch b := f[0].(type) {
-		case Gt:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Le:
-		switch b := f[0].(type) {
-		case Le:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Lt:
-		switch b := f[0].(type) {
-		case Lt:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case As:
-		switch b := f[0].(type) {
-		case As:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case In:
-		switch b := f[0].(type) {
-		case In:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	case Ni:
-		switch b := f[0].(type) {
-		case Ni:
-			return Unite(Merge(a, b), f[1:]...)
-		}
-	}
-	return nil, ErrUnsuitableOperation
 }
 
 type Filterer interface {
@@ -219,27 +154,20 @@ func (e Expression) Filter() (Filter, error) {
 			return a, nil
 		}
 	case Operation:
-		t, err := x.Filter()
-		if err != nil {
-			return nil, err
-		}
-		for _, v := range e[1:] {
+		var a And
+		for _, v := range e {
 			switch o := v.(type) {
 			case Operation:
-				var f Filter
-				f, err = o.Filter()
+				t, err := o.Filter()
 				if err != nil {
 					return nil, err
 				}
-				t, err = Unite(t, f)
-				if err != nil {
-					return nil, err
-				}
+				a = append(a, t)
 			default:
 				return nil, ErrIllegalExpression
 			}
 		}
-		return t, nil
+		return Collapse(a), nil
 	default:
 		return nil, ErrUnknownExpression
 	}

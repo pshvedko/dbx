@@ -182,3 +182,43 @@ func BenchmarkExpand(b *testing.B) {
 		require.ElementsMatch(b, o, Expand(a))
 	}
 }
+
+func TestCollapse(t *testing.T) {
+	tests := []struct {
+		name string
+		args And
+		want Filter
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: And{Eq{"f": 3.14}, Eq{"b": true}, Eq{"n": nil}},
+			want: Eq{"f": 3.14, "b": true, "n": nil},
+		},
+		{
+			name: "",
+			args: And{Eq{"f": 3.14, "x": 1}, Eq{"x": 2, "b": true}, Eq{"n": nil}},
+			want: And{Eq{"x": 2}, Eq{"b": true, "f": 3.14, "n": nil, "x": 1}},
+		},
+		{
+			name: "",
+			args: And{Eq{"f": 3.14, "x": 1}, Eq{"x": 2, "b": true}, Eq{"x": 3, "n": nil}},
+			want: And{Eq{"x": 1}, Eq{"x": 2}, Eq{"b": true, "f": 3.14, "n": nil, "x": 3}},
+		},
+		{
+			name: "",
+			args: And{True{}, True{}, False{}},
+			want: And{True{}, False{}},
+		},
+		{
+			name: "",
+			args: And{True{}, True{}},
+			want: True{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, Collapse(tt.args), "Collapse(%v)", tt.args)
+		})
+	}
+}

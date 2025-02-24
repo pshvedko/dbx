@@ -34,18 +34,16 @@ func (t *Tx) off(x *Tx) *Tx {
 	return t
 }
 
-type Item interface{}
-
 // Row ...
-type Row struct {
-	Item
-	cas uint64
-	rw  sync.RWMutex
-	mx  sync.Mutex
-	tx  *Tx
+type Row[T any] struct {
+	T  T
+	N  uint64
+	rw sync.RWMutex
+	mx sync.Mutex
+	tx *Tx
 }
 
-func (r *Row) acquire(t *Tx) bool {
+func (r *Row[T]) acquire(t *Tx) bool {
 	r.mx.Lock()
 	defer r.mx.Unlock()
 	if r.tx.on(t) {
@@ -58,7 +56,7 @@ func (r *Row) acquire(t *Tx) bool {
 	return true
 }
 
-func (r *Row) release(t *Tx) {
+func (r *Row[T]) release(t *Tx) {
 	r.mx.Lock()
 	defer r.mx.Unlock()
 	t.mx.Lock()
@@ -67,19 +65,19 @@ func (r *Row) release(t *Tx) {
 	t.tx = nil
 }
 
-func (r *Row) lock(t *Tx) {
+func (r *Row[T]) lock(t *Tx) {
 	if !r.acquire(t) {
 		panic(t)
 	}
 	r.rw.Lock()
 }
 
-func (r *Row) unlock(t *Tx) {
+func (r *Row[T]) unlock(t *Tx) {
 	r.release(t)
 	r.rw.Unlock()
 }
 
-func (r *Row) read(t *Tx) bool {
+func (r *Row[T]) read(t *Tx) bool {
 	ok := r.acquire(t)
 	if ok {
 		r.rw.RLock()
@@ -87,25 +85,26 @@ func (r *Row) read(t *Tx) bool {
 	return ok
 }
 
-func (r *Row) unread(t *Tx) {
+func (r *Row[T]) unread(t *Tx) {
 	r.release(t)
 	r.rw.RUnlock()
 }
 
-func (r *Row) committed(tx *Tx) bool {
+func (r *Row[T]) committed(tx *Tx) bool {
 	if r.read(tx) {
 		defer r.unread(tx)
-		return r.cas > 0
+		return r.N > 0
 	}
 	return true
 }
 
-func (r *Row) get(tx *Tx) (Item, uint64, bool) {
+func (r *Row[T]) get(tx *Tx) (T, uint64, bool) {
+	var z T
 	if r.read(tx) {
 		defer r.unread(tx)
-		if r.Item != nil && r.cas > 0 {
-			return r.Item, r.cas, true
+		if r.N > 0 {
+			return r.T, r.N, true
 		}
 	}
-	return nil, 0, false
+	return z, 0, false
 }

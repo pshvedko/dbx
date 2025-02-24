@@ -393,19 +393,19 @@ func TestExpression_Filter(t *testing.T) {
 		{
 			name:    "",
 			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "GE", 3.14}},
-			want:    filter.Ge{"f": 3.14},
-			wantErr: nil,
-		},
-		{
-			name:    "",
-			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "GE", .0}},
-			want:    filter.Ge{"f": 0.0},
+			want:    filter.And{filter.Ge{"f": 3.14}, filter.Ge{"f": 3.14}},
 			wantErr: nil,
 		},
 		{
 			name:    "",
 			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"g", "GE", .0}},
 			want:    filter.Ge{"f": 3.14, "g": 0.0},
+			wantErr: nil,
+		},
+		{
+			name:    "",
+			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "LE", 3.14}},
+			want:    filter.And{filter.Ge{"f": 3.14}, filter.Le{"f": 3.14}},
 			wantErr: nil,
 		},
 		{
@@ -443,12 +443,6 @@ func TestExpression_Filter(t *testing.T) {
 			ex:      filter.Expression{nil},
 			want:    nil,
 			wantErr: filter.ErrUnknownExpression,
-		},
-		{
-			name:    "",
-			ex:      filter.Expression{filter.Operation{"f", "GE", 3.14}, filter.Operation{"f", "LE", 3.14}},
-			want:    nil,
-			wantErr: filter.ErrUnsuitableOperation,
 		},
 		{
 			name:    "",
