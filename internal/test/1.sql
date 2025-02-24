@@ -1,91 +1,27 @@
---
--- PostgreSQL database dump
---
-
--- Dumped from database version 16.6
--- Dumped by pg_dump version 16.6 (Ubuntu 16.6-0ubuntu0.24.04.1)
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-DROP DATABASE IF EXISTS test;
---
--- Name: test; Type: DATABASE; Schema: -; Owner: test
---
-
-CREATE DATABASE test WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'ru_RU.UTF-8';
-
-
-ALTER DATABASE test OWNER TO test;
-
-\connect test
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
-SET check_function_bodies = false;
-SET xmloption = content;
-SET client_min_messages = warning;
-SET row_security = off;
-
-SET default_tablespace = '';
-
-SET default_table_access_method = heap;
-
---
--- Name: objects; Type: TABLE; Schema: public; Owner: test
---
-
 DROP TABLE IF EXISTS public.objects;
 
-CREATE TABLE public.objects (
-    id uuid NOT NULL,
-    o_string_1 text,
-    o_bool boolean,
-    o_float_64 double precision,
-    o_uuid_2 uuid,
-    o_time_1 timestamp with time zone,
-    o_float_32 real DEFAULT 0 NOT NULL,
-    o_int integer,
-    o_null jsonb generated always as (null) stored,
-    o_int_16 smallint DEFAULT 16 NOT NULL,
-    o_time_2 timestamp with time zone,
-    o_time_3 timestamp with time zone,
-    o_time_4 timestamp with time zone,
-    o_time_0 timestamp with time zone
+CREATE TABLE public.objects
+(
+    id         uuid PRIMARY KEY                  DEFAULT gen_random_uuid(),
+    o_uuid_2   uuid                     NOT NULL,
+    o_uuid_3   uuid                              DEFAULT gen_random_uuid(),
+    o_uuid_4   uuid,
+    o_string_1 text                     NOT NULL DEFAULT 'green',
+    o_string_2 text                     NOT NULL,
+    o_string_3 text                              DEFAULT 'red',
+    o_string_4 text,
+    o_bool_1   boolean                  NOT NULL DEFAULT TRUE,
+    o_bool_2   boolean                  NOT NULL,
+    o_bool_3   boolean                           DEFAULT FALSE,
+    o_bool_4   boolean,
+    o_float_32 float4                   NOT NULL DEFAULT 0,
+    o_float_64 float8,
+    o_int_8    char                     NOT NULL DEFAULT 'A',
+    o_int_16   int2                     NOT NULL,
+    o_int_32   int4                              DEFAULT 0,
+    o_int_64   int8,
+    o_time_1   timestamp with time zone NOT NULL DEFAULT now(),
+    o_time_2   timestamp with time zone NOT NULL,
+    o_time_3   timestamp with time zone          DEFAULT now(),
+    o_time_4   timestamp with time zone
 );
-
-
-ALTER TABLE public.objects OWNER TO test;
-
---
--- Data for Name: objects; Type: TABLE DATA; Schema: public; Owner: test
---
-
-COPY public.objects (id, o_string_1, o_bool, o_float_64, o_uuid_2, o_time_1, o_float_32, o_int, o_null, o_int_16, o_time_2, o_time_3, o_time_4, o_time_0) FROM stdin;
-\.
-
-
---
--- Name: objects objects_pkey; Type: CONSTRAINT; Schema: public; Owner: test
---
-
-ALTER TABLE ONLY public.objects
-    ADD CONSTRAINT objects_pkey PRIMARY KEY (id);
-
-
---
--- PostgreSQL database dump complete
---
-
