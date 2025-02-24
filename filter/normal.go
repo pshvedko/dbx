@@ -98,8 +98,10 @@ func Expand(t Filter) Filter {
 	}
 }
 
+type Type int
+
 const (
-	EQ = iota
+	EQ Type = iota
 	NE
 	GE
 	GT
