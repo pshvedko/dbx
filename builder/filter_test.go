@@ -1,12 +1,12 @@
 package builder_test
 
 import (
+	"github.com/pshvedko/dbx/internal/test/model"
 	"reflect"
 	"testing"
 
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/test"
 )
 
 func TestFilter_To(t *testing.T) {
@@ -127,7 +127,7 @@ func TestFilter_To(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			b := builder.Filter{}
-			if err := tt.f.To(&b, &test.Object{}); (err != nil) != tt.wantErr {
+			if err := tt.f.To(&b, &model.Object{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()

@@ -2,9 +2,10 @@ package builder
 
 import (
 	"fmt"
-	"github.com/pshvedko/dbx/filter"
 	"strconv"
 	"strings"
+
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Order []string
@@ -73,7 +74,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	a := filter.And{}
+	var a filter.And
 	if f != nil {
 		a = append(a, f)
 	}
@@ -110,7 +111,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	w := c.Len()
 	err = a.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
-		return nil, "", nil, nil, err
+		return nil, "", nil, nil, fmt.Errorf("select: %w", err)
 	}
 	if w == c.Len() {
 		_, err = c.WriteString("TRUE")
@@ -242,8 +243,6 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	}
 	return c.String(), c.Values(), vv, nil
 }
-
-type Field [2]string
 
 func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, error) {
 	c.Grow(256)

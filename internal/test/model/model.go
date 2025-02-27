@@ -1,4 +1,4 @@
-package test
+package model
 
 import (
 	"time"
@@ -8,71 +8,75 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-//type Profile struct {
-//}
-//
-//func (p Profile) PK() filter.PK {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p Profile) Names() []string {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p *Profile) Values() []any {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p Profile) Value(i int) (any, bool, bool) {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p Profile) Get(i int) any {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p Profile) Copy() filter.Projector {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//func (p Profile) Table() string {
-//	//TODO implement me
-//	panic("implement me")
-//}
-//
-//var _ filter.Projector = &Profile{}
+type Subject struct {
+	ID uint32 `db:"id,pk"`
+}
+
+func (p Subject) PK() filter.PK {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p Subject) Names() []string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p *Subject) Values() []any {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p Subject) Value(i int) (any, bool, bool) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p Subject) Get(i int) (any, bool) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p Subject) Copy() filter.Projector {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (p Subject) Table() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+type SubjectList = filter.Injectable[*Subject]
 
 type ObjectList = filter.Injectable[*Object]
 
 type Object struct {
-	ID      uint32     `json:"id"`                   // 0 pk auto
-	Bool    *bool      `json:"o_bool,omitempty"`     // 1
-	Float32 float32    `json:"o_float_32,omitempty"` // 2
-	Float64 *float64   `json:"o_float_64,omitempty"` // 3
-	Int     int        `json:"o_int,omitempty"`      // 4
-	Int16   *int16     `json:"o_int_16,omitempty"`   // 5
-	Null    any        `json:"o_null,omitempty"`     // 6
-	String1 *string    `json:"o_string_1,omitempty"` // 7 auto
-	String2 string     `json:"o_string_2,omitempty"` // 8 null
-	String3 string     `json:"o_string_3,omitempty"` // 9 null
-	Uint64  *uint64    `json:"o_uint_64,omitempty"`  // 0
-	UUID1   uuid.UUID  `json:"o_uuid_1,omitempty"`   // 1
-	UUID2   *uuid.UUID `json:"o_uuid_2,omitempty"`   // 2
-	UUID3   *uuid.UUID `json:"o_uuid_3,omitempty"`   // 3
-	UUID4   uuid.UUID  `json:"o_uuid_4,omitempty"`   // 4 auto
-	Time0   time.Time  `json:"o_time_0,omitempty"`   // 5 null
-	Time1   time.Time  `json:"o_time_1,omitempty"`   // 6
-	Time2   *time.Time `json:"o_time_2,omitempty"`   // 7
-	Time3   *time.Time `json:"o_time_3,omitempty"`   // 8
-	Time4   time.Time  `json:"o_time_4,omitempty"`   // 9 null
-	//Parent  *Object    `json:"o_parent,omitempty"`   // 0 join,on=o_uuid_2
-	//Profile Profile    `json:"o_profile,omitempty"`  // 0 join,on=o_uuid_1
+	ID      uuid.UUID  `db:"id,primary"`         //
+	UUID2   uuid.UUID  `db:"o_uuid_2,key=2"`     //
+	UUID3   *uuid.UUID `db:"o_uuid_3"`           //
+	UUID4   *uuid.UUID `db:"o_uuid_4,key=1"`     //
+	Bool1   bool       `db:"o_bool_1"`           //
+	Bool2   bool       `db:"o_bool_2"`           //
+	Bool3   *bool      `db:"o_bool_3"`           //
+	Bool4   *bool      `db:"o_bool_4"`           //
+	Float32 float32    `db:"o_float_32"`         //
+	Float64 *float64   `db:"o_float_64"`         //
+	Int8    int8       `db:"o_int_8"`            //
+	Int16   int16      `db:"o_int_16"`           //
+	Int32   *int32     `db:"o_int"`              //
+	Int64   *int64     `db:"o_int_64"`           //
+	String1 string     `db:"o_string_1"`         //
+	String2 string     `db:"o_string_2"`         //
+	String3 *string    `db:"o_string_3"`         //
+	String4 *string    `db:"o_string_4"`         //
+	Time1   time.Time  `db:"o_time_1"`           //
+	Time2   time.Time  `db:"o_time_2"`           //
+	Time3   *time.Time `db:"o_time_3"`           //
+	Time4   *time.Time `db:"o_time_4"`           //
+	Parent  *Object    `db:"parent,join,key=1"`  // left join parent on parent.id = object.o_uuid_4
+	Child   []Object   `db:"child,join,key=1"`   // where child.o_uuid_4 = $object.id
+	Subject Subject    `db:"subject,join,key=2"` // join subject on subject.id = object.o_uuid_2
 }
 
 func (Object) PK() filter.PK {
@@ -88,7 +92,7 @@ func (o *Object) Copy() filter.Projector {
 }
 
 func (Object) Table() string {
-	return "objects"
+	return "object"
 }
 
 func (Object) Names() []string {

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/pshvedko/dbx/filter"
-	"github.com/pshvedko/dbx/internal/test"
+	"github.com/pshvedko/dbx/internal/test/model"
 	"github.com/pshvedko/dbx/request"
 )
 
@@ -15,7 +15,7 @@ func TestConstructor_Select(t *testing.T) {
 		f filter.Filter
 		o []request.Option
 	}
-	o := test.Object{}
+	o := model.Object{}
 	tests := []struct {
 		name    string
 		args    args
@@ -29,13 +29,13 @@ func TestConstructor_Select(t *testing.T) {
 			name: "",
 			args: args{
 				j: &o,
-				f: filter.Eq{"o_int": 1, "o_bool": true},
+				f: filter.Eq{"o_int_8": 'A', "o_bool_2": true},
 				o: []request.Option{
-					request.WithField{"o_bool", "o_float_32", "o_int", "o_null", "o_string_1"},
+					request.WithField{"o_bool_1", "o_float_32", "o_int_32", "o_uuid_4", "o_string_1"},
 					request.WithDeleted("o_time_4"),
 				},
 			},
-			want:    `SELECT "o"."o_bool", "o"."o_float_32", "o"."o_int", "o"."o_null", "o"."o_string_1" FROM "objects" AS "o" WHERE ( ( "o"."o_bool" IS TRUE AND "o"."o_int" = $1 ) AND "o"."o_time_4" IS NULL )`,
+			want:    `SELECT "o"."o_bool_1", "o"."o_float_32", "o"."o_int_32", "o"."o_uuid_4", "o"."o_string_1" FROM "objects" AS "o" WHERE ( ( "o"."o_bool_2" IS TRUE AND "o"."o_int_8" = $1 ) AND "o"."o_time_4" IS NULL )`,
 			want1:   []any{1},
 			want2:   []any{&o.Bool, &o.Float32, &o.Int, &o.Null, &o.String1},
 			wantErr: false,
@@ -69,7 +69,7 @@ func TestConstructor_Select(t *testing.T) {
 			}
 			_, got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("makeSelect() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("Select() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if got != tt.want {
 				t.Errorf("makeSelect() got = %v, want %v", got, tt.want)

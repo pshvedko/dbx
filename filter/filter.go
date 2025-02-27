@@ -191,15 +191,9 @@ func (o Injectable[T]) Get() Projector {
 }
 
 func (o *Injectable[T]) Put(j Projector) {
-	switch v := j.(type) {
+	switch v := j.Copy().(type) {
 	case T:
-		x := v.Copy()
-		switch t := x.(type) {
-		case T:
-			*o = append(*o, t)
-		default:
-			panic("invalid copy")
-		}
+		*o = append(*o, v)
 	default:
 		panic("invalid injection")
 	}
