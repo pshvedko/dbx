@@ -100,6 +100,27 @@ func Expand(t Filter) Filter {
 
 type Type int
 
+func (t Type) String() string {
+	return TypeName[t]
+}
+
+var TypeName = []string{
+	EQ:    "EQ",
+	NE:    "NE",
+	GE:    "GE",
+	GT:    "GT",
+	LE:    "LE",
+	LT:    "LT",
+	AS:    "AS",
+	NA:    "NA",
+	IN:    "IN",
+	NI:    "NI",
+	FALSE: "FALSE",
+	TRUE:  "TRUE",
+	AND:   "AND",
+	OR:    "OR",
+}
+
 const (
 	EQ Type = iota
 	NE

@@ -213,25 +213,25 @@ func ExpressionJSON[T Filterer](b []byte, e *Expression, a []T) error {
 func MarshalJSON(f Filter) ([]byte, error) {
 	switch x := f.(type) {
 	case Eq:
-		return OperationJSON(x, "EQ")
+		return OperationJSON(x)
 	case Ne:
-		return OperationJSON(x, "NE")
+		return OperationJSON(x)
 	case Ge:
-		return OperationJSON(x, "GE")
+		return OperationJSON(x)
 	case Gt:
-		return OperationJSON(x, "GT")
+		return OperationJSON(x)
 	case Le:
-		return OperationJSON(x, "LE")
+		return OperationJSON(x)
 	case Lt:
-		return OperationJSON(x, "LT")
+		return OperationJSON(x)
 	case As:
-		return OperationJSON(x, "AS")
+		return OperationJSON(x)
 	case Na:
-		return OperationJSON(x, "NA")
+		return OperationJSON(x)
 	case In:
-		return OperationJSON(x, "IN")
+		return OperationJSON(x)
 	case Ni:
-		return OperationJSON(x, "NI")
+		return OperationJSON(x)
 	case And:
 		// [[a,b]]
 		a := make([]any, 0, len(x))
@@ -255,10 +255,13 @@ func MarshalJSON(f Filter) ([]byte, error) {
 	}
 }
 
-func OperationJSON[T any](x map[string]T, o string) ([]byte, error) {
+func OperationJSON[T any, M interface {
+	~map[string]T
+	Type() Type
+}](x M) ([]byte, error) {
 	a := make([][]any, 0, len(x))
 	for k, v := range x {
-		a = append(a, []any{k, o, v})
+		a = append(a, []any{k, x.Type().String(), v})
 	}
 	return json.Marshal(a)
 }
