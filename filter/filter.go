@@ -59,7 +59,7 @@ func (e ErrNoSuchField) Error() string {
 	return fmt.Sprintln("no field:", ff)
 }
 
-func Straight[T any](b Builder, j Projector, o string, oo map[string]T, ooo func(any, any) (int, error)) (err error) {
+func Straight[T any](b Builder, j Projector, o string, oo map[string]T, t Type) (err error) {
 	nn := make(ErrNoSuchField, len(oo))
 	for k := range oo {
 		nn[k] = struct{}{}
@@ -86,7 +86,6 @@ func Straight[T any](b Builder, j Projector, o string, oo map[string]T, ooo func
 			}
 		}()
 	}
-	t := j.Table()
 	for i, f := range ff {
 		if i > 0 {
 			_, err = fmt.Fprint(b, " ", o, " ")
@@ -94,7 +93,7 @@ func Straight[T any](b Builder, j Projector, o string, oo map[string]T, ooo func
 				return
 			}
 		}
-		_, err = ooo(Column{t, f}, oo[f])
+		_, err = b.Print(t, Column{j.Table(), f}, oo[f])
 		if err != nil {
 			return
 		}
@@ -209,16 +208,7 @@ type Builder interface {
 	io.Writer
 	io.StringWriter
 	fmt.Stringer
-	Eq(any, any) (int, error)
-	Ne(any, any) (int, error)
-	Ge(any, any) (int, error)
-	Gt(any, any) (int, error)
-	Le(any, any) (int, error)
-	Lt(any, any) (int, error)
-	As(any, any) (int, error)
-	Na(any, any) (int, error)
-	In(any, any) (int, error)
-	Ni(any, any) (int, error)
+	Print(Type, any, any) (int, error)
 	Valuer
 }
 
@@ -285,61 +275,61 @@ type Eq map[string]any
 
 func (f Eq) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Eq) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Eq) }
+func (f Eq) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, EQ) }
 
 type Ne map[string]any
 
 func (f Ne) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ne) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Ne) }
+func (f Ne) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, NE) }
 
 type Ge map[string]any
 
 func (f Ge) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ge) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Ge) }
+func (f Ge) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, GE) }
 
 type Gt map[string]any
 
 func (f Gt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Gt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Gt) }
+func (f Gt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, GT) }
 
 type Le map[string]any
 
 func (f Le) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Le) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Le) }
+func (f Le) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, LE) }
 
 type Lt map[string]any
 
 func (f Lt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Lt) }
+func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, LT) }
 
 type As map[string]string
 
 func (f As) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.As) }
+func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, AS) }
 
 type Na map[string]string
 
 func (f Na) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Na) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Na) }
+func (f Na) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, NA) }
 
 type In map[string]Array
 
 func (f In) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f In) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.In) }
+func (f In) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, IN) }
 
 type Ni map[string]Array
 
 func (f Ni) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ni) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, b.Ni) }
+func (f Ni) To(b Builder, j Projector) error { return Straight(b, j, "AND", f, NI) }
 
 const RFC3339MICRO = "2006-01-02T15:04:05.999999Z07:00"
 

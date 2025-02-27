@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"github.com/pshvedko/dbx/filter"
 	"strings"
 )
 
@@ -83,53 +84,44 @@ const (
 	Na = "%v NOT LIKE %v"
 )
 
-func (f *Filter) Eq(k, v any) (int, error) {
-	switch v.(type) {
-	case nil, bool:
-		if k == nil {
-			return fmt.Fprint(f, f.Value(v))
+func (f *Filter) Print(t filter.Type, k, v any) (int, error) {
+	switch t {
+	case filter.EQ:
+		switch v.(type) {
+		case nil, bool:
+			if k == nil {
+				return fmt.Fprint(f, f.Value(v))
+			}
+			return fmt.Fprintf(f, Is, k, f.Value(v))
 		}
-		return fmt.Fprintf(f, Is, k, f.Value(v))
+		return fmt.Fprintf(f, Eq, k, f.Value(v))
+	case filter.NE:
+		switch v.(type) {
+		case nil, bool:
+			return fmt.Fprintf(f, Si, k, f.Value(v))
+		}
+		return fmt.Fprintf(f, Ne, k, f.Value(v))
+	case filter.GE:
+		return fmt.Fprintf(f, Ge, k, f.Value(v))
+	case filter.GT:
+		return fmt.Fprintf(f, Gt, k, f.Value(v))
+	case filter.LE:
+		return fmt.Fprintf(f, Le, k, f.Value(v))
+	case filter.LT:
+		return fmt.Fprintf(f, Lt, k, f.Value(v))
+	case filter.AS:
+		return fmt.Fprintf(f, As, k, f.Value(v))
+	case filter.NA:
+		return fmt.Fprintf(f, Na, k, f.Value(v))
+	case filter.IN:
+		return fmt.Fprintf(f, In, k, f.Value(v))
+	case filter.NI:
+		return fmt.Fprintf(f, Ni, k, f.Value(v))
+	case filter.FALSE, filter.TRUE:
+		return fmt.Fprint(f, f.Value(v))
+	case filter.AND, filter.OR:
+		fallthrough
+	default:
+		panic(t)
 	}
-	return fmt.Fprintf(f, Eq, k, f.Value(v))
-}
-
-func (f *Filter) Ne(k, v any) (int, error) {
-	switch v.(type) {
-	case nil, bool:
-		return fmt.Fprintf(f, Si, k, f.Value(v))
-	}
-	return fmt.Fprintf(f, Ne, k, f.Value(v))
-}
-
-func (f *Filter) Ge(k, v any) (int, error) {
-	return fmt.Fprintf(f, Ge, k, f.Value(v))
-}
-
-func (f *Filter) Gt(k, v any) (int, error) {
-	return fmt.Fprintf(f, Gt, k, f.Value(v))
-}
-
-func (f *Filter) Le(k, v any) (int, error) {
-	return fmt.Fprintf(f, Le, k, f.Value(v))
-}
-
-func (f *Filter) Lt(k, v any) (int, error) {
-	return fmt.Fprintf(f, Lt, k, f.Value(v))
-}
-
-func (f *Filter) In(k, v any) (int, error) {
-	return fmt.Fprintf(f, In, k, f.Value(v))
-}
-
-func (f *Filter) Ni(k, v any) (int, error) {
-	return fmt.Fprintf(f, Ni, k, f.Value(v))
-}
-
-func (f *Filter) As(k, v any) (int, error) {
-	return fmt.Fprintf(f, As, k, f.Value(v))
-}
-
-func (f *Filter) Na(k, v any) (int, error) {
-	return fmt.Fprintf(f, Na, k, f.Value(v))
 }
