@@ -2,8 +2,9 @@ package builder
 
 import (
 	"fmt"
-	"github.com/pshvedko/dbx/filter"
 	"strings"
+
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Comma int
