@@ -18,7 +18,7 @@ func PtrInt16(v int16) *int16 {
 	return &v
 }
 
-func Ptr[T int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | bool | string | uuid.UUID | time.Time](v T) *T {
+func Ptr[T int | int8 | int16 | int32 | int64 | uint | uint8 | uint16 | uint32 | uint64 | bool | string | float32 | float64 | uuid.UUID | time.Time](v T) *T {
 	return &v
 }
 

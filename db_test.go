@@ -58,7 +58,7 @@ func TestDB(t *testing.T) {
 	t.Run("Connect", db.TestConn)
 	t.Run("TestScan", db.TestScan)
 	t.Run("Get", db.TestGet)
-	//t.Run("List", db.TestList)
+	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
 	t.Run("ListLike", db.TestListLike)
@@ -125,6 +125,7 @@ var (
 	ID4  = uuid.MustParse(`e8d3d9a4-9aba-4303-95bf-4dec730131e6`)
 	ID5  = uuid.MustParse(`62549d95-ba11-450b-a4a2-0911afd3a73f`)
 	ID6  = uuid.MustParse(`9c0c9146-cb6d-4184-80e4-acd26c2c1881`)
+	ID7  = uuid.MustParse(`1ad724f7-7d0e-4ac2-8723-7ec2ed36ad2f`)
 )
 
 func (db DB) TestListAny(t *testing.T) {
@@ -140,9 +141,9 @@ func (db DB) TestListAny(t *testing.T) {
  			  AND "time_1" <>ALL($6)
 			  `,
 		filter.Array{ID6, ID1, ID2},
-		filter.Array{"red", "black", "white", "green", "yellow"},
+		filter.Array{"amber", "black", "white", "green", "yellow"},
 		filter.Array{true},
-		filter.Array{0, 3.14},
+		filter.Array{0, 1e0, 1e1, 1e2},
 		filter.Array{uuid.UUID{}},
 		filter.Array{time.Time{}},
 	)
@@ -154,7 +155,7 @@ func (db DB) TestListIn(t *testing.T) {
 	var oo model.ObjectList
 	total, err := dbx.List(context.TODO(), db, &oo,
 		filter.And{
-			filter.In{"id": {ID1, ID2, ID3, ID4, ID5}, "string_2": {"red", "black", "white", "green", "yellow"}},
+			filter.In{"id": {ID1, ID2, ID3, ID4, ID5}, "string_2": {"amber", "black", "white", "green", "yellow"}},
 			filter.Ni{"time_1": {time.Time{}}},
 		}, nil, nil, nil, request.WithField{"id"})
 	require.NoError(t, err)
@@ -182,8 +183,11 @@ func (db DB) TestListLike(t *testing.T) {
 			filter.Lt{"time_1": filter.Now()},
 		}, nil, nil, nil, request.WithField{"id", "string_1", "string_2", "string_3", "string_4"}, request.DeletedOnly)
 	require.NoError(t, err)
-	require.EqualValues(t, 1, total)
-	require.ElementsMatch(t, model.ObjectList{{ID: ID6, String1: "green", String2: "black", String3: util.PtrString("red")}}, oo)
+	require.EqualValues(t, 2, total)
+	require.ElementsMatch(t, model.ObjectList{
+		{ID: ID6, String1: "green", String2: "black", String3: util.PtrString("red")},
+		{ID: ID7, String1: "green", String2: "orange", String3: util.PtrString("red")},
+	}, oo)
 }
 
 func (db DB) TestGet(t *testing.T) {
@@ -216,8 +220,8 @@ func (db DB) TestGet(t *testing.T) {
 				Bool2:   true,
 				Bool3:   util.Ptr(false),
 				Bool4:   nil,
-				Float32: 0,
-				Float64: nil,
+				Float32: 1e2,
+				Float64: util.Ptr(3.14),
 				Int8:    111,
 				Int16:   16,
 				Int32:   util.Ptr(int32(0)),
@@ -226,9 +230,9 @@ func (db DB) TestGet(t *testing.T) {
 				String2: "yellow",
 				String3: util.PtrString("red"),
 				String4: nil,
-				Time1:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
+				Time1:   time.Date(1970, 01, 01, 03, 0, 0, 0, time.Local),
 				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
-				Time3:   util.Ptr(time.Unix(0, 0)), //1970-01-01 03:00:00+03
+				Time3:   util.Ptr(time.Unix(0, 0)),
 				Time4:   nil,
 				Parent:  nil,
 				Child:   nil,
@@ -278,7 +282,6 @@ func (db DB) TestGet(t *testing.T) {
 	}
 }
 
-/*
 func (db DB) TestList(t *testing.T) {
 	ctx := context.TODO()
 	type args struct {
@@ -308,7 +311,7 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}},
 			},
 			want:    5,
-			want1:   &model.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}},
+			want1:   &model.ObjectList{{ID: ID1}, {ID: ID2}, {ID: ID5}, {ID: ID3}, {ID: ID4}},
 			wantErr: nil,
 		},
 		{
@@ -322,7 +325,7 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}, request.DeletedOnly},
 			},
 			want:    2,
-			want1:   &model.ObjectList{{ID: 6}, {ID: 7}},
+			want1:   &model.ObjectList{{ID: ID7}, {ID: ID6}},
 			wantErr: nil,
 		},
 		{
@@ -336,30 +339,30 @@ func (db DB) TestList(t *testing.T) {
 				oo: []request.Option{request.WithField{"id"}, request.DeletedFree},
 			},
 			want:    7,
-			want1:   &model.ObjectList{{ID: 1}, {ID: 2}, {ID: 3}, {ID: 4}, {ID: 5}, {ID: 6}, {ID: 7}},
+			want1:   &model.ObjectList{{ID: ID7}, {ID: ID1}, {ID: ID2}, {ID: ID5}, {ID: ID3}, {ID: ID6}, {ID: ID4}},
 			wantErr: nil,
 		},
 		{
 			name: "",
 			args: args{
 				i:  &model.ObjectList{},
-				f:  filter.Eq{"o_time_1": time.Unix(0, 0), "o_uint_64": nil},
+				f:  filter.Eq{"time_1": time.Unix(0, 0), "int_64": nil},
 				o:  util.PtrUint(1),
 				l:  util.PtrUint(3),
 				y:  []string{"-id"},
-				oo: []request.Option{request.WithField{"id", "o_absent_0", "o_string_1"}},
+				oo: []request.Option{request.WithField{"id", "absent_0", "string_2"}},
 			},
-			want: 4,
+			want: 5,
 			want1: &model.ObjectList{
 				{
-					ID:      3,
-					String1: util.PtrString("white"),
+					ID:      ID3,
+					String2: "white",
 				}, {
-					ID:      2,
-					String1: util.PtrString("black"),
+					ID:      ID5,
+					String2: "black",
 				}, {
-					ID:      1,
-					String1: util.PtrString("red"),
+					ID:      ID2,
+					String2: "amber",
 				},
 			},
 			wantErr: nil,
@@ -368,7 +371,7 @@ func (db DB) TestList(t *testing.T) {
 			name: "",
 			args: args{
 				i:  &model.ObjectList{},
-				f:  filter.Eq{"o_float_32": "100", "o_float_64": "3.14", "o_int_16": "16", "o_string_1": "red", "o_string_2": "hello", "o_time_0": "1970-01-01T00:00:00Z", "o_bool": "true", "o_null": nil},
+				f:  filter.Eq{"float_32": "100", "float_64": "3.14", "int_16": "16", "string_1": "green", "string_2": "yellow", "time_1": "1970-01-01T00:00:00Z", "bool_1": "true", "int_64": nil},
 				o:  nil,
 				l:  nil,
 				y:  nil,
@@ -376,26 +379,31 @@ func (db DB) TestList(t *testing.T) {
 			},
 			want: 1,
 			want1: &model.ObjectList{{
-				ID:      1,
-				Bool:    util.PtrBool(true),
-				Float32: 100,
-				Float64: util.PtrFloat64(3.14),
-				Int:     0,
-				Int16:   util.PtrInt16(16),
-				Null:    nil,
-				String1: util.PtrString("red"),
-				String2: "hello",
-				String3: "",
-				Uint64:  nil,
-				UUID1:   uuid.UUID{},
-				UUID2:   util.PtrUUID(uuid.UUID{}),
+				ID:      ID1,
+				UUID2:   ID1a,
 				UUID3:   nil,
-				UUID4:   uuid.UUID{},
-				Time0:   time.Unix(0, 0),
-				Time1:   time.Unix(0, 0),
-				Time2:   util.PtrTime(time.Unix(0, 0)),
-				Time3:   nil,
-				Time4:   time.Time{},
+				UUID4:   nil,
+				Bool1:   true,
+				Bool2:   true,
+				Bool3:   util.Ptr(false),
+				Bool4:   nil,
+				Float32: 1e2,
+				Float64: util.Ptr(3.14),
+				Int8:    111,
+				Int16:   16,
+				Int32:   util.Ptr(int32(0)),
+				Int64:   nil,
+				String1: "green",
+				String2: "yellow",
+				String3: util.Ptr("red"),
+				String4: nil,
+				Time1:   time.Date(1970, 01, 01, 03, 0, 0, 0, time.Local),
+				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
+				Time3:   util.Ptr(time.Unix(0, 0)),
+				Time4:   nil,
+				Parent:  nil,
+				Child:   nil,
+				Subject: model.Subject{},
 			}},
 			wantErr: nil,
 		},
@@ -410,187 +418,186 @@ func (db DB) TestList(t *testing.T) {
 	}
 }
 
-func (db DB) TestPut(t *testing.T) {
-	ctx := context.TODO()
-	type args struct {
-		o  dbx.Object
-		oo []request.Option
-	}
-	tests := []struct {
-		name    string
-		args    args
-		want    dbx.Object
-		wantErr error
-	}{
-		// TODO: Add test cases.
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
+/*
+	func (db DB) TestPut(t *testing.T) {
+		ctx := context.TODO()
+		type args struct {
+			o  dbx.Object
+			oo []request.Option
+		}
+		tests := []struct {
+			name    string
+			args    args
+			want    dbx.Object
+			wantErr error
+		}{
+			// TODO: Add test cases.
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      9,
+						Bool:    util.PtrBool(false),
+						Float64: util.PtrFloat64(0),
+						Int16:   util.PtrInt16(0),
+					},
+					oo: []request.Option{request.PutCreate},
+				},
+				want: &model.Object{
 					ID:      9,
 					Bool:    util.PtrBool(false),
 					Float64: util.PtrFloat64(0),
 					Int16:   util.PtrInt16(0),
+					String1: util.PtrString("green"),
 				},
-				oo: []request.Option{request.PutCreate},
+				wantErr: nil,
 			},
-			want: &model.Object{
-				ID:      9,
-				Bool:    util.PtrBool(false),
-				Float64: util.PtrFloat64(0),
-				Int16:   util.PtrInt16(0),
-				String1: util.PtrString("green"),
-			},
-			wantErr: nil,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      9,
+						Bool:    util.PtrBool(true),
+						Float64: util.PtrFloat64(1e1),
+						Int16:   util.PtrInt16(1),
+						String3: "orange",
+					},
+					oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
+				},
+				want: &model.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e1),
 					Int16:   util.PtrInt16(1),
+					String1: util.PtrString("green"),
 					String3: "orange",
 				},
-				oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
+				wantErr: nil,
 			},
-			want: &model.Object{
-				ID:      9,
-				Bool:    util.PtrBool(true),
-				Float64: util.PtrFloat64(1e1),
-				Int16:   util.PtrInt16(1),
-				String1: util.PtrString("green"),
-				String3: "orange",
-			},
-			wantErr: nil,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      9,
+						Bool:    util.PtrBool(true),
+						Float64: util.PtrFloat64(1e2),
+						Int16:   util.PtrInt16(2),
+						String1: util.PtrString("orange"),
+					},
+					oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
+				},
+				want: &model.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e2),
 					Int16:   util.PtrInt16(2),
 					String1: util.PtrString("orange"),
+					String3: "orange",
 				},
-				oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
+				wantErr: nil,
 			},
-			want: &model.Object{
-				ID:      9,
-				Bool:    util.PtrBool(true),
-				Float64: util.PtrFloat64(1e2),
-				Int16:   util.PtrInt16(2),
-				String1: util.PtrString("orange"),
-				String3: "orange",
-			},
-			wantErr: nil,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      9,
+						Bool:    util.PtrBool(true),
+						Float64: util.PtrFloat64(1e3),
+						Int16:   util.PtrInt16(3),
+						String3: "green",
+					},
+					oo: []request.Option{},
+				},
+				want: &model.Object{
 					ID:      9,
 					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e3),
 					Int16:   util.PtrInt16(3),
+					String1: util.PtrString("green"),
 					String3: "green",
 				},
-				oo: []request.Option{},
+				wantErr: nil,
 			},
-			want: &model.Object{
-				ID:      9,
-				Bool:    util.PtrBool(true),
-				Float64: util.PtrFloat64(1e3),
-				Int16:   util.PtrInt16(3),
-				String1: util.PtrString("green"),
-				String3: "green",
-			},
-			wantErr: nil,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      9,
+						Bool:    util.PtrBool(false),
+						Float64: util.PtrFloat64(1e4),
+						Int16:   util.PtrInt16(4),
+						String3: "orange",
+					},
+					oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+				},
+				want: &model.Object{
 					ID:      9,
 					Bool:    util.PtrBool(false),
-					Float64: util.PtrFloat64(1e4),
-					Int16:   util.PtrInt16(4),
-					String3: "orange",
-				},
-				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
-			},
-			want: &model.Object{
-				ID:      9,
-				Bool:    util.PtrBool(false),
-				Float64: util.PtrFloat64(1e3),
-				Int16:   util.PtrInt16(3),
-				String1: util.PtrString("green"),
-				String3: "orange",
-			},
-			wantErr: nil,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
-					ID:      7,
-					Bool:    util.PtrBool(true),
 					Float64: util.PtrFloat64(1e3),
 					Int16:   util.PtrInt16(3),
-					String3: "green",
-				},
-				oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
-			},
-			want:    nil,
-			wantErr: sql.ErrNoRows,
-		},
-		{
-			name: "",
-			args: args{
-				o: &model.Object{
-					ID:      7,
-					Bool:    util.PtrBool(false),
-					Float64: util.PtrFloat64(1e4),
-					Int16:   util.PtrInt16(4),
+					String1: util.PtrString("green"),
 					String3: "orange",
 				},
-				oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+				wantErr: nil,
 			},
-			want:    nil,
-			wantErr: sql.ErrNoRows,
-		},
-	}
-	var ids test.Map
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
-			require.ErrorIs(t, err, tt.wantErr)
-			if tt.wantErr == nil {
-				id, _ := tt.args.o.Get(0)
-				t.Log(ids.Add(tt.args.o.Table(), id))
-				for i, n := range tt.args.o.Names() {
-					v1, n1 := tt.want.Get(i)
-					v2, n2 := tt.args.o.Get(i)
-					require.Equal(t, v1, v2, n)
-					require.Equal(t, n1, n2, n)
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      7,
+						Bool:    util.PtrBool(true),
+						Float64: util.PtrFloat64(1e3),
+						Int16:   util.PtrInt16(3),
+						String3: "green",
+					},
+					oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
+				},
+				want:    nil,
+				wantErr: sql.ErrNoRows,
+			},
+			{
+				name: "",
+				args: args{
+					o: &model.Object{
+						ID:      7,
+						Bool:    util.PtrBool(false),
+						Float64: util.PtrFloat64(1e4),
+						Int16:   util.PtrInt16(4),
+						String3: "orange",
+					},
+					oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+				},
+				want:    nil,
+				wantErr: sql.ErrNoRows,
+			},
+		}
+		var ids test.Map
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
+				require.ErrorIs(t, err, tt.wantErr)
+				if tt.wantErr == nil {
+					id, _ := tt.args.o.Get(0)
+					t.Log(ids.Add(tt.args.o.Table(), id))
+					for i, n := range tt.args.o.Names() {
+						v1, n1 := tt.want.Get(i)
+						v2, n2 := tt.args.o.Get(i)
+						require.Equal(t, v1, v2, n)
+						require.Equal(t, n1, n2, n)
+					}
+					t.Log(tt.args.o.Get(15))
+					t.Log(tt.args.o.Get(16))
 				}
-				t.Log(tt.args.o.Get(15))
-				t.Log(tt.args.o.Get(16))
+			})
+		}
+		t.Cleanup(func() {
+			for k, v := range ids.M {
+				s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
+				_, _ = db.Exec(s, v)
 			}
 		})
 	}
-	t.Cleanup(func() {
-		for k, v := range ids.M {
-			s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
-			_, _ = db.Exec(s, v)
-		}
-	})
-}
-
 */
-
 type Scan struct {
 	bytes.Buffer
 }
