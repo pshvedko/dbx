@@ -146,7 +146,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 					return nil, "", nil, nil, err
 				}
 			}
-			_, err = fmt.Fprintf(c, " %q%s", y, o)
+			_, err = fmt.Fprintf(c, " %q%s", filter.Column{t, y}, o)
 			if err != nil {
 				return nil, "", nil, nil, err
 			}

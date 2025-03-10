@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"time"
 )
 
 type Table struct {
@@ -168,7 +169,7 @@ func NilIfZero[T comparable](v T) (any, bool) {
 	return nil, true
 }
 
-type Nullable[T comparable] struct {
+type Nullable[T int64 | float64 | bool | []byte | string | time.Time] struct {
 	v *T
 }
 
@@ -181,11 +182,11 @@ func (n Nullable[T]) Scan(v any) error {
 	return nil
 }
 
-func Nil[T comparable](v *T) Nullable[T] {
+func Nil[T int64 | float64 | bool | []byte | string | time.Time](v *T) Nullable[T] {
 	return Nullable[T]{v: v}
 }
 
-type Injectable[T Projector] []T
+type Injectable[T Fielder] []T
 
 func (o Injectable[T]) Get() Projector {
 	var x T
@@ -193,15 +194,15 @@ func (o Injectable[T]) Get() Projector {
 }
 
 func (o *Injectable[T]) Put(j Projector) {
-	switch v := j.Copy().(type) {
+	switch v := j.Self().(type) {
 	case T:
 		*o = append(*o, v)
 	default:
-		panic("invalid injection")
+		panic(v)
 	}
 }
 
-type Valuer interface {
+type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
 	Values() []any
@@ -212,7 +213,7 @@ type Builder interface {
 	io.StringWriter
 	fmt.Stringer
 	Print(Type, any, any) (int, error)
-	Valuer
+	Formatter
 }
 
 type PK []string
@@ -235,12 +236,16 @@ func (pk PK) Have(n string) bool {
 	return false
 }
 
+type Valuer interface {
+	Values() []any
+}
+
 type Fielder interface {
 	PK() PK
 	Names() []string
-	Values() []any
 	Value(int) (any, bool, bool) // value, none, auto
 	Get(int) (any, bool)         // value, none
+	Copier
 }
 
 type Injector interface {
@@ -250,11 +255,12 @@ type Injector interface {
 
 type Copier interface {
 	Copy() Projector
+	Self() Copier
 }
 
 type Projector interface {
 	Fielder
-	Copier
+	Valuer
 	Table() string
 }
 
