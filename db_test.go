@@ -57,7 +57,7 @@ func TestDB(t *testing.T) {
 	require.NotNil(t, db)
 	t.Run("Connect", db.TestConn)
 	t.Run("TestScan", db.TestScan)
-	//t.Run("Get", db.TestGet)
+	t.Run("Get", db.TestGet)
 	//t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
@@ -118,12 +118,13 @@ func (db DB) TestConn(t *testing.T) {
 }
 
 var (
-	ID1 = uuid.MustParse(`26dd056a-fddf-4992-9e7f-1af09d610c5c`)
-	ID2 = uuid.MustParse(`4fc2afae-80b1-4045-845b-c373d180beda`)
-	ID3 = uuid.MustParse(`6dc2ed41-03ce-47e3-937e-6b4a7b159ec2`)
-	ID4 = uuid.MustParse(`e8d3d9a4-9aba-4303-95bf-4dec730131e6`)
-	ID5 = uuid.MustParse(`62549d95-ba11-450b-a4a2-0911afd3a73f`)
-	ID6 = uuid.MustParse(`9c0c9146-cb6d-4184-80e4-acd26c2c1881`)
+	ID1  = uuid.MustParse(`26dd056a-fddf-4992-9e7f-1af09d610c5c`)
+	ID1a = uuid.MustParse(`167b738c-d795-44d2-a8d6-2724e9fda43b`)
+	ID2  = uuid.MustParse(`4fc2afae-80b1-4045-845b-c373d180beda`)
+	ID3  = uuid.MustParse(`6dc2ed41-03ce-47e3-937e-6b4a7b159ec2`)
+	ID4  = uuid.MustParse(`e8d3d9a4-9aba-4303-95bf-4dec730131e6`)
+	ID5  = uuid.MustParse(`62549d95-ba11-450b-a4a2-0911afd3a73f`)
+	ID6  = uuid.MustParse(`9c0c9146-cb6d-4184-80e4-acd26c2c1881`)
 )
 
 func (db DB) TestListAny(t *testing.T) {
@@ -185,8 +186,6 @@ func (db DB) TestListLike(t *testing.T) {
 	require.ElementsMatch(t, model.ObjectList{{ID: ID6, String1: "green", String2: "black", String3: util.PtrString("red")}}, oo)
 }
 
-/*
-
 func (db DB) TestGet(t *testing.T) {
 	ctx := context.TODO()
 	type args struct {
@@ -205,30 +204,35 @@ func (db DB) TestGet(t *testing.T) {
 			name: "",
 			args: args{
 				o:  &model.Object{},
-				f:  filter.Eq{"id": 1},
+				f:  filter.Eq{"id": ID1},
 				oo: nil,
 			},
 			want: &model.Object{
-				ID:      1,
-				Bool:    util.PtrBool(true),
-				Float32: 1e2,
-				Float64: util.PtrFloat64(3.14),
-				Int:     0,
-				Int16:   util.PtrInt16(16),
-				Null:    nil,
-				String1: util.PtrString("red"),
-				String2: "hello",
-				String3: "",
-				Uint64:  nil,
-				UUID1:   uuid.UUID{},
-				UUID2:   util.PtrUUID(uuid.UUID{}),
+				ID:      ID1,
+				UUID2:   ID1a,
 				UUID3:   nil,
-				UUID4:   uuid.UUID{},
-				Time0:   time.Unix(0, 0),
-				Time1:   time.Unix(0, 0),
-				Time2:   util.PtrTime(time.Unix(0, 0)),
-				Time3:   nil,
-				Time4:   time.Time{},
+				UUID4:   nil,
+				Bool1:   true,
+				Bool2:   true,
+				Bool3:   util.Ptr(false),
+				Bool4:   nil,
+				Float32: 0,
+				Float64: nil,
+				Int8:    111,
+				Int16:   16,
+				Int32:   util.Ptr(int32(0)),
+				Int64:   nil,
+				String1: "green",
+				String2: "yellow",
+				String3: util.PtrString("red"),
+				String4: nil,
+				Time1:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
+				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
+				Time3:   util.Ptr(time.Unix(0, 0)), //1970-01-01 03:00:00+03
+				Time4:   nil,
+				Parent:  nil,
+				Child:   nil,
+				Subject: model.Subject{},
 			},
 			wantErr: nil,
 		},
@@ -236,30 +240,19 @@ func (db DB) TestGet(t *testing.T) {
 			name: "",
 			args: args{
 				o:  &model.Object{},
-				f:  filter.Eq{"id": 1},
-				oo: []request.Option{request.WithField{"id", "o_string_1"}},
+				f:  filter.Eq{"id": ID1},
+				oo: []request.Option{request.WithField{"id", "string_1"}},
 			},
 			want: &model.Object{
-				ID:      1,
-				Bool:    nil,
-				Float32: 0,
-				Float64: nil,
-				Int:     0,
-				Int16:   nil,
-				Null:    nil,
-				String1: util.PtrString("red"),
-				Uint64:  nil,
-				UUID1:   uuid.UUID{},
-				UUID2:   nil,
-				UUID3:   nil,
-				UUID4:   uuid.UUID{},
+				ID:      ID1,
+				String1: "green",
 			},
 			wantErr: nil,
 		}, {
 			name: "",
 			args: args{
 				o:  &model.Object{},
-				f:  filter.And{filter.Eq{"id": 1}, filter.Le{"o_time_0": "YESTERDAY"}},
+				f:  filter.And{filter.Eq{"id": ID1}, filter.Le{"time_2": "YESTERDAY"}},
 				oo: []request.Option{request.WithoutField(model.Object{}.Names())},
 			},
 			want:    &model.Object{},
@@ -285,6 +278,7 @@ func (db DB) TestGet(t *testing.T) {
 	}
 }
 
+/*
 func (db DB) TestList(t *testing.T) {
 	ctx := context.TODO()
 	type args struct {
