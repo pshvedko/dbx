@@ -6,20 +6,38 @@ import (
 
 type Column interface {
 	Used(string) bool
+	Names() map[string]struct{}
+	Allowed() bool
 }
 
 type AllowedColumn map[string]struct{}
 
-func (f AllowedColumn) Used(k string) bool {
-	_, ok := f[k]
+func (c AllowedColumn) Used(k string) bool {
+	_, ok := c[k]
 	return ok
+}
+
+func (c AllowedColumn) Names() map[string]struct{} {
+	return c
+}
+
+func (c AllowedColumn) Allowed() bool {
+	return true
 }
 
 type ExcludedColumn map[string]struct{}
 
-func (f ExcludedColumn) Used(k string) bool {
-	_, ok := f[k]
+func (c ExcludedColumn) Used(k string) bool {
+	_, ok := c[k]
 	return !ok
+}
+
+func (c ExcludedColumn) Names() map[string]struct{} {
+	return c
+}
+
+func (c ExcludedColumn) Allowed() bool {
+	return false
 }
 
 type Modify struct {

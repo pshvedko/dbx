@@ -54,23 +54,6 @@ func Open(t *testing.T) (*DB, error) {
 			)}, nil
 }
 
-func ExampleUnmarshal() {
-	var a, b pgtype.FlatArray[string]
-	err := json.Unmarshal([]byte(`["a", "b"]`), &a)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(a, a == nil)
-	err = json.Unmarshal([]byte(`null`), &a)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(b, b == nil)
-	// Output:
-	// [a b] false
-	// [] true
-}
-
 func TestDB(t *testing.T) {
 	db, err := Open(t)
 	require.NoError(t, err)
@@ -255,9 +238,6 @@ func (db DB) TestGet(t *testing.T) {
 				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
 				Time3:   util.Ptr(time.Unix(0, 0)),
 				Time4:   nil,
-				//Parent:  nil,
-				//Child:   nil,
-				//Subject: model.Subject{},
 			},
 			wantErr: nil,
 		},
@@ -273,7 +253,8 @@ func (db DB) TestGet(t *testing.T) {
 				String1: "green",
 			},
 			wantErr: nil,
-		}, {
+		},
+		{
 			name: "",
 			args: args{
 				o:  &model.Object{},
@@ -371,7 +352,7 @@ func (db DB) TestList(t *testing.T) {
 				o:  util.PtrUint(1),
 				l:  util.PtrUint(3),
 				y:  []string{"-id"},
-				oo: []request.Option{request.WithField{"id", "absent_0", "string_2"}},
+				oo: []request.Option{request.WithField{"id", "string_2"}},
 			},
 			want: 5,
 			want1: &model.ObjectList{
@@ -422,9 +403,6 @@ func (db DB) TestList(t *testing.T) {
 				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
 				Time3:   util.Ptr(time.Unix(0, 0)),
 				Time4:   nil,
-				//Parent:  nil,
-				//Child:   nil,
-				//Subject: model.Subject{},
 			}},
 			wantErr: nil,
 		},
@@ -486,7 +464,8 @@ func (db DB) TestPut(t *testing.T) {
 					Time1: time.Unix(2, 2),
 					Time2: time.Unix(2, 2),
 				},
-				oo: []request.Option{},
+				oo: []request.Option{request.WithoutField{"string_1", "float_32", "float_64", "bool_1", "bool_3", "bool_2", "bool_4",
+					"id", "uuid_2", "uuid_3", "uuid_4", "int_8", "int_16", "int_32", "int_64", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}},
 			},
 			want: &model.Object{
 				ID:      ID8,
@@ -687,4 +666,21 @@ where t0.id = $1`, "cd484cf9-0702-451d-8770-f70cc0861e56")
 	err = row.Scan(&x, &x, &x, &x, &x, &x, &x, &x, &x)
 	require.NoError(t, err)
 	require.Equal(t, `string::[cd484cf9-0702-451d-8770-f70cc0861e56],string::[2eb40782-cf1d-4777-a5ac-fad81ea4f5a2],string::[login1],<nil>::[<nil>],bool::[true],time.Time::[2025-03-08 15:15:32.722534 +0300 MSK],time.Time::[2025-03-08 15:15:32.722534 +0300 MSK],<nil>::[<nil>],string::[{"(2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,cd484cf9-0702-451d-8770-f70cc0861e56,9801a142-7d5b-4d27-9049-bc223cfe3a9f,\"{\"\"(8f23f2fa-41b2-4bda-91e9-7bb6f2474f02,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,objects,00011,\\\\\"\"2025-03-08 16:01:09.516008+03\\\\\"\",\\\\\"\"2025-03-08 16:01:09.516008+03\\\\\"\",)\"\",\"\"(9ebd7789-f738-4c89-b9d2-f9bac86de3dd,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,users,00001,\\\\\"\"2025-03-08 16:12:24.782876+03\\\\\"\",\\\\\"\"2025-03-08 16:12:24.782876+03\\\\\"\",)\"\",\"\"(4906e175-663b-4c13-82bd-296ee6c7d334,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,domains,00001,\\\\\"\"2025-03-08 16:12:43.2469+03\\\\\"\",\\\\\"\"2025-03-08 16:12:43.2469+03\\\\\"\",)\"\",\"\"(1f6e5334-47c1-489d-a31c-296e6e0d5520,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,roles,00001,\\\\\"\"2025-03-08 16:13:06.833611+03\\\\\"\",\\\\\"\"2025-03-08 16:13:06.833611+03\\\\\"\",)\"\",\"\"(dd450a0c-69e8-447c-a80f-5f8841f5f69e,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,permissions,00001,\\\\\"\"2025-03-08 16:13:16.321388+03\\\\\"\",\\\\\"\"2025-03-08 16:13:16.321388+03\\\\\"\",)\"\"}\")","(2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,cd484cf9-0702-451d-8770-f70cc0861e56,f83693ca-7449-43dc-a061-3e9c86a70638,{})"}],`, x.String())
+}
+
+func ExampleUnmarshal() {
+	var a, b pgtype.FlatArray[string]
+	err := json.Unmarshal([]byte(`["a", "b"]`), &a)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(a, a == nil)
+	err = json.Unmarshal([]byte(`null`), &a)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(b, b == nil)
+	// Output:
+	// [a b] false
+	// [] true
 }

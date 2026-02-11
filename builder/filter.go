@@ -32,7 +32,6 @@ const (
 	TRUE    Keyword = "TRUE"
 	FALSE   Keyword = "FALSE"
 	DEFAULT Keyword = "DEFAULT"
-	NOW     Keyword = "NOW"
 )
 
 type Filter struct {

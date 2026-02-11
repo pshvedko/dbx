@@ -58,21 +58,21 @@ func (o WithGroup) Apply(r *Request) error {
 	return nil
 }
 
-type WithDeleted string
+type WithDeleted string // filed must be defined as DEFAULT NULL
 
 func (o WithDeleted) Apply(r *Request) error {
 	r.x.d = string(o)
 	return nil
 }
 
-type WithUpdated string
+type WithUpdated string // filed must be defined as DEFAULT NOW
 
 func (o WithUpdated) Apply(r *Request) error {
 	r.x.u = string(o)
 	return nil
 }
 
-type WithCreated string
+type WithCreated string // filed must be defined as DEFAULT NOW
 
 func (o WithCreated) Apply(r *Request) error {
 	r.x.c = string(o)

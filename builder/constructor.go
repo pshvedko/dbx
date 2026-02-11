@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -70,7 +71,11 @@ func (c *Counter) Count() (string, int, error) {
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
 	c.Grow(256)
-	_, err := c.WriteString("SELECT")
+	err := c.Validate(j)
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	_, err = c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -111,7 +116,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	w := c.Len()
 	err = a.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
-		return nil, "", nil, nil, fmt.Errorf("select: %w", err)
+		return nil, "", nil, nil, err
 	}
 	if w == c.Len() {
 		_, err = c.WriteString("TRUE")
@@ -184,7 +189,11 @@ func (c *Constructor) Sort(y Order) *Constructor {
 
 func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	c.Grow(256)
-	_, err := c.Printf("UPDATE %q SET", j.Table())
+	err := c.Validate(j)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = c.Printf("UPDATE %q SET", j.Table())
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -249,7 +258,11 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	if m == 2 {
 		return c.Update(j)
 	}
-	_, err := c.WriteString("INSERT INTO")
+	err := c.Validate(j)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = c.WriteString("INSERT INTO")
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -264,19 +277,17 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	for i, n := range nn {
 		o, none, auto := j.Value(i)
 		switch {
-		case c.IsCreated(n):
-			// must be defined as DEFAULT NOW()
-			continue
 		case c.IsUpdated(n):
-			// must be defined as DEFAULT NOW()
 			up = true
 			continue
 		case c.IsDeleted(n):
-			w[n] = nil
+			w[n] = o
 			continue
-		case pk.Have(n): // || c.Unused(n): // FIXME Unused for return
+		case c.IsCreated(n):
+			continue
 		case none && auto:
 			continue
+		case pk.Have(n): // || c.Unused(n): // FIXME Unused for return
 		default:
 			uu = append(uu, n)
 		}
@@ -326,11 +337,15 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 			err = w.To(c, j)
 		}
 	}
+
 	_, err = c.WriteString(" RETURNING")
 	if err != nil {
 		return "", nil, nil, err
 	}
 	for i, n := range nn {
+		if c.Unused(n) {
+			continue
+		}
 		_, err = c.Printf("%v %q", Comma(i), n)
 		if err != nil {
 			return "", nil, nil, err
@@ -345,4 +360,14 @@ func (c *Constructor) Printf(format string, a ...any) (int, error) {
 
 func (c *Constructor) Unused(n string) bool {
 	return !c.Used(n)
+}
+
+func (c *Constructor) Validate(f filter.Fielder) error {
+	names := f.Names()
+	for name := range c.Column.Names() {
+		if !slices.Contains(names, name) {
+			return fmt.Errorf("unknown field: %s", name)
+		}
+	}
+	return nil
 }

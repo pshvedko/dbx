@@ -215,5 +215,5 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 }
 
 func (r *Request) Delete(ctx context.Context, f filter.Filter) (uint, error) {
-	return 0, sql.ErrNoRows
+	return 0, sql.ErrNoRows // FIXME
 }
