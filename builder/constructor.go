@@ -337,21 +337,31 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 			err = w.To(c, j)
 		}
 	}
-
 	_, err = c.WriteString(" RETURNING")
 	if err != nil {
 		return "", nil, nil, err
 	}
+	var v int
 	for i, n := range nn {
 		if c.Unused(n) {
 			continue
 		}
-		_, err = c.Printf("%v %q", Comma(i), n)
+		_, err = c.Printf("%v %q", Comma(v), n)
 		if err != nil {
 			return "", nil, nil, err
 		}
+		vv[v] = vv[i]
+		v++
 	}
-	return c.String(), c.Values(), vv, nil
+	if v == 0 {
+		_, err = c.Write([]byte{' ', '1'})
+		if err != nil {
+			return "", nil, nil, err
+		}
+		vv[0] = new(int64)
+		v++
+	}
+	return c.String(), c.Values(), vv[:v], nil
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
@@ -366,7 +376,7 @@ func (c *Constructor) Validate(f filter.Fielder) error {
 	names := f.Names()
 	for name := range c.Column.Names() {
 		if !slices.Contains(names, name) {
-			return fmt.Errorf("unknown field: %s", name)
+			return fmt.Errorf("unknown column: %s", name)
 		}
 	}
 	return nil

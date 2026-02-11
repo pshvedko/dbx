@@ -464,8 +464,7 @@ func (db DB) TestPut(t *testing.T) {
 					Time1: time.Unix(2, 2),
 					Time2: time.Unix(2, 2),
 				},
-				oo: []request.Option{request.WithoutField{"string_1", "float_32", "float_64", "bool_1", "bool_3", "bool_2", "bool_4",
-					"id", "uuid_2", "uuid_3", "uuid_4", "int_8", "int_16", "int_32", "int_64", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}},
+				oo: []request.Option{request.WithField{"id", "uuid_2", "uuid_3", "uuid_4", "int_8", "string_3", "time_1", "time_2", "time_3"}},
 			},
 			want: &model.Object{
 				ID:      ID8,
@@ -475,6 +474,34 @@ func (db DB) TestPut(t *testing.T) {
 				String3: util.PtrString("red"),
 			},
 			wantEx:  []int{2, 18, 19, 20},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID:    ID8,
+					UUID2: ID9,
+					UUID4: util.PtrUUID(ID5),
+					Int8:  pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+					Time1: time.Unix(2, 2),
+					Time2: time.Unix(2, 2),
+				},
+				oo: []request.Option{
+					request.WithoutField{"id", "uuid_2", "uuid_3", "uuid_4", "time_1", "time_2", "time_3", "time_4"},
+					request.WithoutField{"bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64"},
+					request.WithoutField{"int_8", "int_16", "int_32", "int_64"},
+					request.WithoutField{"string_1", "string_2", "string_3", "string_4"},
+				},
+			},
+			want: &model.Object{
+				ID:      ID8,
+				UUID2:   ID9,
+				UUID4:   util.PtrUUID(ID5),
+				Int8:    pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+				String3: util.PtrString("red"),
+			},
+			wantEx:  []int{2, 16, 18, 19, 20},
 			wantErr: nil,
 		},
 

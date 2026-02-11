@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 
@@ -122,6 +123,10 @@ func (r *Request) withField(b bool, kk ...string) error {
 		r.f = map[string]struct{}{}
 	}
 	for _, k := range kk {
+		_, ok := r.f[k]
+		if ok {
+			return fmt.Errorf("repeated column: %s", k)
+		}
 		r.f[k] = struct{}{}
 	}
 	return nil
