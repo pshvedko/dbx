@@ -73,9 +73,6 @@ type Object struct {
 	Time2   time.Time   `db:"time_2"`        // 20 updated
 	Time3   *time.Time  `db:"time_3,auto"`   // 21
 	Time4   *time.Time  `db:"time_4"`        // 22 deleted
-	//Parent  *Object     `db:"parent,join,key=1"`  // left join parent on parent.id = object.uuid_4
-	//Child   []Object    `db:"child,join,key=1"`   // where child.uuid_4 = $object.id
-	//Subject Subject     `db:"subject,join,key=2"` // join subject on subject.id = object.uuid_2
 }
 
 func (o Object) Self() filter.Copier {
