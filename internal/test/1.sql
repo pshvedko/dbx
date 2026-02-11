@@ -5,7 +5,7 @@ CREATE TABLE public.objects
     id         uuid PRIMARY KEY                  DEFAULT gen_random_uuid(),
     o_uuid_2   uuid                     NOT NULL,
     o_uuid_3   uuid                              DEFAULT gen_random_uuid(),
-    o_uuid_4   uuid,
+    o_uuid_4   uuid                     CHECK ( id <> o_uuid_4 ),
     o_string_1 text                     NOT NULL DEFAULT 'green',
     o_string_2 text                     NOT NULL,
     o_string_3 text                              DEFAULT 'red',
@@ -21,10 +21,14 @@ CREATE TABLE public.objects
     o_int_32   int4                              DEFAULT 0,
     o_int_64   int8,
     o_time_1   timestamp with time zone NOT NULL DEFAULT now(),
-    o_time_2   timestamp with time zone NOT NULL,
+    o_time_2   timestamp with time zone NOT NULL DEFAULT now(),
     o_time_3   timestamp with time zone          DEFAULT now(),
     o_time_4   timestamp with time zone
 );
+
+create unique index if not exists objects_parent_idx
+    on objects ((TRUE))
+    where (uuid_4 IS NULL);
 
 INSERT INTO public.objects (id, uuid_2, uuid_3, uuid_4, string_1, string_2, string_3, string_4, bool_1, bool_2, bool_3,
                             bool_4, float_32, float_64, int_8, int_16, int_32, int_64, time_1, time_2, time_3, time_4)
@@ -67,3 +71,25 @@ VALUES ('1ad724f7-7d0e-4ac2-8723-7ec2ed36ad2f', '8366762c-e1a0-4bd1-bd43-c61c060
         '62549d95-ba11-450b-a4a2-0911afd3a73f', 'green', 'orange', 'red', null, true, false, false, null, 0, null,
         '00000001', 1, 0, null, '2025-03-10 16:24:31.217768 +00:00', '2025-03-10 16:24:31.217768 +00:00',
         '2025-03-10 16:24:31.217768 +00:00', '2025-03-10 21:00:00.000000 +00:00');
+
+create table domains
+(
+    id      uuid                     default gen_random_uuid() not null
+        primary key,
+    name    text                                               not null,
+    active  boolean                  default true              not null,
+    created timestamp with time zone default now()             not null,
+    updated timestamp with time zone default now()             not null,
+    deleted timestamp with time zone
+);
+
+alter table domains
+    owner to test;
+
+create unique index domains_name_idx
+    on domains (name)
+    where (deleted IS NULL);
+
+INSERT INTO public.domains (id, name, active, created, updated, deleted)
+VALUES ('2eb40782-cf1d-4777-a5ac-fad81ea4f5a2', 'domain1', true, '2025-03-08 12:14:03.758198 +00:00',
+        '2025-03-08 12:14:03.758198 +00:00', null);

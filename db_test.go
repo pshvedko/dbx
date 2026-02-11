@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/pshvedko/dbx"
@@ -16,6 +18,7 @@ import (
 	"github.com/pshvedko/dbx/util"
 	"github.com/stretchr/testify/require"
 	"os"
+	"slices"
 	"testing"
 	"time"
 )
@@ -51,6 +54,23 @@ func Open(t *testing.T) (*DB, error) {
 			)}, nil
 }
 
+func ExampleUnmarshal() {
+	var a, b pgtype.FlatArray[string]
+	err := json.Unmarshal([]byte(`["a", "b"]`), &a)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(a, a == nil)
+	err = json.Unmarshal([]byte(`null`), &a)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(b, b == nil)
+	// Output:
+	// [a b] false
+	// [] true
+}
+
 func TestDB(t *testing.T) {
 	db, err := Open(t)
 	require.NoError(t, err)
@@ -62,8 +82,7 @@ func TestDB(t *testing.T) {
 	t.Run("ListIn", db.TestListIn)
 	t.Run("ListAny", db.TestListAny)
 	t.Run("ListLike", db.TestListLike)
-	//t.Run("Put", db.TestPut)
-
+	t.Run("Put", db.TestPut)
 }
 
 const selectPidStmt = `SELECT pg_backend_pid()`
@@ -126,6 +145,8 @@ var (
 	ID5  = uuid.MustParse(`62549d95-ba11-450b-a4a2-0911afd3a73f`)
 	ID6  = uuid.MustParse(`9c0c9146-cb6d-4184-80e4-acd26c2c1881`)
 	ID7  = uuid.MustParse(`1ad724f7-7d0e-4ac2-8723-7ec2ed36ad2f`)
+	ID8  = uuid.MustParse(`22ea94c5-a7f3-44a3-a108-31d58d94f88e`)
+	ID9  = uuid.MustParse(`e1ba1c92-1487-40be-ac87-708d805d6fd7`)
 )
 
 func (db DB) TestListAny(t *testing.T) {
@@ -222,7 +243,7 @@ func (db DB) TestGet(t *testing.T) {
 				Bool4:   nil,
 				Float32: 1e2,
 				Float64: util.Ptr(3.14),
-				Int8:    111,
+				Int8:    pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
 				Int16:   16,
 				Int32:   util.Ptr(int32(0)),
 				Int64:   nil,
@@ -234,9 +255,9 @@ func (db DB) TestGet(t *testing.T) {
 				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
 				Time3:   util.Ptr(time.Unix(0, 0)),
 				Time4:   nil,
-				Parent:  nil,
-				Child:   nil,
-				Subject: model.Subject{},
+				//Parent:  nil,
+				//Child:   nil,
+				//Subject: model.Subject{},
 			},
 			wantErr: nil,
 		},
@@ -389,7 +410,7 @@ func (db DB) TestList(t *testing.T) {
 				Bool4:   nil,
 				Float32: 1e2,
 				Float64: util.Ptr(3.14),
-				Int8:    111,
+				Int8:    pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
 				Int16:   16,
 				Int32:   util.Ptr(int32(0)),
 				Int64:   nil,
@@ -401,9 +422,9 @@ func (db DB) TestList(t *testing.T) {
 				Time2:   time.Date(2025, 02, 24, 16, 8, 6, 482425000, time.Local),
 				Time3:   util.Ptr(time.Unix(0, 0)),
 				Time4:   nil,
-				Parent:  nil,
-				Child:   nil,
-				Subject: model.Subject{},
+				//Parent:  nil,
+				//Child:   nil,
+				//Subject: model.Subject{},
 			}},
 			wantErr: nil,
 		},
@@ -418,186 +439,195 @@ func (db DB) TestList(t *testing.T) {
 	}
 }
 
-/*
-	func (db DB) TestPut(t *testing.T) {
-		ctx := context.TODO()
-		type args struct {
-			o  dbx.Object
-			oo []request.Option
-		}
-		tests := []struct {
-			name    string
-			args    args
-			want    dbx.Object
-			wantErr error
-		}{
-			// TODO: Add test cases.
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      9,
-						Bool:    util.PtrBool(false),
-						Float64: util.PtrFloat64(0),
-						Int16:   util.PtrInt16(0),
-					},
-					oo: []request.Option{request.PutCreate},
+func (db DB) TestPut(t *testing.T) {
+	ctx := context.TODO()
+	type args struct {
+		o  dbx.Object
+		oo []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    dbx.Object
+		wantEx  []int
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID:    ID8,
+					UUID2: ID9,
+					UUID4: util.PtrUUID(ID5),
+					Int8:  pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
+					Time2: time.Now(),
 				},
-				want: &model.Object{
-					ID:      9,
-					Bool:    util.PtrBool(false),
-					Float64: util.PtrFloat64(0),
-					Int16:   util.PtrInt16(0),
-					String1: util.PtrString("green"),
-				},
-				wantErr: nil,
+				oo: []request.Option{request.PutCreate},
 			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      9,
-						Bool:    util.PtrBool(true),
-						Float64: util.PtrFloat64(1e1),
-						Int16:   util.PtrInt16(1),
-						String3: "orange",
-					},
-					oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
-				},
-				want: &model.Object{
-					ID:      9,
-					Bool:    util.PtrBool(true),
-					Float64: util.PtrFloat64(1e1),
-					Int16:   util.PtrInt16(1),
-					String1: util.PtrString("green"),
-					String3: "orange",
-				},
-				wantErr: nil,
+			want: &model.Object{
+				ID:      ID8,
+				UUID2:   ID9,
+				UUID4:   util.PtrUUID(ID5),
+				Int8:    pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
+				String3: util.PtrString("red"),
+				Time1:   time.Time{},
+				Time2:   time.Time{},
+				Time3:   nil,
+				Time4:   nil,
 			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      9,
-						Bool:    util.PtrBool(true),
-						Float64: util.PtrFloat64(1e2),
-						Int16:   util.PtrInt16(2),
-						String1: util.PtrString("orange"),
-					},
-					oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
-				},
-				want: &model.Object{
-					ID:      9,
-					Bool:    util.PtrBool(true),
-					Float64: util.PtrFloat64(1e2),
-					Int16:   util.PtrInt16(2),
-					String1: util.PtrString("orange"),
-					String3: "orange",
-				},
-				wantErr: nil,
-			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      9,
-						Bool:    util.PtrBool(true),
-						Float64: util.PtrFloat64(1e3),
-						Int16:   util.PtrInt16(3),
-						String3: "green",
-					},
-					oo: []request.Option{},
-				},
-				want: &model.Object{
-					ID:      9,
-					Bool:    util.PtrBool(true),
-					Float64: util.PtrFloat64(1e3),
-					Int16:   util.PtrInt16(3),
-					String1: util.PtrString("green"),
-					String3: "green",
-				},
-				wantErr: nil,
-			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      9,
-						Bool:    util.PtrBool(false),
-						Float64: util.PtrFloat64(1e4),
-						Int16:   util.PtrInt16(4),
-						String3: "orange",
-					},
-					oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
-				},
-				want: &model.Object{
-					ID:      9,
-					Bool:    util.PtrBool(false),
-					Float64: util.PtrFloat64(1e3),
-					Int16:   util.PtrInt16(3),
-					String1: util.PtrString("green"),
-					String3: "orange",
-				},
-				wantErr: nil,
-			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      7,
-						Bool:    util.PtrBool(true),
-						Float64: util.PtrFloat64(1e3),
-						Int16:   util.PtrInt16(3),
-						String3: "green",
-					},
-					oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
-				},
-				want:    nil,
-				wantErr: sql.ErrNoRows,
-			},
-			{
-				name: "",
-				args: args{
-					o: &model.Object{
-						ID:      7,
-						Bool:    util.PtrBool(false),
-						Float64: util.PtrFloat64(1e4),
-						Int16:   util.PtrInt16(4),
-						String3: "orange",
-					},
-					oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
-				},
-				want:    nil,
-				wantErr: sql.ErrNoRows,
-			},
-		}
-		var ids test.Map
-		for _, tt := range tests {
-			t.Run(tt.name, func(t *testing.T) {
-				err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
-				require.ErrorIs(t, err, tt.wantErr)
-				if tt.wantErr == nil {
-					id, _ := tt.args.o.Get(0)
-					t.Log(ids.Add(tt.args.o.Table(), id))
-					for i, n := range tt.args.o.Names() {
-						v1, n1 := tt.want.Get(i)
-						v2, n2 := tt.args.o.Get(i)
-						require.Equal(t, v1, v2, n)
-						require.Equal(t, n1, n2, n)
+			wantEx:  []int{2, 18, 19, 20},
+			wantErr: nil,
+		},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      9,
+		//			Bool:    util.PtrBool(true),
+		//			Float64: util.PtrFloat64(1e1),
+		//			Int16:   util.PtrInt16(1),
+		//			String3: "orange",
+		//		},
+		//		oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
+		//	},
+		//	want: &model.Object{
+		//		ID:      9,
+		//		Bool:    util.PtrBool(true),
+		//		Float64: util.PtrFloat64(1e1),
+		//		Int16:   util.PtrInt16(1),
+		//		String1: util.PtrString("green"),
+		//		String3: "orange",
+		//	},
+		//	wantErr: nil,
+		//},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      9,
+		//			Bool:    util.PtrBool(true),
+		//			Float64: util.PtrFloat64(1e2),
+		//			Int16:   util.PtrInt16(2),
+		//			String1: util.PtrString("orange"),
+		//		},
+		//		oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
+		//	},
+		//	want: &model.Object{
+		//		ID:      9,
+		//		Bool:    util.PtrBool(true),
+		//		Float64: util.PtrFloat64(1e2),
+		//		Int16:   util.PtrInt16(2),
+		//		String1: util.PtrString("orange"),
+		//		String3: "orange",
+		//	},
+		//	wantErr: nil,
+		//},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      9,
+		//			Bool:    util.PtrBool(true),
+		//			Float64: util.PtrFloat64(1e3),
+		//			Int16:   util.PtrInt16(3),
+		//			String3: "green",
+		//		},
+		//		oo: []request.Option{},
+		//	},
+		//	want: &model.Object{
+		//		ID:      9,
+		//		Bool:    util.PtrBool(true),
+		//		Float64: util.PtrFloat64(1e3),
+		//		Int16:   util.PtrInt16(3),
+		//		String1: util.PtrString("green"),
+		//		String3: "green",
+		//	},
+		//	wantErr: nil,
+		//},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      9,
+		//			Bool:    util.PtrBool(false),
+		//			Float64: util.PtrFloat64(1e4),
+		//			Int16:   util.PtrInt16(4),
+		//			String3: "orange",
+		//		},
+		//		oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+		//	},
+		//	want: &model.Object{
+		//		ID:      9,
+		//		Bool:    util.PtrBool(false),
+		//		Float64: util.PtrFloat64(1e3),
+		//		Int16:   util.PtrInt16(3),
+		//		String1: util.PtrString("green"),
+		//		String3: "orange",
+		//	},
+		//	wantErr: nil,
+		//},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      7,
+		//			Bool:    util.PtrBool(true),
+		//			Float64: util.PtrFloat64(1e3),
+		//			Int16:   util.PtrInt16(3),
+		//			String3: "green",
+		//		},
+		//		oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
+		//	},
+		//	want:    nil,
+		//	wantErr: sql.ErrNoRows,
+		//},
+		//{
+		//	name: "",
+		//	args: args{
+		//		o: &model.Object{
+		//			ID:      7,
+		//			Bool:    util.PtrBool(false),
+		//			Float64: util.PtrFloat64(1e4),
+		//			Int16:   util.PtrInt16(4),
+		//			String3: "orange",
+		//		},
+		//		oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
+		//	},
+		//	want:    nil,
+		//	wantErr: sql.ErrNoRows,
+		//},
+	}
+	var ids test.Map
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := dbx.Put(ctx, db, tt.args.o, tt.args.oo...)
+			require.ErrorIs(t, tt.wantErr, err)
+			require.Equal(t, tt.wantErr, err)
+			if tt.wantErr == nil {
+				id, _ := tt.args.o.Get(0)
+				t.Log(ids.Add(tt.args.o.Table(), id))
+				for i, n := range tt.args.o.Names() {
+					if slices.Contains(tt.wantEx, i) {
+						t.Log(tt.args.o.Get(i))
+						continue
 					}
-					t.Log(tt.args.o.Get(15))
-					t.Log(tt.args.o.Get(16))
+					v1, n1 := tt.want.Get(i)
+					v2, n2 := tt.args.o.Get(i)
+					require.Equal(t, v1, v2, n)
+					require.Equal(t, n1, n2, n)
 				}
-			})
-		}
-		t.Cleanup(func() {
-			for k, v := range ids.M {
-				s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
-				_, _ = db.Exec(s, v)
 			}
 		})
 	}
-*/
+	t.Cleanup(func() {
+		for k, v := range ids.M {
+			s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
+			_, _ = db.Exec(s, v)
+		}
+	})
+}
+
 type Scan struct {
 	bytes.Buffer
 }

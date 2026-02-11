@@ -4,8 +4,8 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
-	"time"
 )
 
 type Table struct {
@@ -161,30 +161,37 @@ func Now() Special {
 //	return Many[T]{v: v, k: k}
 //}
 
-func NilIfZero[T comparable](v T) (any, bool) {
-	var z T
-	if v != z {
-		return v, false
+func NilIfZero[T any](v T) (any, bool) {
+	if reflect.ValueOf(v).IsZero() {
+		return nil, true
 	}
-	return nil, true
+	return v, false
 }
 
-type Nullable[T int64 | float64 | bool | []byte | string | time.Time] struct {
-	v *T
-}
-
-func (n Nullable[T]) Scan(v any) error {
-	switch x := v.(type) {
-	case nil:
-	case T:
-		*n.v = x
-	}
-	return nil
-}
-
-func Nil[T int64 | float64 | bool | []byte | string | time.Time](v *T) Nullable[T] {
-	return Nullable[T]{v: v}
-}
+//type Scanned interface {
+//	~int64 | ~float64 | ~bool | ~[]byte | ~string | time.Time
+//}
+//
+//type Nullable[T Scanned] struct {
+//	v *T
+//}
+//
+//func (n Nullable[T]) Scan(v any) error {
+//	switch x := v.(type) {
+//	case nil:
+//	case T:
+//		*n.v = x
+//	}
+//	return nil
+//}
+//
+//func Nil[T Scanned](v *T) Nullable[T] {
+//	return Nullable[T]{v: v}
+//}
+//
+//func Scan[T sql.Scanner](v T) Nullable[T] {
+//	return Nullable[T]{v: v}
+//}
 
 type Injectable[T Fielder] []T
 

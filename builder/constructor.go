@@ -260,17 +260,20 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
 	w := filter.Eq{}
+	var up bool
 	for i, n := range nn {
 		switch {
 		case c.IsCreated(n):
+			// must be defined as DEFAULT NOW()
 			continue
 		case c.IsUpdated(n):
-			uu = append(uu, n)
+			// must be defined as DEFAULT NOW()
+			up = true
 			continue
 		case c.IsDeleted(n):
 			w[n] = nil
 			continue
-		case pk.Have(n) || c.Unused(n):
+		case pk.Have(n): // || c.Unused(n): // FIXME Unused for return
 		default:
 			uu = append(uu, n)
 		}
@@ -306,6 +309,12 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 		}
 		for i, u := range uu {
 			_, err = c.Printf("%v %q = EXCLUDED.%q", Comma(i), u, u)
+			if err != nil {
+				return "", nil, nil, err
+			}
+		}
+		if up {
+			_, err = c.Printf("%v %q = DEFAULT", Comma(a), c.Updated)
 			if err != nil {
 				return "", nil, nil, err
 			}
