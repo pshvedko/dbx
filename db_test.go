@@ -461,7 +461,7 @@ func (db DB) TestPut(t *testing.T) {
 					UUID2: ID9,
 					UUID4: util.PtrUUID(ID5),
 					Int8:  pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
-					Time2: time.Now(),
+					Time2: time.Unix(1, 1),
 				},
 				oo: []request.Option{request.PutCreate},
 			},
@@ -471,14 +471,34 @@ func (db DB) TestPut(t *testing.T) {
 				UUID4:   util.PtrUUID(ID5),
 				Int8:    pgtype.Bits{Bytes: []byte{7}, Len: 8, Valid: true},
 				String3: util.PtrString("red"),
-				Time1:   time.Time{},
-				Time2:   time.Time{},
-				Time3:   nil,
-				Time4:   nil,
 			},
 			wantEx:  []int{2, 18, 19, 20},
 			wantErr: nil,
 		},
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID:    ID8,
+					UUID2: ID9,
+					UUID4: util.PtrUUID(ID5),
+					Int8:  pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+					Time1: time.Unix(2, 2),
+					Time2: time.Unix(2, 2),
+				},
+				oo: []request.Option{},
+			},
+			want: &model.Object{
+				ID:      ID8,
+				UUID2:   ID9,
+				UUID4:   util.PtrUUID(ID5),
+				Int8:    pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+				String3: util.PtrString("red"),
+			},
+			wantEx:  []int{2, 18, 19, 20},
+			wantErr: nil,
+		},
+
 		//{
 		//	name: "",
 		//	args: args{

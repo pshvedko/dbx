@@ -262,6 +262,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	w := filter.Eq{}
 	var up bool
 	for i, n := range nn {
+		o, none, auto := j.Value(i)
 		switch {
 		case c.IsCreated(n):
 			// must be defined as DEFAULT NOW()
@@ -274,12 +275,10 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 			w[n] = nil
 			continue
 		case pk.Have(n): // || c.Unused(n): // FIXME Unused for return
+		case none && auto:
+			continue
 		default:
 			uu = append(uu, n)
-		}
-		o, none, auto := j.Value(i)
-		if none && auto {
-			continue
 		}
 		_, err = c.Printf("%v %q", Comma(a), n)
 		if err != nil {
