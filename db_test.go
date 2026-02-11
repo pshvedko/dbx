@@ -464,7 +464,9 @@ func (db DB) TestPut(t *testing.T) {
 					Time1: time.Unix(2, 2),
 					Time2: time.Unix(2, 2),
 				},
-				oo: []request.Option{request.WithField{"id", "uuid_2", "uuid_3", "uuid_4", "int_8", "string_3", "time_1", "time_2", "time_3"}},
+				oo: []request.Option{
+					request.WithField{"id", "uuid_2", "uuid_3", "uuid_4", "int_8", "string_3", "time_1", "time_2", "time_3"},
+				},
 			},
 			want: &model.Object{
 				ID:      ID8,
@@ -504,125 +506,78 @@ func (db DB) TestPut(t *testing.T) {
 			wantEx:  []int{2, 16, 18, 19, 20},
 			wantErr: nil,
 		},
-
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      9,
-		//			Bool:    util.PtrBool(true),
-		//			Float64: util.PtrFloat64(1e1),
-		//			Int16:   util.PtrInt16(1),
-		//			String3: "orange",
-		//		},
-		//		oo: []request.Option{request.WithField{"o_bool", "o_string_3", "o_float_64", "o_int_16"}},
-		//	},
-		//	want: &model.Object{
-		//		ID:      9,
-		//		Bool:    util.PtrBool(true),
-		//		Float64: util.PtrFloat64(1e1),
-		//		Int16:   util.PtrInt16(1),
-		//		String1: util.PtrString("green"),
-		//		String3: "orange",
-		//	},
-		//	wantErr: nil,
-		//},
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      9,
-		//			Bool:    util.PtrBool(true),
-		//			Float64: util.PtrFloat64(1e2),
-		//			Int16:   util.PtrInt16(2),
-		//			String1: util.PtrString("orange"),
-		//		},
-		//		oo: []request.Option{request.WithField{"o_bool", "o_string_1", "o_float_64", "o_int_16"}},
-		//	},
-		//	want: &model.Object{
-		//		ID:      9,
-		//		Bool:    util.PtrBool(true),
-		//		Float64: util.PtrFloat64(1e2),
-		//		Int16:   util.PtrInt16(2),
-		//		String1: util.PtrString("orange"),
-		//		String3: "orange",
-		//	},
-		//	wantErr: nil,
-		//},
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      9,
-		//			Bool:    util.PtrBool(true),
-		//			Float64: util.PtrFloat64(1e3),
-		//			Int16:   util.PtrInt16(3),
-		//			String3: "green",
-		//		},
-		//		oo: []request.Option{},
-		//	},
-		//	want: &model.Object{
-		//		ID:      9,
-		//		Bool:    util.PtrBool(true),
-		//		Float64: util.PtrFloat64(1e3),
-		//		Int16:   util.PtrInt16(3),
-		//		String1: util.PtrString("green"),
-		//		String3: "green",
-		//	},
-		//	wantErr: nil,
-		//},
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      9,
-		//			Bool:    util.PtrBool(false),
-		//			Float64: util.PtrFloat64(1e4),
-		//			Int16:   util.PtrInt16(4),
-		//			String3: "orange",
-		//		},
-		//		oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
-		//	},
-		//	want: &model.Object{
-		//		ID:      9,
-		//		Bool:    util.PtrBool(false),
-		//		Float64: util.PtrFloat64(1e3),
-		//		Int16:   util.PtrInt16(3),
-		//		String1: util.PtrString("green"),
-		//		String3: "orange",
-		//	},
-		//	wantErr: nil,
-		//},
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      7,
-		//			Bool:    util.PtrBool(true),
-		//			Float64: util.PtrFloat64(1e3),
-		//			Int16:   util.PtrInt16(3),
-		//			String3: "green",
-		//		},
-		//		oo: []request.Option{request.WithField{"o_bool", "o_string_3"}},
-		//	},
-		//	want:    nil,
-		//	wantErr: sql.ErrNoRows,
-		//},
-		//{
-		//	name: "",
-		//	args: args{
-		//		o: &model.Object{
-		//			ID:      7,
-		//			Bool:    util.PtrBool(false),
-		//			Float64: util.PtrFloat64(1e4),
-		//			Int16:   util.PtrInt16(4),
-		//			String3: "orange",
-		//		},
-		//		oo: []request.Option{request.PutUpdate, request.WithField{"o_bool", "o_string_3"}},
-		//	},
-		//	want:    nil,
-		//	wantErr: sql.ErrNoRows,
-		//},
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID:      ID9,
+					UUID2:   ID9,
+					UUID4:   util.PtrUUID(ID5),
+					Bool3:   util.PtrBool(false),
+					Float64: util.PtrFloat64(1e4),
+					Int16:   4,
+					String2: "orange",
+				},
+				oo: []request.Option{request.PutUpdate},
+			},
+			want:    nil,
+			wantEx:  []int{2, 16, 18, 19, 20},
+			wantErr: sql.ErrNoRows,
+		},
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID:      ID8,
+					UUID2:   ID9,
+					UUID4:   util.PtrUUID(ID5),
+					Bool3:   util.PtrBool(true),
+					Float64: util.PtrFloat64(1e4),
+					Int16:   4,
+					String2: "orange",
+				},
+				oo: []request.Option{request.PutUpdate},
+			},
+			want: &model.Object{
+				ID:      ID8,
+				UUID2:   ID9,
+				UUID4:   util.PtrUUID(ID5),
+				Bool3:   util.PtrBool(true),
+				Int8:    pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+				Float64: util.PtrFloat64(1e4),
+				Int16:   4,
+				String2: "orange",
+			},
+			wantEx:  []int{2, 16, 18, 19, 20},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				o: &model.Object{
+					ID: ID8,
+					//UUID2:   ID9,
+					//UUID4:   util.PtrUUID(ID5),
+					//Bool3:   util.PtrBool(false),
+					//Float64: util.PtrFloat64(111.111),
+					//Int16:   11,
+					//String2: "magenta",
+				},
+				oo: []request.Option{request.PutUpdate, request.WithField{"id"}}, // TODO
+			},
+			want: &model.Object{
+				ID:      ID8,
+				UUID2:   ID9,
+				UUID4:   util.PtrUUID(ID5),
+				Bool3:   util.PtrBool(true),
+				Int8:    pgtype.Bits{Bytes: []byte{1}, Len: 8, Valid: true},
+				Float64: util.PtrFloat64(1e4),
+				Int16:   4,
+				String2: "orange",
+			},
+			wantEx:  []int{2, 16, 18, 19, 20},
+			wantErr: nil,
+		},
 	}
 	var ids test.Map
 	for _, tt := range tests {
@@ -647,7 +602,11 @@ func (db DB) TestPut(t *testing.T) {
 		})
 	}
 	t.Cleanup(func() {
+
 		for k, v := range ids.M {
+
+			println("delete ", fmt.Sprint(k, v))
+
 			s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
 			_, _ = db.Exec(s, v)
 		}
