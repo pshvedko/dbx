@@ -3,7 +3,9 @@ module github.com/pshvedko/dbx
 go 1.21.1
 
 require (
+	github.com/fatih/structtag v1.2.0
 	github.com/google/uuid v1.6.0
+	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/stretchr/testify v1.8.1
