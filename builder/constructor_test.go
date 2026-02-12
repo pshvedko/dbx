@@ -2,6 +2,7 @@ package builder_test
 
 import (
 	"github.com/stretchr/testify/require"
+	"reflect"
 	"testing"
 
 	"github.com/pshvedko/dbx/filter"
@@ -10,12 +11,12 @@ import (
 )
 
 func TestConstructor_Select(t *testing.T) {
+	var o model.Object
 	type args struct {
 		j filter.Projector
 		f filter.Filter
 		o []request.Option
 	}
-	o := model.Object{}
 	tests := []struct {
 		name    string
 		args    args
@@ -66,10 +67,51 @@ func TestConstructor_Select(t *testing.T) {
 			r, err := request.NewWithOption(tt.args.o)
 			require.ErrorIs(t, err, tt.wantErr)
 			_, got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
+			t.Log(got)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.want1, got1)
 			require.Equal(t, tt.want2, got2)
+		})
+	}
+}
+
+func TestConstructor_Insert(t *testing.T) {
+	type args struct {
+		j filter.Projector
+		m int
+		o []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		want1   []any
+		want2   []any
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := request.NewWithOption(tt.args.o)
+			require.ErrorIs(t, err, tt.wantErr)
+
+			got, got1, got2, err := c.Insert(tt.args.j, tt.args.m)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Insert() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("Insert() got = %v, want %v", got, tt.want)
+			}
+			if !reflect.DeepEqual(got1, tt.want1) {
+				t.Errorf("Insert() got1 = %v, want %v", got1, tt.want1)
+			}
+			if !reflect.DeepEqual(got2, tt.want2) {
+				t.Errorf("Insert() got2 = %v, want %v", got2, tt.want2)
+			}
 		})
 	}
 }

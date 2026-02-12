@@ -273,6 +273,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
 	w := filter.Eq{}
+	f := filter.And{w}
 	var up bool
 	for i, n := range nn {
 		o, none, auto := j.Value(i)
@@ -329,12 +330,12 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 				return "", nil, nil, err
 			}
 		}
-		if len(w) > 0 {
+		if len(w) > 0 || len(f) > 1 {
 			_, err = c.WriteString(" WHERE ")
 			if err != nil {
 				return "", nil, nil, err
 			}
-			err = w.To(c, j)
+			err = f.To(c, j)
 		}
 	}
 	_, err = c.WriteString(" RETURNING")
