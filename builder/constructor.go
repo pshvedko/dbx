@@ -281,8 +281,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	}
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
-	w := filter.Eq{}
-	f := filter.And{w}
+	w := filter.And{}
 	var up bool
 	for i, n := range nn {
 		o, none, auto := j.Value(i)
@@ -291,7 +290,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			up = true
 			continue
 		case c.IsDeleted(n):
-			w[n] = o
+			w = c.Visibility(w)
 			continue
 		case c.IsCreated(n):
 			continue
@@ -339,7 +338,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 				return "", nil, nil, err
 			}
 		}
-		if len(w) > 0 || len(f) > 1 {
+		if len(w) > 0 {
 			_, err = c.WriteString(" WHERE ")
 			if err != nil {
 				return "", nil, nil, err
