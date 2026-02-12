@@ -287,7 +287,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 			continue
 		case none && auto:
 			continue
-		case pk.Have(n): // || c.Unused(n): // FIXME Unused for return
+		case pk.Have(n):
 		default:
 			uu = append(uu, n)
 		}
