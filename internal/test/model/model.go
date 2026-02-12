@@ -1,2 +1,3 @@
 package model
-//go:generate go run ../../../cmd/dbx Object
+
+//go:generate go run ../../../cmd/dbx -x Object User

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"embed"
 	"flag"
-	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -203,7 +202,7 @@ type generate struct {
 }
 
 func main() {
-	var output, suffix, direct string
+	var suffix, direct string
 	var prefix bool
 	flag.StringVar(&suffix, "n", "gen.go", "output file name")
 	flag.StringVar(&direct, "w", ".", "work directory")
@@ -216,15 +215,9 @@ func main() {
 
 	filter := files{}
 	for _, name := range flag.Args() {
-		name = strcase.ToSnake(name)
-		if output == "" {
-			if !prefix {
-				output = name + "_"
-			}
-			output += suffix
-		}
-		filter.add(name)
+		filter.add(strcase.ToSnake(name))
 	}
+
 	dir, err := parser.ParseDir(token.NewFileSet(), direct, func(info fs.FileInfo) bool {
 		return filter.match(info.Name())
 	}, 0)
@@ -232,58 +225,68 @@ func main() {
 		return
 	}
 
-	var types []class
-	for _, pkg := range dir {
-		t := getTypes(pkg, "db", "password", flag.Args()...)
-		if t != nil {
-			types = append(types, t...)
-		}
-	}
-	sort.SliceStable(types, func(i, j int) bool {
-		return types[i].Type < types[j].Type
-	})
-
-	fmt.Printf("%+#v\n", types)
-
-	for _, name := range flag.Args() {
-		i := sort.Search(len(types), func(i int) bool {
-			return types[i].Type >= name
+	packages := map[string][]class{}
+	for name, pkg := range dir {
+		types := getTypes(pkg, "db", "password", flag.Args()...)
+		sort.SliceStable(types, func(i, j int) bool {
+			return types[i].Type < types[j].Type
 		})
-		if i >= len(types) || types[i].Type != name {
-			log.Printf("type `%s` not found in source files", name)
-		}
+		packages[name] = types
 	}
+
+	//for _, name := range flag.Args() {
+	//	i := sort.Search(len(types), func(i int) bool {
+	//		return types[i].Type >= name
+	//	})
+	//	if i >= len(types) || types[i].Type != name {
+	//		log.Printf("type `%s` not found in source files", name)
+	//	}
+	//}
 
 	tmp, err := template.ParseFS(tmpFS, "*")
 	if err != nil {
 		log.Fatal(err)
 	}
-	out, err := os.Create(path.Join(direct, output))
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	var buf bytes.Buffer
-	for name := range dir {
-		err = tmp.Execute(&buf, generate{
-			Package: name,
-			Types:   types,
-		})
-		if err != nil {
-			log.Fatal(err)
+	outputs := map[string]map[string][]class{}
+	for name, types := range packages {
+		outputs[name] = map[string][]class{}
+		if prefix {
+			for _, t := range types {
+				file := strcase.ToSnake(t.Type)
+				outputs[name][file+"_"] = []class{t}
+			}
+		} else {
+			outputs[name][""] = packages[name]
 		}
 	}
 
-	_, err = buf.WriteTo(out)
-	if err != nil {
-		return
-	}
-	err = out.Sync()
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = out.Close()
-	if err != nil {
-		log.Fatal(err)
+	for name, packages := range outputs {
+		for file, types := range packages {
+			out, err := os.Create(path.Join(direct, file+suffix))
+			if err != nil {
+				log.Fatal(err)
+			}
+			var buf bytes.Buffer
+			err = tmp.Execute(&buf, generate{
+				Package: name,
+				Types:   types,
+			})
+			if err != nil {
+				log.Fatal(err)
+			}
+			_, err = buf.WriteTo(out)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = out.Sync()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = out.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
 	}
 }
