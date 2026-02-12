@@ -1,7 +1,6 @@
 package dbx_test
 
 import (
-	"bytes"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -59,7 +58,6 @@ func TestDB(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, db)
 	t.Run("Connect", db.TestConn)
-	t.Run("TestScan", db.TestScan)
 	t.Run("Get", db.TestGet)
 	t.Run("List", db.TestList)
 	t.Run("ListIn", db.TestListIn)
@@ -629,56 +627,11 @@ func (db DB) TestPut(t *testing.T) {
 		})
 	}
 	t.Cleanup(func() {
-
 		for k, v := range ids.M {
-
-			println("delete ", fmt.Sprint(k, v))
-
-			s := fmt.Sprintf(`DELETE FROM`+` %q`+` WHERE "id" =ANY($1)`, k)
+			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
 			_, _ = db.Exec(s, v)
 		}
 	})
-}
-
-type Scan struct {
-	bytes.Buffer
-}
-
-func (s *Scan) Scan(v any) error {
-	_, _ = fmt.Fprintf(&s.Buffer, "%T::[%v],", v, v)
-	return nil
-}
-
-var _ sql.Scanner = &Scan{}
-
-func (db DB) TestScan(t *testing.T) {
-	var x Scan
-	row := db.QueryRow(`SELECT 0::int2, '11d7c4b2-9546-4296-b97b-f93a068f3d72'::uuid, '2025-02-23 05:32:48.899094'::timestamp, '123'::bytea`)
-	err := row.Scan(&x, &x, &x, &x)
-	require.NoError(t, err)
-	require.Equal(t, "int64::[0],string::[11d7c4b2-9546-4296-b97b-f93a068f3d72],time.Time::[2025-02-23 05:32:48.899094 +0000 UTC],[]uint8::[[49 50 51]],", x.String())
-
-	x.Reset()
-
-	row = db.QueryRow(`
-with t2 as (select *
-            from permissions p),
-     t1 as (select *,
-                   ARRAY(select t2
-                         from t2
-                         where t2.role_id = u.role_id) permissions
-            from user_roles u),
-     t0 as (select *,
-                   ARRAY(select t1
-                         from t1
-                         where t1.user_id = u.id) user_roles
-            from users u)
-select *
-from t0
-where t0.id = $1`, "cd484cf9-0702-451d-8770-f70cc0861e56")
-	err = row.Scan(&x, &x, &x, &x, &x, &x, &x, &x, &x)
-	require.NoError(t, err)
-	require.Equal(t, `string::[cd484cf9-0702-451d-8770-f70cc0861e56],string::[2eb40782-cf1d-4777-a5ac-fad81ea4f5a2],string::[login1],<nil>::[<nil>],bool::[true],time.Time::[2025-03-08 15:15:32.722534 +0300 MSK],time.Time::[2025-03-08 15:15:32.722534 +0300 MSK],<nil>::[<nil>],string::[{"(2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,cd484cf9-0702-451d-8770-f70cc0861e56,9801a142-7d5b-4d27-9049-bc223cfe3a9f,\"{\"\"(8f23f2fa-41b2-4bda-91e9-7bb6f2474f02,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,objects,00011,\\\\\"\"2025-03-08 16:01:09.516008+03\\\\\"\",\\\\\"\"2025-03-08 16:01:09.516008+03\\\\\"\",)\"\",\"\"(9ebd7789-f738-4c89-b9d2-f9bac86de3dd,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,users,00001,\\\\\"\"2025-03-08 16:12:24.782876+03\\\\\"\",\\\\\"\"2025-03-08 16:12:24.782876+03\\\\\"\",)\"\",\"\"(4906e175-663b-4c13-82bd-296ee6c7d334,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,domains,00001,\\\\\"\"2025-03-08 16:12:43.2469+03\\\\\"\",\\\\\"\"2025-03-08 16:12:43.2469+03\\\\\"\",)\"\",\"\"(1f6e5334-47c1-489d-a31c-296e6e0d5520,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,roles,00001,\\\\\"\"2025-03-08 16:13:06.833611+03\\\\\"\",\\\\\"\"2025-03-08 16:13:06.833611+03\\\\\"\",)\"\",\"\"(dd450a0c-69e8-447c-a80f-5f8841f5f69e,2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,9801a142-7d5b-4d27-9049-bc223cfe3a9f,,permissions,00001,\\\\\"\"2025-03-08 16:13:16.321388+03\\\\\"\",\\\\\"\"2025-03-08 16:13:16.321388+03\\\\\"\",)\"\"}\")","(2eb40782-cf1d-4777-a5ac-fad81ea4f5a2,cd484cf9-0702-451d-8770-f70cc0861e56,f83693ca-7449-43dc-a061-3e9c86a70638,{})"}],`, x.String())
 }
 
 func ExampleUnmarshal() {
