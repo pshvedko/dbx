@@ -5,6 +5,7 @@ import (
 	"embed"
 	"flag"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"io/fs"
@@ -303,10 +304,6 @@ func main() {
 
 	for name, packages := range outputs {
 		for file, types := range packages {
-			out, err := os.Create(path.Join(direct, file+suffix))
-			if err != nil {
-				log.Fatal(err)
-			}
 			var buf bytes.Buffer
 			err = tmp.Option().Execute(&buf, generate{
 				Package: name,
@@ -315,15 +312,11 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			_, err = buf.WriteTo(out)
+			source, err := format.Source(buf.Bytes())
 			if err != nil {
 				log.Fatal(err)
 			}
-			err = out.Sync()
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = out.Close()
+			err = os.WriteFile(file+suffix, source, 0644)
 			if err != nil {
 				log.Fatal(err)
 			}
