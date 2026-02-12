@@ -157,6 +157,7 @@ func (r *Request) Constructor() *builder.Constructor {
 				return builder.DeletedNone(r.x.d)
 			}(),
 		},
+		Mode: r.p.Mode(),
 	}
 }
 
@@ -212,7 +213,7 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 }
 
 func (r *Request) Put(ctx context.Context, j filter.Projector) error {
-	q, aa, vv, err := r.Constructor().Insert(j, r.p.Mode())
+	q, aa, vv, err := r.Constructor().Insert(j)
 	if err != nil {
 		return err
 	}

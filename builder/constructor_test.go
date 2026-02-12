@@ -1,9 +1,9 @@
 package builder_test
 
 import (
-	"github.com/stretchr/testify/require"
-	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/pshvedko/dbx/filter"
 	"github.com/pshvedko/dbx/internal/test/model"
@@ -77,9 +77,9 @@ func TestConstructor_Select(t *testing.T) {
 }
 
 func TestConstructor_Insert(t *testing.T) {
+	var o model.Object
 	type args struct {
 		j filter.Projector
-		m int
 		o []request.Option
 	}
 	tests := []struct {
@@ -91,27 +91,32 @@ func TestConstructor_Insert(t *testing.T) {
 		wantErr error
 	}{
 		// TODO: Add test cases.
-		{},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				o: []request.Option{
+					request.WithCreated("time_1"),
+					request.WithUpdated("time_2"),
+					request.WithDeleted("time_4"),
+					request.PutModify},
+			},
+			want:    `INSERT INTO "objects" ( "uuid_2", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_16", "int_32", "int_64", "string_1", "string_2", "string_4" ) VALUES ( $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14 ) ON CONFLICT ( "id" ) DO UPDATE SET "uuid_2" = EXCLUDED."uuid_2", "uuid_4" = EXCLUDED."uuid_4", "bool_1" = EXCLUDED."bool_1", "bool_2" = EXCLUDED."bool_2", "bool_3" = EXCLUDED."bool_3", "bool_4" = EXCLUDED."bool_4", "float_32" = EXCLUDED."float_32", "float_64" = EXCLUDED."float_64", "int_16" = EXCLUDED."int_16", "int_32" = EXCLUDED."int_32", "int_64" = EXCLUDED."int_64", "string_1" = EXCLUDED."string_1", "string_2" = EXCLUDED."string_2", "string_4" = EXCLUDED."string_4", "time_2" = DEFAULT WHERE "objects"."time_4" IS NULL RETURNING "id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"`,
+			want1:   []any{o.UUID2, nil, o.Bool1, o.Bool2, nil, nil, o.Float32, nil, o.Int16, nil, nil, o.String1, o.String2, nil},
+			want2:   []any{&o.ID, &o.UUID2, &o.UUID3, &o.UUID4, &o.Bool1, &o.Bool2, &o.Bool3, &o.Bool4, &o.Float32, &o.Float64, &o.Int8, &o.Int16, &o.Int32, &o.Int64, &o.String1, &o.String2, &o.String3, &o.String4, &o.Time1, &o.Time2, &o.Time3, &o.Time4},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r, err := request.NewWithOption(tt.args.o)
 			require.ErrorIs(t, err, tt.wantErr)
-
-			got, got1, got2, err := c.Insert(tt.args.j, tt.args.m)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Insert() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if got != tt.want {
-				t.Errorf("Insert() got = %v, want %v", got, tt.want)
-			}
-			if !reflect.DeepEqual(got1, tt.want1) {
-				t.Errorf("Insert() got1 = %v, want %v", got1, tt.want1)
-			}
-			if !reflect.DeepEqual(got2, tt.want2) {
-				t.Errorf("Insert() got2 = %v, want %v", got2, tt.want2)
-			}
+			got, got1, got2, err := r.Constructor().Insert(tt.args.j)
+			t.Log(got)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.want1, got1)
+			require.Equal(t, tt.want2, got2)
 		})
 	}
 }

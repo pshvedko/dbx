@@ -40,12 +40,21 @@ func (a Aliases) Alias(t string) string {
 	return t[:i] + strconv.Itoa(n)
 }
 
+type Mode int
+
+func (m Mode) IsModify() bool { return m == 0 }
+
+func (m Mode) IsCreate() bool { return m == 1 }
+
+func (m Mode) IsUpdate() bool { return m == 2 }
+
 type Constructor struct {
 	Filter
 	Column
 	Modify
 	Access
 	Aliases
+	Mode
 	p Ranger
 	y Order
 }
@@ -253,9 +262,9 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	return c.String(), c.Values(), vv, nil
 }
 
-func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, error) {
+func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	c.Grow(256)
-	if m == 2 {
+	if c.IsUpdate() {
 		return c.Update(j)
 	}
 	err := c.Validate(j)
@@ -313,7 +322,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 	if err != nil {
 		return "", nil, nil, err
 	}
-	if m == 0 && len(pk) > 0 {
+	if c.IsModify() && len(pk) > 0 {
 		_, err = c.Printf(" ON CONFLICT ( %v ) DO UPDATE SET", pk)
 		if err != nil {
 			return "", nil, nil, err
@@ -335,7 +344,7 @@ func (c *Constructor) Insert(j filter.Projector, m int) (string, []any, []any, e
 			if err != nil {
 				return "", nil, nil, err
 			}
-			err = f.To(c, j)
+			err = w.To(c, j)
 		}
 	}
 	_, err = c.WriteString(" RETURNING")

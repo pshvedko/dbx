@@ -3,6 +3,8 @@ package request
 import (
 	"context"
 	"database/sql"
+
+	"github.com/pshvedko/dbx/builder"
 )
 
 type Option interface {
@@ -99,8 +101,8 @@ func (o PerformPut) Apply(r *Request) error {
 	return nil
 }
 
-func (o PerformPut) Mode() int {
-	return int(o)
+func (o PerformPut) Mode() builder.Mode {
+	return builder.Mode(o)
 }
 
 const (
