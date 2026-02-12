@@ -72,6 +72,14 @@ func (f field) IsNull() bool {
 	return slices.Contains(f.Option, "null")
 }
 
+func (f field) IsZero() bool {
+	return slices.Contains(f.Option, "zero")
+}
+
+func (f field) IsKey() bool {
+	return slices.IndexFunc(f.Option, func(key string) bool { return key == "key" || strings.HasPrefix(key, "key=") }) >= 0
+}
+
 func getTag(tag, key, not string) *structtag.Tag {
 	tt, err := structtag.Parse(tag)
 	if err != nil {

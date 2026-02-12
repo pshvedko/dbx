@@ -21,7 +21,7 @@ type Object struct {
 	Bool4   *bool       `db:"bool_4"`          // 8
 	Float32 float32     `db:"float_32"`        // 9
 	Float64 *float64    `db:"float_64"`        // 10
-	Int8    pgtype.Bits `db:"int_8,null,auto"` // 11
+	Int8    pgtype.Bits `db:"int_8,zero,auto"` // 11
 	Int16   int16       `db:"int_16"`          // 12
 	Int32   *int32      `db:"int_32"`          // 13
 	Int64   *int64      `db:"int_64"`          // 14

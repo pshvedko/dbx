@@ -50,8 +50,8 @@ func (obj {{.Type}}) Value(i int) (any, bool, bool) {
 func (obj {{.Type}}) Get(i int) (any, bool) {
 	switch i {
 	{{range $index, $_ := .Fields -}}
-    case {{$index}}:
-		return {{if or .IsPointer .IsSlice .IsMap .IsInterface .IsPrimary .IsNull}}filter.NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
+	case {{$index}}:
+		return {{if or .IsPointer .IsSlice .IsMap .IsInterface .IsPrimary .IsZero}}filter.NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
     {{end -}}
     default:
 		panic(i)
