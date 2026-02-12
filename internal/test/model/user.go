@@ -8,11 +8,11 @@ import (
 const UserTable = "users"
 
 type User struct {
-	ID        uuid.UUID  `db:"id"`
+	ID        uuid.UUID  `db:"id,primary"`
 	DomainID  uuid.UUID  `db:"domain_id"`
 	Login     string     `db:"login"`
 	Password  []byte     `db:"password"`
-	Active    bool       `db:"active"`
+	Active    *bool      `db:"active,auto"`
 	UserRoles []UserRole `db:"user_roles"`
 	Created   time.Time  `db:"created"`
 	Updated   time.Time  `db:"updated"`

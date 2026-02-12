@@ -16,7 +16,7 @@ func (obj {{.Type}}) Self() filter.Copier {
 }
 
 func ({{.Type}}) PK() filter.PK {
-	return []string{"id"} // FIXME
+	return []string{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}"{{end}}{{end -}} }
 }
 
 func (obj {{.Type}}) Copy() filter.Projector {
@@ -28,22 +28,20 @@ func (obj {{.Type}}) Table() string {
 }
 
 func ({{.Type}}) Names() []string {
-	return []string{
-        {{range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end}},
-	}
+    return []string{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}} }
 }
 
 func (obj *{{.Type}}) Values() []any {
-	return []any{
-        {{range $index, $_ := .Fields}}{{if $index}}, {{end}}&obj.{{.Name}}{{end}},
-	}
+	return []any{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}&obj.{{.Name}}{{end -}} }
 }
 
 func (obj {{.Type}}) Value(i int) (any, bool, bool) {
 	v, ok := obj.Get(i)
 	switch i {
-	case 0, 2, 10, 16, 20: // FIXME
+	{{- if or .IsAuto}}
+	case {{$comma := false}}{{range $index, $_ := .Fields}}{{if or .IsPrimary .IsAuto}}{{if $comma }}, {{end}}{{$comma = true}}{{$index}}{{end}}{{end}}:
 		return v, ok, true
+    {{- end}}
 	default:
 		return v, ok, false
 	}
@@ -51,15 +49,17 @@ func (obj {{.Type}}) Value(i int) (any, bool, bool) {
 
 func (obj {{.Type}}) Get(i int) (any, bool) {
 	switch i {
-	{{range $index, $_ := .Fields}}case {{$index}}:
-		return {{if or .Type.IsPointer .Type.IsSlice .Type.IsMap .Type.IsInterface}}filter.NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
-    {{end}}default:
+	{{range $index, $_ := .Fields -}}
+    case {{$index}}:
+		return {{if or .IsPointer .IsSlice .IsMap .IsInterface .IsPrimary .IsNull}}filter.NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
+    {{end -}}
+    default:
 		panic(i)
 	}
 }
 
 func (obj {{.Type}}) String() string {
-	b := &strings.Builder{}{{$last := .Last}}{{range $index, $_ := .Fields}}{{$begin := "{"}}{{$end := ""}}{{if $index}}{{$begin = " "}}{{end}}{{if eq $index $last}}{{$end = "}"}}{{end}}{{if or .Type.IsPointer .Type.IsSlice .Type.IsMap .Type.IsInterface}}
+	b := &strings.Builder{}{{$last := .Last}}{{range $index, $_ := .Fields}}{{$begin := "{"}}{{$end := ""}}{{if $index}}{{$begin = " "}}{{end}}{{if eq $index $last}}{{$end = "}"}}{{end}}{{if or .IsPointer .IsSlice .IsMap .IsInterface}}
 	if obj.{{.Name}} == nil {
 		_, _ = fmt.Fprintf(b, "{{$begin}}{{.Alias}}=nil{{$end}}")
 	} else {

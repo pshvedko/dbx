@@ -16,7 +16,7 @@ func (obj User) Self() filter.Copier {
 }
 
 func (User) PK() filter.PK {
-	return []string{"id"} // FIXME
+	return []string{"id"}
 }
 
 func (obj User) Copy() filter.Projector {
@@ -28,21 +28,17 @@ func (obj User) Table() string {
 }
 
 func (User) Names() []string {
-	return []string{
-		"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted",
-	}
+	return []string{"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted"}
 }
 
 func (obj *User) Values() []any {
-	return []any{
-		&obj.ID, &obj.DomainID, &obj.Login, &obj.Active, &obj.UserRoles, &obj.Created, &obj.Updated, &obj.Deleted,
-	}
+	return []any{&obj.ID, &obj.DomainID, &obj.Login, &obj.Active, &obj.UserRoles, &obj.Created, &obj.Updated, &obj.Deleted}
 }
 
 func (obj User) Value(i int) (any, bool, bool) {
 	v, ok := obj.Get(i)
 	switch i {
-	case 0, 2, 10, 16, 20: // FIXME
+	case 0, 3:
 		return v, ok, true
 	default:
 		return v, ok, false
@@ -52,13 +48,13 @@ func (obj User) Value(i int) (any, bool, bool) {
 func (obj User) Get(i int) (any, bool) {
 	switch i {
 	case 0:
-		return obj.ID, false
+		return filter.NilIfZero(obj.ID)
 	case 1:
 		return obj.DomainID, false
 	case 2:
 		return obj.Login, false
 	case 3:
-		return obj.Active, false
+		return filter.NilIfZero(obj.Active)
 	case 4:
 		return filter.NilIfZero(obj.UserRoles)
 	case 5:
@@ -77,7 +73,11 @@ func (obj User) String() string {
 	_, _ = fmt.Fprintf(b, "{id=%v", obj.ID)
 	_, _ = fmt.Fprintf(b, " domain_id=%v", obj.DomainID)
 	_, _ = fmt.Fprintf(b, " login=%v", obj.Login)
-	_, _ = fmt.Fprintf(b, " active=%v", obj.Active)
+	if obj.Active == nil {
+		_, _ = fmt.Fprintf(b, " active=nil")
+	} else {
+		_, _ = fmt.Fprintf(b, " active=%v", *obj.Active)
+	}
 	if obj.UserRoles == nil {
 		_, _ = fmt.Fprintf(b, " user_roles=nil")
 	} else {

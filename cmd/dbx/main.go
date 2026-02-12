@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 	"text/template"
@@ -44,10 +45,31 @@ func (t spec) IsMap() bool {
 	return len(t) > 0 && t[0] == "map["
 }
 
+type Type interface {
+	IsMap() bool
+	IsSlice() bool
+	IsInterface() bool
+	IsPointer() bool
+	String() string
+}
+
 type field struct {
-	Name  string
-	Alias string
-	Type  spec
+	Name   string
+	Alias  string
+	Option []string
+	Type
+}
+
+func (f field) IsPrimary() bool {
+	return slices.Contains(f.Option, "primary")
+}
+
+func (f field) IsAuto() bool {
+	return slices.Contains(f.Option, "auto")
+}
+
+func (f field) IsNull() bool {
+	return slices.Contains(f.Option, "null")
 }
 
 func getTag(tag, key, not string) *structtag.Tag {
@@ -62,7 +84,7 @@ func getTag(tag, key, not string) *structtag.Tag {
 	return t
 }
 
-func getType(x ast.Expr) []string {
+func getType(x ast.Expr) spec {
 	switch t := x.(type) {
 	case *ast.MapType:
 		return append(append(append([]string{"map["}, getType(t.Key)...), "]"), getType(t.Value)...)
@@ -107,9 +129,10 @@ func getFields(pkg *ast.Package, a []*ast.Field, key, not string) []field {
 			panic(f)
 		}
 		ef := field{
-			Name:  fn.Name,
-			Alias: tg.Name,
-			Type:  tt,
+			Name:   fn.Name,
+			Alias:  tg.Name,
+			Option: tg.Options,
+			Type:   tt,
 		}
 		ff = append(ff, ef)
 	}
@@ -154,8 +177,17 @@ type class struct {
 	Fields []field
 }
 
-func (t class) Last() int {
-	return len(t.Fields) - 1
+func (c class) IsAuto() bool {
+	for _, f := range c.Fields {
+		if f.IsAuto() || f.IsPrimary() {
+			return true
+		}
+	}
+	return false
+}
+
+func (c class) Last() int {
+	return len(c.Fields) - 1
 }
 
 func getTypes(pkg *ast.Package, key, not string, names ...string) []class {
@@ -268,7 +300,7 @@ func main() {
 				log.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err = tmp.Execute(&buf, generate{
+			err = tmp.Option().Execute(&buf, generate{
 				Package: name,
 				Types:   types,
 			})

@@ -16,7 +16,7 @@ func (obj Object) Self() filter.Copier {
 }
 
 func (Object) PK() filter.PK {
-	return []string{"id"} // FIXME
+	return []string{"id"}
 }
 
 func (obj Object) Copy() filter.Projector {
@@ -28,21 +28,17 @@ func (obj Object) Table() string {
 }
 
 func (Object) Names() []string {
-	return []string{
-		"id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4",
-	}
+	return []string{"id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}
 }
 
 func (obj *Object) Values() []any {
-	return []any{
-		&obj.ID, &obj.UUID2, &obj.UUID3, &obj.UUID4, &obj.Bool1, &obj.Bool2, &obj.Bool3, &obj.Bool4, &obj.Float32, &obj.Float64, &obj.Int8, &obj.Int16, &obj.Int32, &obj.Int64, &obj.String1, &obj.String2, &obj.String3, &obj.String4, &obj.Time1, &obj.Time2, &obj.Time3, &obj.Time4,
-	}
+	return []any{&obj.ID, &obj.UUID2, &obj.UUID3, &obj.UUID4, &obj.Bool1, &obj.Bool2, &obj.Bool3, &obj.Bool4, &obj.Float32, &obj.Float64, &obj.Int8, &obj.Int16, &obj.Int32, &obj.Int64, &obj.String1, &obj.String2, &obj.String3, &obj.String4, &obj.Time1, &obj.Time2, &obj.Time3, &obj.Time4}
 }
 
 func (obj Object) Value(i int) (any, bool, bool) {
 	v, ok := obj.Get(i)
 	switch i {
-	case 0, 2, 10, 16, 20: // FIXME
+	case 0, 2, 10, 16, 20:
 		return v, ok, true
 	default:
 		return v, ok, false
