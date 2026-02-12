@@ -9,6 +9,10 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
+type Table = filter.Table
+
+type Field = filter.Column
+
 type Order []string
 
 type Ranger struct {
@@ -106,7 +110,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 				return nil, "", nil, nil, err
 			}
 		}
-		_, err = fmt.Fprintf(c, " %q", filter.Column{t, n})
+		_, err = fmt.Fprintf(c, " %q", Field{t, n})
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -123,7 +127,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	w := c.Len()
-	err = a.To(c, filter.Table{Projector: j, Alias: t})
+	err = a.To(c, Table{Projector: j, Alias: t})
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -160,7 +164,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 					return nil, "", nil, nil, err
 				}
 			}
-			_, err = fmt.Fprintf(c, " %q%s", filter.Column{t, y}, o)
+			_, err = fmt.Fprintf(c, " %q%s", Field{t, y}, o)
 			if err != nil {
 				return nil, "", nil, nil, err
 			}
@@ -275,19 +279,20 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if err != nil {
 		return "", nil, nil, err
 	}
-	_, err = c.Printf(" %q (", j.Table())
+	t := c.Alias(j.Table())
+	_, err = c.Printf(" %q AS %q (", j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
 	}
 	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
 	w := filter.And{}
-	var up bool
+	var up string
 	for i, n := range nn {
 		o, none, auto := j.Value(i)
 		switch {
 		case c.IsUpdated(n):
-			up = true
+			up = n
 			continue
 		case c.IsDeleted(n):
 			w = c.Visibility(w)
@@ -332,8 +337,8 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 				return "", nil, nil, err
 			}
 		}
-		if up {
-			_, err = c.Printf("%v %q = DEFAULT", Comma(a), c.Updated)
+		if len(up) > 0 {
+			_, err = c.Printf("%v %q = DEFAULT", Comma(a), up)
 			if err != nil {
 				return "", nil, nil, err
 			}
@@ -343,7 +348,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			if err != nil {
 				return "", nil, nil, err
 			}
-			err = w.To(c, j)
+			err = w.To(c, Table{Projector: j, Alias: t})
 		}
 	}
 	_, err = c.WriteString(" RETURNING")
@@ -355,7 +360,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		if c.Unused(n) {
 			continue
 		}
-		_, err = c.Printf("%v %q", Comma(v), n)
+		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}
