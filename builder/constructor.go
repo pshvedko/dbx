@@ -101,7 +101,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if c.IsDeleted(n) {
 			a = c.DeletionClause(a)
 		}
-		if !c.Used(n) {
+		if c.Unused(n) {
 			continue
 		}
 		if v > 0 {
@@ -392,9 +392,11 @@ func (c *Constructor) Unused(n string) bool {
 
 func (c *Constructor) Validate(f filter.Fielder) error {
 	names := f.Names()
-	for name := range c.Column.Names() {
-		if !slices.Contains(names, name) {
-			return fmt.Errorf("unknown column: %s", name)
+	for _, fields := range c.Column.Names() {
+		for name := range fields {
+			if !slices.Contains(names, name) {
+				return fmt.Errorf("unknown column: %s", name)
+			}
 		}
 	}
 	return nil

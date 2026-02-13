@@ -27,16 +27,22 @@ func makeConnect(ctx context.Context, c Connector) OptionFunc {
 	}
 }
 
+type WithReturnField []string
+
+func (o WithReturnField) Apply(r *Request) error {
+	return r.withField(1, true, o...)
+}
+
 type WithField []string
 
 func (o WithField) Apply(r *Request) error {
-	return r.withField(true, o...)
+	return r.withField(0, true, o...)
 }
 
 type WithoutField []string
 
 func (o WithoutField) Apply(r *Request) error {
-	return r.withField(false, o...)
+	return r.withField(0, false, o...)
 }
 
 type WithTx sql.TxOptions
@@ -49,35 +55,35 @@ func (o WithTx) Apply(r *Request) error {
 type WithOwner string
 
 func (o WithOwner) Apply(r *Request) error {
-	r.u = string(o)
+	r.a.u = string(o)
 	return nil
 }
 
 type WithGroup string
 
 func (o WithGroup) Apply(r *Request) error {
-	r.g = string(o)
+	r.a.g = string(o)
 	return nil
 }
 
 type WithDeleted string // filed must be defined as DEFAULT NULL
 
 func (o WithDeleted) Apply(r *Request) error {
-	r.x.d = string(o)
+	r.s.d = string(o)
 	return nil
 }
 
 type WithUpdated string // filed must be defined as DEFAULT NOW
 
 func (o WithUpdated) Apply(r *Request) error {
-	r.x.u = string(o)
+	r.s.u = string(o)
 	return nil
 }
 
 type WithCreated string // filed must be defined as DEFAULT NOW
 
 func (o WithCreated) Apply(r *Request) error {
-	r.x.c = string(o)
+	r.s.c = string(o)
 	return nil
 }
 

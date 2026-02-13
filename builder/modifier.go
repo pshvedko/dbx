@@ -6,38 +6,51 @@ import (
 
 type Column interface {
 	Used(string) bool
-	Names() map[string]struct{}
-	Allowed() bool
+	Names() [2]map[string]struct{}
+	Returned(string) bool
 }
 
-type AllowedColumn map[string]struct{}
+type IncludedColumn [2]map[string]struct{}
 
-func (c AllowedColumn) Used(k string) bool {
-	_, ok := c[k]
+func (c IncludedColumn) Returned(k string) bool {
+	i := 0
+	if c[1] != nil {
+		i++
+	}
+	_, ok := c[i][k]
 	return ok
 }
 
-func (c AllowedColumn) Names() map[string]struct{} {
+func (c IncludedColumn) Used(k string) bool {
+	_, ok := c[0][k]
+	return ok
+}
+
+func (c IncludedColumn) Names() [2]map[string]struct{} {
 	return c
 }
 
-func (c AllowedColumn) Allowed() bool {
-	return true
+type ExcludedColumn [2]map[string]struct{}
+
+func (c ExcludedColumn) Returned(k string) bool {
+	i := 0
+	if c[1] != nil {
+		i++
+	}
+	_, ok := c[i][k]
+	if i == 0 {
+		return !ok
+	}
+	return ok
 }
 
-type ExcludedColumn map[string]struct{}
-
 func (c ExcludedColumn) Used(k string) bool {
-	_, ok := c[k]
+	_, ok := c[0][k]
 	return !ok
 }
 
-func (c ExcludedColumn) Names() map[string]struct{} {
+func (c ExcludedColumn) Names() [2]map[string]struct{} {
 	return c
-}
-
-func (c ExcludedColumn) Allowed() bool {
-	return false
 }
 
 type Modify struct {

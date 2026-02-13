@@ -561,7 +561,7 @@ func (db DB) TestPut(t *testing.T) {
 					Int16:   11,
 					String2: "magenta",
 				},
-				oo: []request.Option{request.PutUpdate, request.WithField{"id"}},
+				oo: []request.Option{request.PutUpdate, request.WithField{"id"}, request.WithReturnField{"bool_3"}},
 			},
 			want: &model.Object{
 				ID:      ID8,
@@ -620,8 +620,8 @@ func (db DB) TestPut(t *testing.T) {
 					}
 					v1, n1 := tt.want.Get(i)
 					v2, n2 := tt.args.o.Get(i)
-					require.Equal(t, v1, v2, n)
-					require.Equal(t, n1, n2, n)
+					require.Equal(t, v1, v2, "[%v] %v", i, n)
+					require.Equal(t, n1, n2, "[%v] %v", i, n)
 				}
 			}
 		})

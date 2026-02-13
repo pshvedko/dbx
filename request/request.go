@@ -16,14 +16,16 @@ type Request struct {
 	c Connection
 	e bool
 	t bool
-	b bool
-	f map[string]struct{}
+	x [2]bool
+	f [2]map[string]struct{}
 	o *sql.TxOptions
-	u string
-	g string
+	a struct {
+		u string
+		g string
+	}
 	m ReadDeleted
 	p PerformPut
-	x struct {
+	s struct {
 		d string
 		u string
 		c string
@@ -107,27 +109,27 @@ func (r *Request) End(err error) error {
 	}
 	r.c = nil
 	r.o = nil
-	r.f = nil
-	r.b = false
+	r.f = [2]map[string]struct{}{nil, nil}
+	r.x = [2]bool{false, false}
 	r.t = false
 	r.e = false
 	return err
 }
 
-func (r *Request) withField(b bool, kk ...string) error {
+func (r *Request) withField(i int, b bool, kk ...string) error {
 	switch {
-	case r.b == b:
-		r.b = !r.b
+	case r.x[i] == b:
+		r.x[i] = !r.x[i]
 		fallthrough
-	case r.f == nil:
-		r.f = map[string]struct{}{}
+	case r.f[i] == nil:
+		r.f[i] = map[string]struct{}{}
 	}
 	for _, k := range kk {
-		_, ok := r.f[k]
+		_, ok := r.f[i][k]
 		if ok {
 			return fmt.Errorf("repeated column: %s", k)
 		}
-		r.f[k] = struct{}{}
+		r.f[i][k] = struct{}{}
 	}
 	return nil
 }
@@ -135,26 +137,26 @@ func (r *Request) withField(b bool, kk ...string) error {
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
 		Column: func() builder.Column {
-			if r.b || len(r.f) == 0 {
+			if r.x[0] || len(r.f[0]) == 0 {
 				return builder.ExcludedColumn(r.f)
 			}
-			return builder.AllowedColumn(r.f)
+			return builder.IncludedColumn(r.f)
 		}(),
 		Access: builder.Access{
-			Owner: r.u,
-			Group: r.g,
+			Owner: r.a.u,
+			Group: r.a.g,
 		},
 		Aliases: builder.Aliases{},
 		Modify: builder.Modify{
-			Created: r.x.c,
-			Updated: r.x.u,
+			Created: r.s.c,
+			Updated: r.s.u,
 			Deleted: func() builder.Deleted {
 				if r.m == DeletedFree {
-					return builder.DeletedFree(r.x.d)
+					return builder.DeletedFree(r.s.d)
 				} else if r.m == DeletedOnly {
-					return builder.DeletedOnly(r.x.d)
+					return builder.DeletedOnly(r.s.d)
 				}
-				return builder.DeletedNone(r.x.d)
+				return builder.DeletedNone(r.s.d)
 			}(),
 		},
 		Mode: r.p.Mode(),

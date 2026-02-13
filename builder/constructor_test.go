@@ -1,9 +1,9 @@
 package builder_test
 
 import (
-	"github.com/google/uuid"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/pshvedko/dbx/filter"
