@@ -27,8 +27,18 @@ func (obj User) Table() string {
 	return UserTable
 }
 
+var UserNames = []string{"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted"}
+
+// Names returns READ ONLY name slice
 func (User) Names() []string {
-	return []string{"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted"}
+	return UserNames
+}
+
+var UserColumns = map[string]struct{}{"id": {}, "domain_id": {}, "login": {}, "active": {}, "user_roles": {}, "created": {}, "updated": {}, "deleted": {}}
+
+// Columns returns READ ONLY name map
+func (User) Columns() map[string]struct{} {
+	return UserColumns
 }
 
 func (obj *User) Values() []any {

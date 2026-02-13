@@ -2,7 +2,6 @@ package builder
 
 import (
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -391,25 +390,14 @@ func (c *Constructor) Unused(n string) bool {
 }
 
 func (c *Constructor) Validate(f filter.Fielder) error {
-	names := f.Names()
+	columns := f.Columns()
 	for _, fields := range c.Column.Names() {
 		for name := range fields {
-			if !slices.Contains(names, name) {
+			_, ok := columns[name]
+			if !ok {
 				return fmt.Errorf("unknown column: %s", name)
 			}
 		}
 	}
 	return nil
 }
-
-//func (c *Constructor) Validate1(f filter.Fielder) error { TODO
-//    namesMap := f.NamesMap()
-//    for _, fields := range c.Column.Names() {
-//        for name := range fields {
-//            if _, ok := namesMap[name]; !ok {
-//                return fmt.Errorf("unknown column: %s", name)
-//            }
-//        }
-//    }
-//    return nil
-//}

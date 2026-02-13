@@ -250,6 +250,7 @@ type Valuer interface {
 type Fielder interface {
 	PK() PK
 	Names() []string
+	Columns() map[string]struct{}
 	Value(int) (any, bool, bool) // value, none, auto
 	Get(int) (any, bool)         // value, none
 	Copier

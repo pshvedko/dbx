@@ -27,8 +27,18 @@ func (obj Object) Table() string {
 	return ObjectTable
 }
 
+var ObjectNames = []string{"id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}
+
+// Names returns READ ONLY name slice
 func (Object) Names() []string {
-	return []string{"id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}
+	return ObjectNames
+}
+
+var ObjectColumns = map[string]struct{}{"id": {}, "uuid_2": {}, "uuid_3": {}, "uuid_4": {}, "bool_1": {}, "bool_2": {}, "bool_3": {}, "bool_4": {}, "float_32": {}, "float_64": {}, "int_8": {}, "int_16": {}, "int_32": {}, "int_64": {}, "string_1": {}, "string_2": {}, "string_3": {}, "string_4": {}, "time_1": {}, "time_2": {}, "time_3": {}, "time_4": {}}
+
+// Columns returns READ ONLY name map
+func (Object) Columns() map[string]struct{} {
+	return ObjectColumns
 }
 
 func (obj *Object) Values() []any {

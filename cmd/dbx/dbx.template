@@ -27,8 +27,18 @@ func (obj {{.Type}}) Table() string {
 	return {{.Type}}Table
 }
 
+var {{.Type}}Names = []string{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}} }
+
+// Names returns READ ONLY name slice
 func ({{.Type}}) Names() []string {
-    return []string{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}} }
+    return {{.Type}}Names
+}
+
+var {{.Type}}Columns = map[string]struct{}{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}":{}{{end}}}
+
+// Columns returns READ ONLY name map
+func ({{.Type}}) Columns() map[string]struct{} {
+    return {{.Type}}Columns
 }
 
 func (obj *{{.Type}}) Values() []any {
