@@ -13,11 +13,11 @@ type Column interface {
 type IncludedColumn [2]map[string]struct{}
 
 func (c IncludedColumn) Returned(k string) bool {
-	i := 0
 	if c[1] != nil {
-		i++
+		_, ok := c[1][k]
+		return ok
 	}
-	_, ok := c[i][k]
+	_, ok := c[0][k]
 	return ok
 }
 
@@ -33,15 +33,12 @@ func (c IncludedColumn) Names() [2]map[string]struct{} {
 type ExcludedColumn [2]map[string]struct{}
 
 func (c ExcludedColumn) Returned(k string) bool {
-	i := 0
 	if c[1] != nil {
-		i++
+		_, ok := c[1][k]
+		return ok
 	}
-	_, ok := c[i][k]
-	if i == 0 {
-		return !ok
-	}
-	return ok
+	_, ok := c[0][k]
+	return !ok
 }
 
 func (c ExcludedColumn) Used(k string) bool {

@@ -561,7 +561,10 @@ func (db DB) TestPut(t *testing.T) {
 					Int16:   11,
 					String2: "magenta",
 				},
-				oo: []request.Option{request.PutUpdate, request.WithField{"id"}, request.WithReturnField{"bool_3"}},
+				oo: []request.Option{
+					request.PutUpdate,
+					request.WithField{"id"},
+					request.WithReturnField{"id", "bool_3", "float_64", "int_8", "int_16", "string_2"}},
 			},
 			want: &model.Object{
 				ID:      ID8,
@@ -588,7 +591,10 @@ func (db DB) TestPut(t *testing.T) {
 					Int16:   11,
 					String2: "magenta",
 				},
-				oo: []request.Option{request.PutUpdate, request.WithField{"bool_3"}}, // TODO
+				oo: []request.Option{
+					request.PutUpdate,
+					request.WithField{"bool_3"},
+					request.WithReturnField{"id", "bool_3", "float_64", "int_8", "int_16", "string_2"}},
 			},
 			want: &model.Object{
 				ID:      ID8,

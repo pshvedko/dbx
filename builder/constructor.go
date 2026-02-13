@@ -276,7 +276,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 	}
 	var v int
 	for i, n := range nn {
-		if c.Unused(n) {
+		if !c.Returned(n) {
 			continue
 		}
 		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
@@ -401,3 +401,15 @@ func (c *Constructor) Validate(f filter.Fielder) error {
 	}
 	return nil
 }
+
+//func (c *Constructor) Validate1(f filter.Fielder) error { TODO
+//    namesMap := f.NamesMap()
+//    for _, fields := range c.Column.Names() {
+//        for name := range fields {
+//            if _, ok := namesMap[name]; !ok {
+//                return fmt.Errorf("unknown column: %s", name)
+//            }
+//        }
+//    }
+//    return nil
+//}
