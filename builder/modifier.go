@@ -55,7 +55,7 @@ func (m Modify) IsUpdated(n string) bool {
 }
 
 type Deleted interface {
-	Visibility(filter.And) filter.And
+	DeletionClause(filter.And) filter.And
 	IsDeleted(string) bool
 }
 
@@ -65,7 +65,7 @@ func (o DeletedOnly) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
-func (o DeletedOnly) Visibility(a filter.And) filter.And {
+func (o DeletedOnly) DeletionClause(a filter.And) filter.And {
 	return append(a, filter.Ne{string(o): nil})
 }
 
@@ -75,7 +75,7 @@ func (o DeletedNone) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
-func (o DeletedNone) Visibility(a filter.And) filter.And {
+func (o DeletedNone) DeletionClause(a filter.And) filter.And {
 	return append(a, filter.Eq{string(o): nil})
 }
 
@@ -85,6 +85,6 @@ func (o DeletedFree) IsDeleted(n string) bool {
 	return n == string(o)
 }
 
-func (DeletedFree) Visibility(a filter.And) filter.And {
+func (DeletedFree) DeletionClause(a filter.And) filter.And {
 	return a
 }

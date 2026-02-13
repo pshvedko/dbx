@@ -247,3 +247,69 @@ func Unite(a And, eqs []Eq, nes []Ne, ges []Ge, gts []Gt, les []Le, lts []Lt, as
 func Collapse(a And) Filter {
 	return Unite(a, []Eq{}, []Ne{}, []Ge{}, []Gt{}, []Le{}, []Lt{}, []As{}, []Na{}, []In{}, []Ni{}, 0, 0)
 }
+
+func IsEmpty(f Filter) bool {
+	switch v := f.(type) {
+	case nil:
+		return true
+
+	case And:
+		for _, x := range v {
+			if !IsEmpty(x) {
+				return false
+			}
+		}
+		return true
+	case Or:
+		for _, x := range v {
+			if !IsEmpty(x) {
+				return false
+			}
+		}
+		return true
+
+	case In:
+		if len(v) == 0 {
+			return true
+		}
+		for _, x := range v {
+			if len(x) > 0 {
+				return false
+			}
+		}
+		return true
+	case Ni:
+		if len(v) == 0 {
+			return true
+		}
+		for _, x := range v {
+			if len(x) > 0 {
+				return false
+			}
+		}
+		return true
+
+	case Eq:
+		return len(v) == 0
+	case Ne:
+		return len(v) == 0
+	case Ge:
+		return len(v) == 0
+	case Gt:
+		return len(v) == 0
+	case Le:
+		return len(v) == 0
+	case Lt:
+		return len(v) == 0
+	case As:
+		return len(v) == 0
+	case Na:
+		return len(v) == 0
+
+	case True, False:
+		return false
+
+	default:
+		panic(v)
+	}
+}

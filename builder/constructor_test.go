@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"github.com/google/uuid"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -151,6 +152,90 @@ func TestConstructor_Insert(t *testing.T) {
 			r, err := request.NewWithOption(tt.args.o)
 			require.ErrorIs(t, err, tt.wantErr)
 			got, got1, got2, err := r.Constructor().Insert(tt.args.j)
+			t.Log(got)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.want1, got1)
+			require.Equal(t, tt.want2, got2)
+		})
+	}
+}
+
+func TestConstructor_Update(t *testing.T) {
+	o := model.Object{ID: uuid.New()}
+	type args struct {
+		j filter.Projector
+		o []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		want1   []any
+		want2   []any
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				j: &o,
+				o: []request.Option{
+					request.WithCreated("time_1"),
+					request.WithUpdated("time_2"),
+					request.WithDeleted("time_4"),
+					request.PutUpdate,
+					request.WithField{"id", "uuid_3"},
+					request.DeletedNone,
+				},
+			},
+			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT WHERE ( "o"."id" = $1 AND "o"."time_4" IS NULL ) RETURNING "o"."id", "o"."uuid_3"`,
+			want1:   []any{o.ID},
+			want2:   []any{&o.ID, &o.UUID3},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				o: []request.Option{
+					request.WithCreated("time_1"),
+					request.WithUpdated("time_2"),
+					request.WithDeleted("time_4"),
+					request.PutUpdate,
+					request.WithField{"id", "uuid_3"},
+					request.DeletedOnly,
+				},
+			},
+			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT WHERE ( "o"."id" = $1 AND "o"."time_4" IS NOT NULL ) RETURNING "o"."id", "o"."uuid_3"`,
+			want1:   []any{o.ID},
+			want2:   []any{&o.ID, &o.UUID3},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				o: []request.Option{
+					request.WithCreated("time_1"),
+					request.WithUpdated("time_2"),
+					request.WithDeleted("time_4"),
+					request.PutUpdate,
+					request.WithField{"id", "uuid_3"},
+					request.DeletedFree,
+				},
+			},
+			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT WHERE "o"."id" = $1 RETURNING "o"."id", "o"."uuid_3"`,
+			want1:   []any{o.ID},
+			want2:   []any{&o.ID, &o.UUID4}, // bug of require.Equal and Exactly
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := request.NewWithOption(tt.args.o)
+			require.ErrorIs(t, err, tt.wantErr)
+			got, got1, got2, err := r.Constructor().Update(tt.args.j)
 			t.Log(got)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)

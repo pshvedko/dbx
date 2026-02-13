@@ -222,3 +222,41 @@ func TestCollapse(t *testing.T) {
 		})
 	}
 }
+
+func TestIsEmpty(t *testing.T) {
+	type args struct {
+		f Filter
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{},
+			want: true,
+		},
+		{
+			name: "",
+			args: args{f: And{Ni{}}},
+			want: true,
+		},
+		{
+			name: "",
+			args: args{f: And{Or{Eq{}, Gt{}}, In{"a": {}}}},
+			want: true,
+		},
+		{
+			name: "",
+			args: args{f: True{}},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equalf(t, tt.want, IsEmpty(tt.args.f), "IsEmpty(%v)", tt.args.f)
+		})
+	}
+}

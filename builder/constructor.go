@@ -99,7 +99,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	v, nn, vv, t := 0, j.Names(), j.Values(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
-			a = c.Visibility(a)
+			a = c.DeletionClause(a)
 		}
 		if !c.Used(n) {
 			continue
@@ -206,7 +206,8 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	if err != nil {
 		return "", nil, nil, err
 	}
-	_, err = c.Printf("UPDATE %q SET", j.Table())
+	t := c.Alias(j.Table())
+	_, err = c.Printf("UPDATE %q AS %q SET", j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -214,7 +215,8 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	if len(pk) == 0 {
 		return "", nil, nil, fmt.Errorf("unknown primary key")
 	}
-	w := filter.Eq{}
+	k := filter.Eq{}
+	w := filter.And{k}
 	for i, n := range nn {
 		var v fmt.Formatter
 		switch {
@@ -225,10 +227,10 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 			if none && auto {
 				return "", nil, nil, fmt.Errorf("invalid primary key")
 			}
-			w[n] = o
+			k[n] = o
 			continue
 		case c.IsDeleted(n):
-			w[n] = nil
+			w = c.DeletionClause(w)
 			continue
 		case c.Unused(n) || c.IsCreated(n):
 			continue
@@ -245,25 +247,54 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 		}
 		u++
 	}
-	_, err = c.WriteString(" WHERE ")
+	err = c.WriteWhere(j, t, w)
 	if err != nil {
 		return "", nil, nil, err
 	}
-	err = w.To(c, j)
+	return c.WriteReturning(t, nn, vv)
+}
+
+func (c *Constructor) WriteWhere(j filter.Projector, t string, f filter.And) error {
+	if filter.IsEmpty(f) {
+		return nil
+	}
+	_, err := c.WriteString(" WHERE ")
+	if err != nil {
+		return err
+	}
+	err = f.To(c, Table{Projector: j, Alias: t})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, []any, []any, error) {
+	_, err := c.WriteString(" RETURNING")
 	if err != nil {
 		return "", nil, nil, err
 	}
-	_, err = c.WriteString(" RETURNING")
-	if err != nil {
-		return "", nil, nil, err
-	}
+	var v int
 	for i, n := range nn {
-		_, err = c.Printf("%v %q", Comma(i), n)
+		if c.Unused(n) {
+			continue
+		}
+		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}
+		vv[v] = vv[i]
+		v++
 	}
-	return c.String(), c.Values(), vv, nil
+	if v == 0 {
+		_, err = c.Write([]byte{' ', '1'})
+		if err != nil {
+			return "", nil, nil, err
+		}
+		vv[0] = new(int64)
+		v++
+	}
+	return c.String(), c.Values(), vv[:v], nil
 }
 
 func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
@@ -295,7 +326,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			up = n
 			continue
 		case c.IsDeleted(n):
-			w = c.Visibility(w)
+			w = c.DeletionClause(w)
 			continue
 		case c.IsCreated(n):
 			continue
@@ -343,39 +374,12 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 				return "", nil, nil, err
 			}
 		}
-		if len(w) > 0 {
-			_, err = c.WriteString(" WHERE ")
-			if err != nil {
-				return "", nil, nil, err
-			}
-			err = w.To(c, Table{Projector: j, Alias: t})
-		}
-	}
-	_, err = c.WriteString(" RETURNING")
-	if err != nil {
-		return "", nil, nil, err
-	}
-	var v int
-	for i, n := range nn {
-		if c.Unused(n) {
-			continue
-		}
-		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
+		err = c.WriteWhere(j, t, w)
 		if err != nil {
 			return "", nil, nil, err
 		}
-		vv[v] = vv[i]
-		v++
 	}
-	if v == 0 {
-		_, err = c.Write([]byte{' ', '1'})
-		if err != nil {
-			return "", nil, nil, err
-		}
-		vv[0] = new(int64)
-		v++
-	}
-	return c.String(), c.Values(), vv[:v], nil
+	return c.WriteReturning(t, nn, vv)
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
