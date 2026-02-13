@@ -36,9 +36,6 @@ func Open(t *testing.T) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err != nil {
-		return nil, err
-	}
 	t.Cleanup(func() {
 		_ = db.Close()
 	})
