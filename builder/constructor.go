@@ -413,7 +413,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
 	if !c.IsDeleted("") {
-		return c.Update(filter.NewProjector(j).WithPK().WithValue(filter.Set{"time_4": filter.Now()}), f)
+		return c.Update(filter.NewProjector(j).WithPK().WithValue(filter.Set{c.Deleted.Name(): filter.Now()}), f)
 	}
 	err := c.Validate(j)
 	if err != nil {
