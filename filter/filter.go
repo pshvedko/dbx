@@ -35,7 +35,11 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 			}
 		}()
 	}
-	for i, f := range ff {
+	var i int
+	for _, f := range ff {
+		if IsEmpty(f) {
+			continue
+		}
 		if i > 0 {
 			_, err = fmt.Fprint(b, " ", o, " ")
 			if err != nil {
@@ -46,6 +50,7 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 		if err != nil {
 			return err
 		}
+		i++
 	}
 	return err
 }

@@ -224,7 +224,7 @@ func (c *Constructor) Sort(y Order) *Constructor {
 	return c
 }
 
-func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
+func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
 	err := c.Validate(j)
 	if err != nil {
@@ -236,33 +236,35 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 		return "", nil, nil, err
 	}
 	u, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
-	if len(pk) == 0 {
+	if len(ff) == 0 && len(pk) == 0 {
 		return "", nil, nil, fmt.Errorf("unknown primary key")
 	}
 	k := filter.Eq{}
 	w := filter.And{k}
+	w = append(w, ff...)
 	for i, n := range nn {
 		var v fmt.Formatter
+		o, none, auto := j.Value(i)
 		switch {
 		case c.IsUpdated(n):
 			v = DEFAULT
 		case pk.Have(n):
-			o, none, auto := j.Value(i)
-			if none && auto {
+			if none {
 				return "", nil, nil, fmt.Errorf("invalid primary key")
 			}
 			k[n] = o
 			continue
 		case c.IsDeleted(n):
 			w = c.DeletionClause(w)
-			continue
-		case c.Unused(n) || c.IsCreated(n):
-			continue
-		default:
-			o, none, auto := j.Value(i)
-			if none && auto {
+			if none {
 				continue
 			}
+			v = c.Add(o)
+		case c.Unused(n) || c.IsCreated(n):
+			continue
+		case none && auto:
+			continue
+		default:
 			v = c.Add(o)
 		}
 		_, err = c.Printf("%v %q = %v", Comma(u), n, v)
@@ -278,7 +280,7 @@ func (c *Constructor) Update(j filter.Projector) (string, []any, []any, error) {
 	return c.WriteReturning(t, nn, vv)
 }
 
-func (c *Constructor) WriteWhere(j filter.Projector, t string, f filter.And) error {
+func (c *Constructor) WriteWhere(j filter.Projector, t string, f filter.Filter) error {
 	if filter.IsEmpty(f) {
 		return nil
 	}
@@ -315,7 +317,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		if err != nil {
 			return "", nil, nil, err
 		}
-		vv[0] = new(int64)
+		vv[v] = new(int64)
 		v++
 	}
 	return c.String(), c.Values(), vv[:v], nil
@@ -351,7 +353,9 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			continue
 		case c.IsDeleted(n):
 			w = c.DeletionClause(w)
-			continue
+			if none {
+				continue
+			}
 		case c.IsCreated(n):
 			continue
 		case none && auto:
@@ -406,8 +410,31 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	return c.WriteReturning(t, nn, vv)
 }
 
+type Set map[int]any
+
+type X struct {
+	filter.Projector
+	Set
+}
+
+func (x X) PK() filter.PK {
+	return filter.PK{}
+}
+
+func (x X) Value(i int) (any, bool, bool) {
+	v, ok := x.Set[i]
+	if ok {
+		return v, false, false
+	}
+	return x.Projector.Value(i)
+}
+
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
+	if !c.IsDeleted("") {
+		return c.Update(X{Projector: j, Set: Set{21: filter.Now()}}, f)
+	}
+
 	err := c.Validate(j)
 	if err != nil {
 		return "", nil, nil, err
@@ -417,12 +444,7 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if err != nil {
 		return "", nil, nil, err
 	}
-
 	w := filter.And{f}
-	//if f != nil {
-	//	w = append(w, f)
-	//}
-
 	err = c.WriteWhere(j, t, w)
 	if err != nil {
 		return "", nil, nil, err

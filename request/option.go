@@ -72,7 +72,7 @@ func (o WithGroup) Apply(r *Request) error {
 	return nil
 }
 
-type WithDeleted string // filed must be defined as DEFAULT NULL
+type WithDeleted string // filed must be defined as DEFAULT NULL and NOW compatible
 
 func (o WithDeleted) Apply(r *Request) error {
 	r.s.d = string(o)

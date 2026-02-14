@@ -326,7 +326,7 @@ func TestConstructor_Delete(t *testing.T) {
 			name: "",
 			args: args{
 				j: &o,
-				f: filter.Eq{"id": uuid.UUID{}},
+				f: filter.Eq{"id": uuid.UUID{0x48, 0xf9, 0xf2, 0x4e, 0x12, 0xbe, 0x48, 0xe8, 0xa1, 0x61, 0xe0, 0x9, 0xc4, 0xb7, 0x28, 0xd3}},
 				o: []request.Option{
 					request.WithCreated("time_1"),
 					request.WithUpdated("time_2"),
@@ -334,9 +334,9 @@ func TestConstructor_Delete(t *testing.T) {
 					request.WithField{"id"},
 				},
 			},
-			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT, "time_4" = NOW() WHERE ( "o"."id" = $1 AND "o"."time_4" IS NOT NULL ) RETURNING "o"."id"`,
-			want1:   nil,
-			want2:   nil,
+			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT, "time_4" = NOW() WHERE ( "o"."id" = $1 AND "o"."time_4" IS NULL ) RETURNING "o"."id"`,
+			want1:   []any{uuid.UUID{0x48, 0xf9, 0xf2, 0x4e, 0x12, 0xbe, 0x48, 0xe8, 0xa1, 0x61, 0xe0, 0x9, 0xc4, 0xb7, 0x28, 0xd3}},
+			want2:   []any{&o.ID},
 			wantErr: nil,
 		},
 	}
