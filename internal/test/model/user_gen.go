@@ -34,10 +34,10 @@ func (User) Names() []string {
 	return UserNames
 }
 
-var UserColumns = map[string]struct{}{"id": {}, "domain_id": {}, "login": {}, "active": {}, "user_roles": {}, "created": {}, "updated": {}, "deleted": {}}
+var UserColumns = map[string]int{"id": 0, "domain_id": 1, "login": 2, "active": 3, "user_roles": 4, "created": 5, "updated": 6, "deleted": 7}
 
 // Columns returns READ ONLY name map
-func (User) Columns() map[string]struct{} {
+func (User) Columns() map[string]int {
 	return UserColumns
 }
 

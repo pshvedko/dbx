@@ -640,7 +640,7 @@ func (db DB) TestPut(t *testing.T) {
 
 func (db DB) TestDelete(t *testing.T) {
 	var oo model.ObjectList
-	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": nil}, request.WithField{"id"})
+	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": uuid.New()}, request.WithField{"id"})
 	require.NoError(t, err)
 	require.ElementsMatch(t, model.ObjectList{}, oo)
 }

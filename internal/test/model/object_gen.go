@@ -34,10 +34,10 @@ func (Object) Names() []string {
 	return ObjectNames
 }
 
-var ObjectColumns = map[string]struct{}{"id": {}, "uuid_2": {}, "uuid_3": {}, "uuid_4": {}, "bool_1": {}, "bool_2": {}, "bool_3": {}, "bool_4": {}, "float_32": {}, "float_64": {}, "int_8": {}, "int_16": {}, "int_32": {}, "int_64": {}, "string_1": {}, "string_2": {}, "string_3": {}, "string_4": {}, "time_1": {}, "time_2": {}, "time_3": {}, "time_4": {}}
+var ObjectColumns = map[string]int{"id": 0, "uuid_2": 1, "uuid_3": 2, "uuid_4": 3, "bool_1": 4, "bool_2": 5, "bool_3": 6, "bool_4": 7, "float_32": 8, "float_64": 9, "int_8": 10, "int_16": 11, "int_32": 12, "int_64": 13, "string_1": 14, "string_2": 15, "string_3": 16, "string_4": 17, "time_1": 18, "time_2": 19, "time_3": 20, "time_4": 21}
 
 // Columns returns READ ONLY name map
-func (Object) Columns() map[string]struct{} {
+func (Object) Columns() map[string]int {
 	return ObjectColumns
 }
 

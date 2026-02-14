@@ -410,31 +410,11 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	return c.WriteReturning(t, nn, vv)
 }
 
-type Set map[int]any
-
-type X struct {
-	filter.Projector
-	Set
-}
-
-func (x X) PK() filter.PK {
-	return filter.PK{}
-}
-
-func (x X) Value(i int) (any, bool, bool) {
-	v, ok := x.Set[i]
-	if ok {
-		return v, false, false
-	}
-	return x.Projector.Value(i)
-}
-
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
 	if !c.IsDeleted("") {
-		return c.Update(X{Projector: j, Set: Set{21: filter.Now()}}, f)
+		return c.Update(filter.NewProjector(j).WithPK().WithValue(filter.Set{"time_4": filter.Now()}), f)
 	}
-
 	err := c.Validate(j)
 	if err != nil {
 		return "", nil, nil, err
