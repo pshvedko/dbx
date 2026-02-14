@@ -214,6 +214,8 @@ func (o *Injectable[T]) Put(j Projector) {
 	}
 }
 
+func (o *Injectable[T]) Cleanup() { *o = (*o)[:0] }
+
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter

@@ -161,13 +161,13 @@ func (db DB) TestListIn(t *testing.T) {
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, model.ObjectList{{ID: ID1}, {ID: ID2}, {ID: ID3}, {ID: ID4}, {ID: ID5}}, oo)
-	oo = nil
+	oo.Cleanup()
 	total, err = dbx.List(context.TODO(), db, &oo,
 		filter.In{"time_3": {"1970-01-01T00:00:00Z"}}, nil, util.PtrUint(5), nil, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, model.ObjectList{{ID: ID1}, {ID: ID2}, {ID: ID3}, {ID: ID4}, {ID: ID5}}, oo)
-	oo = nil
+	oo.Cleanup()
 	total, err = dbx.List(context.TODO(), db, &oo,
 		filter.In{"time_3": {"YESTERDAY", filter.Now(), time.Now(), time.UnixMicro(0)}}, nil, nil, []string{"id"}, request.WithField{"id"})
 	require.NoError(t, err)
@@ -639,10 +639,33 @@ func (db DB) TestPut(t *testing.T) {
 }
 
 func (db DB) TestDelete(t *testing.T) {
+	var ids test.Map
+	t.Cleanup(func() {
+		for k, v := range ids.M {
+			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
+			_, _ = db.Exec(s, v)
+		}
+	})
 	var oo model.ObjectList
-	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": uuid.New()}, request.WithField{"id"})
+	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": uuid.UUID{}}, request.WithoutReturning())
 	require.NoError(t, err)
 	require.ElementsMatch(t, model.ObjectList{}, oo)
+	oo.Cleanup()
+	o1 := model.Object{
+		ID:    uuid.New(),
+		UUID4: util.Ptr(uuid.New())}
+	err = dbx.Put(context.TODO(), db, &o1, request.PutCreate)
+	require.NoError(t, err)
+	ids.Add(o1.Table(), o1.ID)
+	err = dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": o1.ID})
+	require.NoError(t, err)
+	require.LessOrEqual(t, o1.Time2, oo[0].Time2)
+	require.NotZero(t, oo[0].Time4)
+	require.Equal(t, oo[0].Time2, *oo[0].Time4)
+	o1.Time2 = oo[0].Time2
+	o1.Time4 = oo[0].Time4
+	require.ElementsMatch(t, model.ObjectList{o1}, oo)
+	oo.Cleanup()
 }
 
 func ExampleUnmarshal() {

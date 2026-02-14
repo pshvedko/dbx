@@ -6,11 +6,11 @@ import (
 
 type Column interface {
 	Used(string) bool
-	Names() [2]map[string]struct{}
+	Names() [2]map[string]int
 	Returned(string) bool
 }
 
-type IncludedColumn [2]map[string]struct{}
+type IncludedColumn [2]map[string]int
 
 func (c IncludedColumn) Returned(k string) bool {
 	if c[1] != nil {
@@ -26,11 +26,11 @@ func (c IncludedColumn) Used(k string) bool {
 	return ok
 }
 
-func (c IncludedColumn) Names() [2]map[string]struct{} {
+func (c IncludedColumn) Names() [2]map[string]int {
 	return c
 }
 
-type ExcludedColumn [2]map[string]struct{}
+type ExcludedColumn [2]map[string]int
 
 func (c ExcludedColumn) Returned(k string) bool {
 	if c[1] != nil {
@@ -46,7 +46,7 @@ func (c ExcludedColumn) Used(k string) bool {
 	return !ok
 }
 
-func (c ExcludedColumn) Names() [2]map[string]struct{} {
+func (c ExcludedColumn) Names() [2]map[string]int {
 	return c
 }
 

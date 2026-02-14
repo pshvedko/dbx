@@ -17,7 +17,7 @@ type Request struct {
 	e bool
 	t bool
 	x [2]bool
-	f [2]map[string]struct{}
+	f [2]map[string]int
 	o *sql.TxOptions
 	a struct {
 		u string
@@ -68,14 +68,22 @@ func (r *Request) makeTx(ctx context.Context) error {
 	return nil
 }
 
+func (r *Request) apply(oo ...Option) error {
+	for _, o := range oo {
+		err := o.Apply(r)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func NewWithOption(options ...[]Option) (*Request, error) {
 	var r Request
-	for _, option := range options {
-		for _, o := range option {
-			err := o.Apply(&r)
-			if err != nil {
-				return nil, r.End(err)
-			}
+	for _, oo := range options {
+		err := r.apply(oo...)
+		if err != nil {
+			return nil, r.End(err)
 		}
 	}
 	return &r, nil
@@ -109,7 +117,7 @@ func (r *Request) End(err error) error {
 	}
 	r.c = nil
 	r.o = nil
-	r.f = [2]map[string]struct{}{nil, nil}
+	r.f = [2]map[string]int{nil, nil}
 	r.x = [2]bool{false, false}
 	r.t = false
 	r.e = false
@@ -122,14 +130,14 @@ func (r *Request) withField(i int, b bool, kk ...string) error {
 		r.x[i] = !r.x[i]
 		fallthrough
 	case r.f[i] == nil:
-		r.f[i] = map[string]struct{}{}
+		r.f[i] = map[string]int{}
 	}
 	for _, k := range kk {
 		_, ok := r.f[i][k]
 		if ok {
 			return fmt.Errorf("repeated column: %s", k)
 		}
-		r.f[i][k] = struct{}{}
+		r.f[i][k] = 0
 	}
 	return nil
 }
@@ -243,6 +251,11 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 
 func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter) error {
 	j := i.Get()
+	r.f[0] = j.Columns()
+	r.x[0] = true
+	if r.f[1] == nil {
+		r.f[1] = j.Columns()
+	}
 	q, aa, vv, err := r.Constructor().Delete(j, f)
 	if err != nil {
 		return err
