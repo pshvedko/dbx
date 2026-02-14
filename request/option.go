@@ -27,6 +27,12 @@ func makeConnect(ctx context.Context, c Connector) OptionFunc {
 	}
 }
 
+func WithoutReturning() OptionFunc {
+	return func(r *Request) error {
+		return r.withField(1, false)
+	}
+}
+
 type WithReturnField []string
 
 func (o WithReturnField) Apply(r *Request) error {

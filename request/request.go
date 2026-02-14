@@ -204,21 +204,31 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 	if z == nil {
 		return t, nil
 	}
-	// FIXME - FOR UPDATE or COUNT(*) OVER() or CTE
+	// TODO - FOR UPDATE / COUNT(*) OVER() / CTE
 	// SELECT
-	//    id, name, created_at, -- твои поля
-	//    COUNT(*) OVER() as total -- добавляется в каждый SELECT
-	// FROM your_table
+	//    *, COUNT(*) OVER() AS total
+	// FROM table
 	// WHERE ...
 	// ORDER BY ...
 	// LIMIT 10 OFFSET 20
+	//
+	// WITH result AS (
+	//    SELECT * FROM table WHERE ... LIMIT 10 OFFSET 20
+	// )
+	// SELECT
+	//    *, (SELECT COUNT(*) FROM table WHERE ...) AS total
+	// FROM result
 	p, n, err := z.Count()
 	if err != nil {
 		return 0, err
 	}
-	err = r.c.QueryRow(ctx, p, aa[:n]...).Scan(&t)
+	var x uint
+	err = r.c.QueryRow(ctx, p, aa[:n]...).Scan(&x)
 	if err != nil {
 		return 0, err
+	}
+	if x > t {
+		return x, nil
 	}
 	return t, nil
 }

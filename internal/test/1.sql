@@ -93,6 +93,31 @@ CREATE UNIQUE INDEX IF NOT EXISTS domains_parent_id_idx
     ON public.domains ((TRUE))
     WHERE (parent_id IS NULL);
 
+ALTER TABLE domains
+    ADD CONSTRAINT domains_parent_id_fkey
+        FOREIGN KEY (parent_id)
+            REFERENCES domains (id);
+
 INSERT INTO public.domains (id, name, active, created, updated, deleted)
 VALUES ('2eb40782-cf1d-4777-a5ac-fad81ea4f5a2', 'domain1', true, '2025-03-08 12:14:03.758198 +00:00',
         '2025-03-08 12:14:03.758198 +00:00', null);
+
+CREATE TABLE users
+(
+    id        uuid PRIMARY KEY         NOT NULL DEFAULT gen_random_uuid(),
+    domain_id uuid REFERENCES domains  NOT NULL,
+    login     text                     NOT NULL,
+    password  bytea,
+    active    boolean                  NOT NULL DEFAULT true,
+    created   timestamp with time zone NOT NULL DEFAULT now(),
+    updated   timestamp with time zone NOT NULL DEFAULT now(),
+    deleted   timestamp with time zone
+);
+
+CREATE UNIQUE INDEX users_domain_id_id_idx
+    ON users (domain_id, id);
+
+CREATE UNIQUE INDEX users_login_domain_id_idx
+    ON users (login, domain_id)
+    WHERE (deleted IS NULL);
+

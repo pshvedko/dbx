@@ -274,6 +274,54 @@ func TestConstructor_Delete(t *testing.T) {
 			want2:   o.Values(),
 			wantErr: nil,
 		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: nil,
+				o: []request.Option{request.WithField{"id", "time_1"}},
+			},
+			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."time_1"`,
+			want1:   nil,
+			want2:   []any{&o.ID, &o.Time1},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: nil,
+				o: []request.Option{request.WithField{"id", "time_1"}, request.WithReturnField{"id"}},
+			},
+			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id"`,
+			want1:   nil,
+			want2:   []any{&o.ID},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: nil,
+				o: []request.Option{request.WithField{"id", "time_1"}, request.WithReturnField{"id"}, request.WithoutReturning()},
+			},
+			want:    `DELETE FROM "objects" AS "o" RETURNING 1`,
+			want1:   nil,
+			want2:   []any{new(int64)},
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{"id": uuid.UUID{}},
+				o: []request.Option{request.WithField{"id", "time_1"}, request.WithReturnField{"id"}, request.WithoutReturning()},
+			},
+			want:    `DELETE FROM "objects" AS "o" WHERE "o"."id" = $1 RETURNING 1`,
+			want1:   []any{uuid.UUID{}},
+			want2:   []any{new(int64)},
+			wantErr: nil,
+		},
 		//{
 		//	name: "",
 		//	args: args{

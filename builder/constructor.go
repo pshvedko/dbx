@@ -412,20 +412,16 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if err != nil {
 		return "", nil, nil, err
 	}
-	_, err = c.WriteString("DELETE FROM")
-	if err != nil {
-		return "", nil, nil, err
-	}
 	nn, vv, t := j.Names(), j.Values(), c.Alias(j.Table())
-	_, err = c.Printf(" %q AS %q", j.Table(), t)
+	_, err = c.Printf(`DELETE FROM`+` %q AS %q`, j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
 	}
 
-	var w filter.And
-	if f != nil {
-		w = append(w, f)
-	}
+	w := filter.And{f}
+	//if f != nil {
+	//	w = append(w, f)
+	//}
 
 	err = c.WriteWhere(j, t, w)
 	if err != nil {
