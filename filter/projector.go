@@ -3,12 +3,12 @@ package filter
 type Set map[string]any
 
 func (s Set) Index(f Fielder) map[int]any {
-	values := make(map[int]any, len(s))
+	index := make(map[int]any, len(s))
 	for key, value := range s {
 		i := f.Columns()[key]
-		values[i] = value
+		index[i] = value
 	}
-	return values
+	return index
 }
 
 type Mutator interface {
@@ -23,11 +23,11 @@ type Wrapper struct {
 
 type WrapperWithValue struct {
 	Projector
-	values map[int]any
+	index map[int]any
 }
 
 func (w WrapperWithValue) Value(i int) (any, bool, bool) {
-	v, ok := w.values[i]
+	v, ok := w.index[i]
 	if ok {
 		return v, false, false
 	}
@@ -35,7 +35,7 @@ func (w WrapperWithValue) Value(i int) (any, bool, bool) {
 }
 
 func (w Wrapper) WithValue(set Set) Mutator {
-	return Wrapper{Projector: WrapperWithValue{Projector: w, values: set.Index(w)}}
+	return Wrapper{Projector: WrapperWithValue{Projector: w, index: set.Index(w)}}
 }
 
 type WrapperWithPK struct {
