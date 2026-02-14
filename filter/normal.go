@@ -309,6 +309,11 @@ func IsEmpty(f Filter) bool {
 	case True, False:
 		return false
 
+	case Formatter:
+		return v.Size() == 0
+	case Builder:
+		return v.Size() == 0
+
 	default:
 		panic(v)
 	}
