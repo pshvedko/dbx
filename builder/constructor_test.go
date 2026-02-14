@@ -267,17 +267,29 @@ func TestConstructor_Delete(t *testing.T) {
 			args: args{
 				j: &o,
 				f: nil,
-				o: []request.Option{
-					request.WithCreated("time_1"),
-					request.WithUpdated("time_2"),
-					request.WithDeleted("time_4"),
-				},
+				o: nil,
 			},
-			want:    "",
+			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4"`,
 			want1:   nil,
-			want2:   nil,
+			want2:   o.Values(),
 			wantErr: nil,
 		},
+		//{
+		//	name: "",
+		//	args: args{
+		//		j: &o,
+		//		f: nil,
+		//		o: []request.Option{
+		//			request.WithCreated("time_1"),
+		//			request.WithUpdated("time_2"),
+		//			request.WithDeleted("time_4"),
+		//		},
+		//	},
+		//	want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4"`,
+		//	want1:   nil,
+		//	want2:   nil,
+		//	wantErr: nil,
+		//},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

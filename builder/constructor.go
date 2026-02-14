@@ -70,6 +70,10 @@ func (c *Constructor) Unused(n string) bool {
 	return !c.Used(n)
 }
 
+func (c *Constructor) Unreturned(n string) bool {
+	return !c.Returned(n)
+}
+
 func (c *Constructor) Validate(f filter.Fielder) error {
 	columns := f.Columns()
 	for _, fields := range c.Column.Names() {
@@ -296,7 +300,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 	}
 	var v int
 	for i, n := range nn {
-		if !c.Returned(n) {
+		if c.Unreturned(n) {
 			continue
 		}
 		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
@@ -403,6 +407,29 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 }
 
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
+	c.Grow(256)
+	err := c.Validate(j)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = c.WriteString("DELETE FROM")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	nn, vv, t := j.Names(), j.Values(), c.Alias(j.Table())
+	_, err = c.Printf(" %q AS %q", j.Table(), t)
+	if err != nil {
+		return "", nil, nil, err
+	}
 
-	return "", nil, nil, fmt.Errorf("not implemeted yet")
+	var w filter.And
+	if f != nil {
+		w = append(w, f)
+	}
+
+	err = c.WriteWhere(j, t, w)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	return c.WriteReturning(t, nn, vv)
 }
