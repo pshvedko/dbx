@@ -62,6 +62,27 @@ type Constructor struct {
 	y Order
 }
 
+func (c *Constructor) Printf(format string, a ...any) (int, error) {
+	return fmt.Fprintf(c, format, a...)
+}
+
+func (c *Constructor) Unused(n string) bool {
+	return !c.Used(n)
+}
+
+func (c *Constructor) Validate(f filter.Fielder) error {
+	columns := f.Columns()
+	for _, fields := range c.Column.Names() {
+		for name := range fields {
+			_, ok := columns[name]
+			if !ok {
+				return fmt.Errorf("unknown column: %s", name)
+			}
+		}
+	}
+	return nil
+}
+
 type Counter struct {
 	strings.Builder
 	q string
@@ -381,23 +402,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	return c.WriteReturning(t, nn, vv)
 }
 
-func (c *Constructor) Printf(format string, a ...any) (int, error) {
-	return fmt.Fprintf(c, format, a...)
-}
+func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 
-func (c *Constructor) Unused(n string) bool {
-	return !c.Used(n)
-}
-
-func (c *Constructor) Validate(f filter.Fielder) error {
-	columns := f.Columns()
-	for _, fields := range c.Column.Names() {
-		for name := range fields {
-			_, ok := columns[name]
-			if !ok {
-				return fmt.Errorf("unknown column: %s", name)
-			}
-		}
-	}
-	return nil
+	return "", nil, nil, fmt.Errorf("not implemeted yet")
 }

@@ -76,22 +76,22 @@ DROP TABLE public.domains;
 
 CREATE TABLE public.domains
 (
-    id      uuid PRIMARY KEY         NOT NULL DEFAULT gen_random_uuid(),
-    parent  uuid CHECK ( parent <> id ),
-    name    text                     NOT NULL,
-    active  boolean                  NOT NULL DEFAULT TRUE,
-    created timestamp with time zone NOT NULL DEFAULT now(),
-    updated timestamp with time zone NOT NULL DEFAULT now(),
-    deleted timestamp with time zone
+    id        uuid PRIMARY KEY         NOT NULL DEFAULT gen_random_uuid(),
+    parent_id uuid CHECK ( parent_id <> id ),
+    name      text                     NOT NULL,
+    active    boolean                  NOT NULL DEFAULT TRUE,
+    created   timestamp with time zone NOT NULL DEFAULT now(),
+    updated   timestamp with time zone NOT NULL DEFAULT now(),
+    deleted   timestamp with time zone
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS domains_name_idx
     ON public.domains (name)
     WHERE (deleted IS NULL);
 
-CREATE UNIQUE INDEX IF NOT EXISTS domains_parent_idx
+CREATE UNIQUE INDEX IF NOT EXISTS domains_parent_id_idx
     ON public.domains ((TRUE))
-    WHERE (parent IS NULL);
+    WHERE (parent_id IS NULL);
 
 INSERT INTO public.domains (id, name, active, created, updated, deleted)
 VALUES ('2eb40782-cf1d-4777-a5ac-fad81ea4f5a2', 'domain1', true, '2025-03-08 12:14:03.758198 +00:00',

@@ -200,9 +200,18 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 	err = rows.Err()
 	if err != nil {
 		return 0, err
-	} else if z == nil {
+	}
+	if z == nil {
 		return t, nil
 	}
+	// FIXME - FOR UPDATE or COUNT(*) OVER() or CTE
+	// SELECT
+	//    id, name, created_at, -- твои поля
+	//    COUNT(*) OVER() as total -- добавляется в каждый SELECT
+	// FROM your_table
+	// WHERE ...
+	// ORDER BY ...
+	// LIMIT 10 OFFSET 20
 	p, n, err := z.Count()
 	if err != nil {
 		return 0, err
@@ -222,6 +231,31 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 	return r.c.QueryRow(ctx, q, aa...).Scan(vv...)
 }
 
-func (r *Request) Delete(ctx context.Context, f filter.Filter) (uint, error) {
-	return 0, sql.ErrNoRows // FIXME
+func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter) error {
+	j := i.Get()
+	q, aa, vv, err := r.Constructor().Delete(j, f)
+	if err != nil {
+		return err
+	}
+	rows, err := r.c.Query(ctx, q, aa...)
+	if err != nil {
+		return err
+	}
+	var t uint
+	for rows.Next() {
+		err = rows.Scan(vv...)
+		if err != nil {
+			break
+		}
+		i.Put(j)
+		t++
+	}
+	err2 := rows.Close()
+	if err2 != nil {
+		return err2
+	}
+	if err != nil {
+		return err
+	}
+	return rows.Err()
 }

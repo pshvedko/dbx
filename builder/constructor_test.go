@@ -222,12 +222,13 @@ func TestConstructor_Update(t *testing.T) {
 					request.WithDeleted("time_4"),
 					request.PutUpdate,
 					request.WithField{"id", "uuid_3"},
+					request.WithReturnField{"id", "uuid_3", "time_1"},
 					request.DeletedFree,
 				},
 			},
-			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT WHERE "o"."id" = $1 RETURNING "o"."id", "o"."uuid_3"`,
+			want:    `UPDATE "objects" AS "o" SET "time_2" = DEFAULT WHERE "o"."id" = $1 RETURNING "o"."id", "o"."uuid_3", "o"."time_1"`,
 			want1:   []any{o.ID},
-			want2:   []any{&o.ID, &o.UUID4}, // bug of require.Equal and Exactly
+			want2:   []any{&o.ID, &o.UUID3, &o.Time1},
 			wantErr: nil,
 		},
 	}
@@ -236,6 +237,53 @@ func TestConstructor_Update(t *testing.T) {
 			r, err := request.NewWithOption(tt.args.o)
 			require.ErrorIs(t, err, tt.wantErr)
 			got, got1, got2, err := r.Constructor().Update(tt.args.j)
+			t.Log(got)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.want1, got1)
+			require.Equal(t, tt.want2, got2)
+		})
+	}
+}
+
+func TestConstructor_Delete(t *testing.T) {
+	var o model.Object
+	type args struct {
+		j filter.Projector
+		f filter.Filter
+		o []request.Option
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		want1   []any
+		want2   []any
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: nil,
+				o: []request.Option{
+					request.WithCreated("time_1"),
+					request.WithUpdated("time_2"),
+					request.WithDeleted("time_4"),
+				},
+			},
+			want:    "",
+			want1:   nil,
+			want2:   nil,
+			wantErr: nil,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r, err := request.NewWithOption(tt.args.o)
+			require.ErrorIs(t, err, tt.wantErr)
+			got, got1, got2, err := r.Constructor().Delete(tt.args.j, tt.args.f)
 			t.Log(got)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)

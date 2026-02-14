@@ -52,12 +52,12 @@ func (db *DB) WithLogger(h slog.Handler) *DB {
 	return db
 }
 
-func Get(ctx context.Context, db request.Connector, o filter.Projector, f filter.Filter, oo ...request.Option) error {
+func Get(ctx context.Context, db request.Connector, j filter.Projector, f filter.Filter, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return err
 	}
-	err = r.Get(ctx, o, f)
+	err = r.Get(ctx, j, f)
 	return r.End(err)
 }
 
@@ -70,20 +70,20 @@ func List(ctx context.Context, db request.Connector, i filter.Injector, f filter
 	return total, r.End(err)
 }
 
-func Put(ctx context.Context, db request.Connector, o filter.Projector, oo ...request.Option) error {
+func Put(ctx context.Context, db request.Connector, j filter.Projector, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return err
 	}
-	err = r.Put(ctx, o)
+	err = r.Put(ctx, j)
 	return r.End(err)
 }
 
-func Delete(ctx context.Context, db request.Connector, f filter.Filter, oo ...request.Option) (uint, error) {
+func Delete(ctx context.Context, db request.Connector, i filter.Injector, f filter.Filter, oo ...request.Option) error {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	total, err := r.Delete(ctx, f)
-	return total, r.End(err)
+	err = r.Delete(ctx, i, f)
+	return r.End(err)
 }

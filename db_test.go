@@ -61,6 +61,7 @@ func TestDB(t *testing.T) {
 	t.Run("ListAny", db.TestListAny)
 	t.Run("ListLike", db.TestListLike)
 	t.Run("Put", db.TestPut)
+	t.Run("Delete", db.TestDelete)
 }
 
 const selectPidStmt = `SELECT pg_backend_pid()`
@@ -635,6 +636,13 @@ func (db DB) TestPut(t *testing.T) {
 			_, _ = db.Exec(s, v)
 		}
 	})
+}
+
+func (db DB) TestDelete(t *testing.T) {
+	var oo model.ObjectList
+	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": nil}, request.WithField{"id"})
+	require.NoError(t, err)
+	require.ElementsMatch(t, model.ObjectList{}, oo)
 }
 
 func ExampleUnmarshal() {
