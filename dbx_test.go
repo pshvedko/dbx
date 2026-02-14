@@ -659,6 +659,7 @@ func (db DB) TestDelete(t *testing.T) {
 	ids.Add(o1.Table(), o1.ID)
 	err = dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": o1.ID})
 	require.NoError(t, err)
+	require.Len(t, oo, 1)
 	require.LessOrEqual(t, o1.Time2, oo[0].Time2)
 	require.NotZero(t, oo[0].Time4)
 	require.Equal(t, oo[0].Time2, *oo[0].Time4)
