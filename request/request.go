@@ -180,7 +180,7 @@ func (r *Request) Get(ctx context.Context, j filter.Projector, f filter.Filter) 
 }
 
 func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, o, l *uint, y builder.Order) (uint, error) {
-	j := i.Get()
+	j := i.Element()
 	z, q, aa, vv, err := r.Constructor().Range(o, l).Sort(y).Select(j, f)
 	if err != nil {
 		return 0, err
@@ -195,7 +195,7 @@ func (r *Request) List(ctx context.Context, i filter.Injector, f filter.Filter, 
 		if err != nil {
 			break
 		}
-		i.Put(j)
+		i.Inject(j)
 		t++
 	}
 	err2 := rows.Close()
@@ -250,7 +250,7 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 }
 
 func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter) error {
-	j := i.Get()
+	j := i.Element()
 	q, aa, vv, err := r.Constructor().Delete(j, f)
 	if err != nil {
 		return err
@@ -265,7 +265,7 @@ func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter
 		if err != nil {
 			break
 		}
-		i.Put(j)
+		i.Inject(j)
 		t++
 	}
 	err2 := rows.Close()

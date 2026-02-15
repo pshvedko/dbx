@@ -176,4 +176,4 @@ func (obj Object) String() string {
 	return b.String()
 }
 
-type ObjectList = dbx.Array[Object]
+type ObjectList = dbx.FlatArray[Object]

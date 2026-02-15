@@ -78,5 +78,5 @@ func (obj {{.Type}}) String() string {
 	return b.String()
 }
 
-type {{.Type}}List = dbx.Array[{{.Type}}]
+type {{.Type}}List = dbx.FlatArray[Object]
 {{end}}

@@ -102,4 +102,4 @@ func (obj User) String() string {
 	return b.String()
 }
 
-type UserList = dbx.Array[User]
+type UserList = dbx.FlatArray[Object]

@@ -129,12 +129,12 @@ func NilIfZero[T any](v T) (any, bool) {
 
 type Injectable[T Fielder] []T
 
-func (o Injectable[T]) Get() Projector {
+func (o Injectable[T]) Element() Projector {
 	var x T
 	return x.Copy()
 }
 
-func (o *Injectable[T]) Put(j Projector) {
+func (o *Injectable[T]) Inject(j Projector) {
 	switch v := j.Self().(type) {
 	case T:
 		*o = append(*o, v)
@@ -191,8 +191,8 @@ type Fielder interface {
 }
 
 type Injector interface {
-	Get() Projector
-	Put(Projector)
+	Element() Projector
+	Inject(Projector)
 }
 
 type Copier interface {
