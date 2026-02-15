@@ -691,6 +691,9 @@ func (db DB) TestDelete(t *testing.T) {
 
 	err = o1.Delete(context.TODO(), db, request.WithDeleted(""), request.WithoutReturning())
 	require.ErrorIs(t, err, dbx.ErrNoRows)
+
+	//err = dbx.Delete1(context.TODO(), db, &o1, filter.Eq{"uuid_3": nil}, request.WithoutReturning())
+	//require.ErrorIs(t, err, dbx.ErrTooManyRows)
 }
 
 func ExampleUnmarshal() {
