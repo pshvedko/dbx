@@ -39,8 +39,8 @@ func (w Wrapper) WithSet(set Set) Mutator {
 	return Wrapper{Projector: WrapperWithValue{Projector: w, index: set.Index(w)}}
 }
 
-func (w Wrapper) WithValue(n string, a any) Mutator {
-	return Wrapper{Projector: WrapperWithValue{Projector: w, index: Index{w.Columns()[n]: a}}}
+func (w Wrapper) WithValue(key string, value any) Mutator {
+	return Wrapper{Projector: WrapperWithValue{Projector: w, index: Index{w.Columns()[key]: value}}}
 }
 
 type WrapperWithPK struct {
