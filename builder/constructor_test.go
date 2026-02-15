@@ -1,16 +1,16 @@
 package builder_test
 
 import (
-	"github.com/pshvedko/dbx/builder"
-	"github.com/pshvedko/dbx/util"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
 	"github.com/pshvedko/dbx/internal/test/model"
 	"github.com/pshvedko/dbx/request"
+	"github.com/pshvedko/dbx/util"
 )
 
 func TestConstructor_Select(t *testing.T) {
