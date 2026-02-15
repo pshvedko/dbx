@@ -2,6 +2,8 @@ package dbx
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log/slog"
 
 	"github.com/jmoiron/sqlx"
@@ -19,6 +21,15 @@ type DB struct {
 	*slog.Logger
 	oo []request.Option
 }
+
+type DBX interface {
+	WithLogger(slog.Handler) *DB
+	WithOption(...request.Option) *DB
+	request.Connector
+	sqlx.ExtContext
+}
+
+var _ DBX = &DB{}
 
 func New(db *sqlx.DB) *DB {
 	return &DB{
@@ -86,4 +97,26 @@ func Delete(ctx context.Context, db request.Connector, i filter.Injector, f filt
 	}
 	err = r.Delete(ctx, i, f)
 	return r.End(err)
+}
+
+var (
+	ErrNoRows      = sql.ErrNoRows
+	ErrTooManyRows = errors.New("dbx: too many rows in result set")
+)
+
+func Delete1[T filter.Fielder](ctx context.Context, db request.Connector, o *T, f filter.Filter, oo ...request.Option) error {
+	var arr filter.Injectable[T]
+	err := Delete(ctx, db, &arr, f, oo...)
+	if err != nil {
+		return err
+	}
+	switch len(arr) {
+	case 1:
+		*o = arr[0]
+	case 0:
+		return ErrNoRows
+	default:
+		return ErrTooManyRows
+	}
+	return nil
 }

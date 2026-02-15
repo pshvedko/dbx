@@ -1,11 +1,16 @@
 package model
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v5/pgtype"
+
+	"github.com/pshvedko/dbx"
+	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 
 const ObjectTable = "objects"
@@ -33,4 +38,34 @@ type Object struct {
 	Time2   time.Time   `db:"time_2"`          //19
 	Time3   *time.Time  `db:"time_3,auto"`     //20
 	Time4   *time.Time  `db:"time_4"`          //21
+}
+
+func (obj *Object) Get(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Get(ctx, db, obj, filter.Eq{"id": obj.ID}, options...)
+}
+
+func (obj *Object) Put(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Put(ctx, db, obj, options...)
+}
+
+func (obj *Object) Delete(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Delete1(ctx, db, obj, filter.Eq{"id": obj.ID}, options...)
+}
+
+func GetObject(ctx context.Context, db dbx.DBX, id uuid.UUID, options ...request.Option) (*Object, error) {
+	obj := Object{ID: id}
+	err := obj.Get(ctx, db, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func ListObject(ctx context.Context, db dbx.DBX, f filter.Filter, offset *uint, limit *uint, order []string, options ...request.Option) (uint, []Object, error) {
+	var arr ObjectList
+	total, err := dbx.List(ctx, db, &arr, f, offset, limit, order, options...)
+	if err != nil {
+		return 0, nil, err
+	}
+	return total, arr, nil
 }

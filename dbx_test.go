@@ -615,15 +615,15 @@ func (db DB) TestPut(t *testing.T) {
 			require.ErrorIs(t, tt.wantErr, err)
 			require.Equal(t, tt.wantErr, err)
 			if tt.wantErr == nil {
-				id, _ := tt.args.o.Get(0)
+				id, _ := tt.args.o.Field(0)
 				t.Log(ids.Add(tt.args.o.Table(), id))
 				for i, n := range tt.args.o.Names() {
 					if slices.Contains(tt.wantEx, i) {
-						t.Log(tt.args.o.Get(i))
+						t.Log(tt.args.o.Field(i))
 						continue
 					}
-					v1, n1 := tt.want.Get(i)
-					v2, n2 := tt.args.o.Get(i)
+					v1, n1 := tt.want.Field(i)
+					v2, n2 := tt.args.o.Field(i)
 					require.Equal(t, v1, v2, "[%v] %v", i, n)
 					require.Equal(t, n1, n2, "[%v] %v", i, n)
 				}
@@ -633,7 +633,7 @@ func (db DB) TestPut(t *testing.T) {
 	t.Cleanup(func() {
 		ids.Range(func(k string, v *test.Array) {
 			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
-			_, _ = db.Exec(s, v)
+			_, _ = db.ExecContext(context.TODO(), s, v)
 		})
 	})
 }
@@ -643,7 +643,7 @@ func (db DB) TestDelete(t *testing.T) {
 	t.Cleanup(func() {
 		ids.Range(func(k string, v *test.Array) {
 			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
-			_, _ = db.Exec(s, v)
+			_, _ = db.ExecContext(context.TODO(), s, v)
 		})
 	})
 	var oo model.ObjectList
@@ -652,9 +652,10 @@ func (db DB) TestDelete(t *testing.T) {
 	require.ElementsMatch(t, model.ObjectList{}, oo)
 	oo.Cleanup()
 
+	id := uuid.New()
 	o1 := model.Object{
-		ID:    uuid.New(),
-		UUID4: util.Ptr(uuid.New())}
+		ID:    id,
+		UUID4: util.Ptr(ID5)}
 	err = dbx.Put(context.TODO(), db, &o1, request.PutCreate)
 	require.NoError(t, err)
 
@@ -674,6 +675,17 @@ func (db DB) TestDelete(t *testing.T) {
 	err = dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": o1.ID}, request.WithField{"id"})
 	require.NoError(t, err)
 	require.Len(t, oo, 0)
+
+	err = o1.Delete(context.TODO(), db, request.WithoutReturning())
+	require.ErrorIs(t, err, dbx.ErrNoRows)
+
+	err = o1.Delete(context.TODO(), db, request.WithDeleted(""), request.WithReturnField{"id", "uuid_4"})
+	require.NoError(t, err)
+	require.Equal(t, id, o1.ID)
+	require.Equal(t, &ID5, o1.UUID4)
+
+	err = o1.Delete(context.TODO(), db, request.WithDeleted(""), request.WithoutReturning())
+	require.ErrorIs(t, err, dbx.ErrNoRows)
 }
 
 func ExampleUnmarshal() {

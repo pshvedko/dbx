@@ -46,7 +46,7 @@ func (obj *Object) Values() []any {
 }
 
 func (obj Object) Value(i int) (any, bool, bool) {
-	v, ok := obj.Get(i)
+	v, ok := obj.Field(i)
 	switch i {
 	case 0, 2, 10, 16, 20:
 		return v, ok, true
@@ -55,7 +55,7 @@ func (obj Object) Value(i int) (any, bool, bool) {
 	}
 }
 
-func (obj Object) Get(i int) (any, bool) {
+func (obj Object) Field(i int) (any, bool) {
 	switch i {
 	case 0:
 		return filter.NilIfZero(obj.ID)

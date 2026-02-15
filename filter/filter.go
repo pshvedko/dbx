@@ -259,7 +259,7 @@ type Fielder interface {
 	Names() []string
 	Columns() map[string]int
 	Value(int) (any, bool, bool) // value, none, auto
-	Get(int) (any, bool)         // value, none
+	Field(int) (any, bool)       // value, none
 	Copier
 }
 

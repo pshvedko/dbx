@@ -46,7 +46,7 @@ func (obj *{{.Type}}) Values() []any {
 }
 
 func (obj {{.Type}}) Value(i int) (any, bool, bool) {
-	v, ok := obj.Get(i)
+	v, ok := obj.Field(i)
 	switch i {
 	{{- if or .IsAuto}}
 	case {{$comma := false}}{{range $index, $_ := .Fields}}{{if or .IsPrimary .IsAuto}}{{if $comma }}, {{end}}{{$comma = true}}{{$index}}{{end}}{{end}}:
@@ -57,7 +57,7 @@ func (obj {{.Type}}) Value(i int) (any, bool, bool) {
 	}
 }
 
-func (obj {{.Type}}) Get(i int) (any, bool) {
+func (obj {{.Type}}) Field(i int) (any, bool) {
 	switch i {
 	{{range $index, $_ := .Fields -}}
 	case {{$index}}:
