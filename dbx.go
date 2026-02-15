@@ -106,17 +106,20 @@ var (
 
 func Delete1[T filter.Fielder](ctx context.Context, db request.Connector, o *T, f filter.Filter, oo ...request.Option) error {
 	var arr filter.Injectable[T]
-	err := Delete(ctx, db, &arr, f, oo...)
+	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return err
 	}
-	switch len(arr) {
-	case 1:
-		*o = arr[0]
-	case 0:
-		return ErrNoRows
-	default:
-		return ErrTooManyRows
+	err = r.Delete(ctx, &arr, f)
+	if err == nil {
+		switch len(arr) {
+		case 1:
+			*o = arr[0]
+		case 0:
+			err = ErrNoRows
+		default:
+			err = ErrTooManyRows
+		}
 	}
-	return nil
+	return r.End(err)
 }
