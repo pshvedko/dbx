@@ -270,6 +270,16 @@ func (db DB) TestGet(t *testing.T) {
 			want:    &model.Object{},
 			wantErr: sql.ErrNoRows,
 		},
+		{
+			name: "",
+			args: args{
+				o:  &model.Object{},
+				f:  filter.Eq{"string_1": "green"},
+				oo: []request.Option{request.WithField{"id", "string_1"}},
+			},
+			want:    &model.Object{ID: ID1, String1: "green"},
+			wantErr: nil, // TODO too many?
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

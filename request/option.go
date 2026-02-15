@@ -27,6 +27,20 @@ func makeConnect(ctx context.Context, c Connector) OptionFunc {
 	}
 }
 
+func WithCount() OptionFunc {
+	return func(r *Request) error {
+		r.z = false
+		return nil
+	}
+}
+
+func WithoutCount() OptionFunc {
+	return func(r *Request) error {
+		r.z = true
+		return nil
+	}
+}
+
 func WithoutReturning() OptionFunc {
 	return func(r *Request) error {
 		return r.withField(1, false)

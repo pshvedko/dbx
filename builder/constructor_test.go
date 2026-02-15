@@ -1,6 +1,8 @@
 package builder_test
 
 import (
+	"github.com/pshvedko/dbx/builder"
+	"github.com/pshvedko/dbx/util"
 	"testing"
 
 	"github.com/google/uuid"
@@ -17,6 +19,9 @@ func TestConstructor_Select(t *testing.T) {
 		j filter.Projector
 		f filter.Filter
 		o []request.Option
+		b *uint
+		l *uint
+		y builder.Order
 	}
 	tests := []struct {
 		name    string
@@ -24,6 +29,8 @@ func TestConstructor_Select(t *testing.T) {
 		want    string
 		want1   []any
 		want2   []any
+		want3   string
+		want4   int
 		wantErr error
 	}{
 		// TODO: Add test cases.
@@ -62,17 +69,57 @@ func TestConstructor_Select(t *testing.T) {
 			want1: []any{1},
 			want2: []any{&o.ID, &o.Float64, &o.Int16},
 		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}, request.WithCount(), request.WithoutReturning()},
+				b: util.PtrUint(10),
+				l: util.PtrUint(20),
+				y: nil,
+			},
+			want:    `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
+			want1:   []any{uint(10), uint(20)},
+			want2:   []any{},
+			want3:   `SELECT COUNT(*) FROM "objects" AS "o" WHERE TRUE`,
+			wantErr: nil,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}, request.WithoutReturning(), request.WithoutCount()},
+				b: util.PtrUint(10),
+				l: util.PtrUint(20),
+				y: nil,
+			},
+			want:    `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
+			want1:   []any{uint(10), uint(20)},
+			want2:   []any{},
+			wantErr: nil,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r, err := request.NewWithOption(tt.args.o)
 			require.ErrorIs(t, err, tt.wantErr)
-			_, got, got1, got2, err := r.Constructor().Select(tt.args.j, tt.args.f)
+			z, got, got1, got2, err := r.Constructor().Range(tt.args.b, tt.args.l).Sort(tt.args.y).Select(tt.args.j, tt.args.f)
 			t.Log(got)
 			require.ErrorIs(t, err, tt.wantErr)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.want1, got1)
 			require.Equal(t, tt.want2, got2)
+			require.Equal(t, z == nil, tt.want3 == "")
+			if z == nil {
+				return
+			}
+			got3, got4, err := z.Count()
+			t.Log(got3)
+			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, tt.want3, got3)
+			require.Equal(t, tt.want4, got4)
 		})
 	}
 }

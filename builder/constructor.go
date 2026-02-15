@@ -60,6 +60,7 @@ type Constructor struct {
 	Mode
 	p Ranger
 	y Order
+	Z bool
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
@@ -125,7 +126,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if c.IsDeleted(n) {
 			a = c.DeleteClause(a)
 		}
-		if c.Unused(n) {
+		if c.Unreturned(n) || c.Unused(n) {
 			continue
 		}
 		if v > 0 {
@@ -208,7 +209,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		}
 	}
 	q := c.String()
-	if z == c.Size() {
+	if c.Z || z == c.Size() {
 		return nil, q, c.Values(), vv[:v], nil
 	}
 	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil

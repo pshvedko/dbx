@@ -30,6 +30,7 @@ type Request struct {
 		u string
 		c string
 	}
+	z bool
 }
 
 func (r *Request) closer() io.Closer {
@@ -121,6 +122,7 @@ func (r *Request) End(err error) error {
 	r.x = [2]bool{false, false}
 	r.t = false
 	r.e = false
+	r.z = false
 	return err
 }
 
@@ -168,6 +170,7 @@ func (r *Request) Constructor() *builder.Constructor {
 			}(),
 		},
 		Mode: r.p.Mode(),
+		Z:    r.z,
 	}
 }
 
