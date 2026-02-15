@@ -646,6 +646,7 @@ func (db DB) TestDelete(t *testing.T) {
 			_, _ = db.ExecContext(context.TODO(), s, v)
 		})
 	})
+
 	var oo model.ObjectList
 	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": uuid.UUID{}}, request.WithoutReturning())
 	require.NoError(t, err)
@@ -656,6 +657,10 @@ func (db DB) TestDelete(t *testing.T) {
 	o1 := model.Object{
 		ID:    id,
 		UUID4: util.Ptr(ID5)}
+
+	err = o1.Get(context.TODO(), db)
+	require.ErrorIs(t, err, dbx.ErrNoRows)
+
 	err = dbx.Put(context.TODO(), db, &o1, request.PutCreate)
 	require.NoError(t, err)
 

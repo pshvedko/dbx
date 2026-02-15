@@ -40,6 +40,8 @@ type Object struct {
 	Time4   *time.Time  `db:"time_4"`          //21
 }
 
+// TODO generate sugar
+
 func (obj *Object) Get(ctx context.Context, db dbx.DBX, options ...request.Option) error {
 	return dbx.Get(ctx, db, obj, filter.Eq{"id": obj.ID}, options...)
 }
