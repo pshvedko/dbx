@@ -135,3 +135,7 @@ func (a *FlatArray[T]) Inject(j filter.Projector) {
 }
 
 func (a *FlatArray[T]) Cleanup() { *a = (*a)[:0] }
+
+func (a *FlatArray[T]) Load(ctx context.Context, db request.Connector, f filter.Filter, o, l *uint, y []string, oo ...request.Option) (uint, error) {
+	return List(ctx, db, a, f, o, l, y, oo...)
+}
