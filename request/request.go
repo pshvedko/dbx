@@ -251,11 +251,6 @@ func (r *Request) Put(ctx context.Context, j filter.Projector) error {
 
 func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter) error {
 	j := i.Get()
-	r.f[0] = j.Columns()
-	r.x[0] = true
-	if r.f[1] == nil {
-		r.f[1] = j.Columns()
-	}
 	q, aa, vv, err := r.Constructor().Delete(j, f)
 	if err != nil {
 		return err

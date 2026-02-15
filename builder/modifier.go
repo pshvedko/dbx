@@ -17,8 +17,7 @@ func (c IncludedColumn) Returned(k string) bool {
 		_, ok := c[1][k]
 		return ok
 	}
-	_, ok := c[0][k]
-	return ok
+	return c.Used(k)
 }
 
 func (c IncludedColumn) Used(k string) bool {
@@ -37,8 +36,7 @@ func (c ExcludedColumn) Returned(k string) bool {
 		_, ok := c[1][k]
 		return ok
 	}
-	_, ok := c[0][k]
-	return !ok
+	return c.Used(k)
 }
 
 func (c ExcludedColumn) Used(k string) bool {
@@ -63,12 +61,12 @@ func (m Modify) IsUpdated(n string) bool { return m.Updated == n }
 type Deleted interface {
 	DeletionClause(filter.And) filter.And
 	IsDeleted(string) bool
-	Name() string
+	AsDeleted() string
 }
 
 type DeletedOnly string
 
-func (o DeletedOnly) Name() string { return string(o) }
+func (o DeletedOnly) AsDeleted() string { return string(o) }
 
 func (o DeletedOnly) IsDeleted(n string) bool { return n == string(o) }
 
@@ -78,7 +76,7 @@ func (o DeletedOnly) DeletionClause(a filter.And) filter.And {
 
 type DeletedNone string
 
-func (o DeletedNone) Name() string { return string(o) }
+func (o DeletedNone) AsDeleted() string { return string(o) }
 
 func (o DeletedNone) IsDeleted(n string) bool { return n == string(o) }
 
@@ -88,7 +86,7 @@ func (o DeletedNone) DeletionClause(a filter.And) filter.And {
 
 type DeletedFree string
 
-func (o DeletedFree) Name() string { return string(o) }
+func (o DeletedFree) AsDeleted() string { return string(o) }
 
 func (o DeletedFree) IsDeleted(n string) bool { return n == string(o) }
 

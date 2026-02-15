@@ -1,12 +1,12 @@
 package filter
 
 type Set map[string]any
+type Index map[int]any
 
-func (s Set) Index(f Fielder) map[int]any {
-	index := make(map[int]any, len(s))
+func (s Set) Index(f Fielder) Index {
+	index := make(Index, len(s))
 	for key, value := range s {
-		i := f.Columns()[key]
-		index[i] = value
+		index[f.Columns()[key]] = value
 	}
 	return index
 }
@@ -14,7 +14,8 @@ func (s Set) Index(f Fielder) map[int]any {
 type Mutator interface {
 	Projector
 	WithPK(...string) Mutator
-	WithValue(Set) Mutator
+	WithSet(Set) Mutator
+	WithValue(string, any) Mutator
 }
 
 type Wrapper struct {
@@ -23,7 +24,7 @@ type Wrapper struct {
 
 type WrapperWithValue struct {
 	Projector
-	index map[int]any
+	index Index
 }
 
 func (w WrapperWithValue) Value(i int) (any, bool, bool) {
@@ -34,8 +35,12 @@ func (w WrapperWithValue) Value(i int) (any, bool, bool) {
 	return w.Projector.Value(i)
 }
 
-func (w Wrapper) WithValue(set Set) Mutator {
+func (w Wrapper) WithSet(set Set) Mutator {
 	return Wrapper{Projector: WrapperWithValue{Projector: w, index: set.Index(w)}}
+}
+
+func (w Wrapper) WithValue(n string, a any) Mutator {
+	return Wrapper{Projector: WrapperWithValue{Projector: w, index: Index{w.Columns()[n]: a}}}
 }
 
 type WrapperWithPK struct {

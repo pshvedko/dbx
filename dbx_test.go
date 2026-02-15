@@ -631,32 +631,35 @@ func (db DB) TestPut(t *testing.T) {
 		})
 	}
 	t.Cleanup(func() {
-		for k, v := range ids.M {
+		ids.Range(func(k string, v *test.Array) {
 			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
 			_, _ = db.Exec(s, v)
-		}
+		})
 	})
 }
 
 func (db DB) TestDelete(t *testing.T) {
 	var ids test.Map
 	t.Cleanup(func() {
-		for k, v := range ids.M {
+		ids.Range(func(k string, v *test.Array) {
 			s := fmt.Sprintf(`DELETE FROM`+` %q WHERE "id" =ANY($1)`, k)
 			_, _ = db.Exec(s, v)
-		}
+		})
 	})
 	var oo model.ObjectList
 	err := dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": uuid.UUID{}}, request.WithoutReturning())
 	require.NoError(t, err)
 	require.ElementsMatch(t, model.ObjectList{}, oo)
 	oo.Cleanup()
+
 	o1 := model.Object{
 		ID:    uuid.New(),
 		UUID4: util.Ptr(uuid.New())}
 	err = dbx.Put(context.TODO(), db, &o1, request.PutCreate)
 	require.NoError(t, err)
+
 	ids.Add(o1.Table(), o1.ID)
+
 	err = dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": o1.ID})
 	require.NoError(t, err)
 	require.Len(t, oo, 1)
@@ -667,6 +670,10 @@ func (db DB) TestDelete(t *testing.T) {
 	o1.Time4 = oo[0].Time4
 	require.ElementsMatch(t, model.ObjectList{o1}, oo)
 	oo.Cleanup()
+
+	err = dbx.Delete(context.TODO(), db, &oo, filter.Eq{"id": o1.ID}, request.WithField{"id"})
+	require.NoError(t, err)
+	require.Len(t, oo, 0)
 }
 
 func ExampleUnmarshal() {

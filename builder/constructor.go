@@ -410,10 +410,23 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	return c.WriteReturning(t, nn, vv)
 }
 
+type UnusedColumn struct {
+	Column
+}
+
+func (UnusedColumn) Used(string) bool {
+	return false
+}
+
+func (c *Constructor) SoftDelete() *Constructor {
+	c.Column = UnusedColumn{Column: c.Column}
+	return c
+}
+
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
 	c.Grow(256)
 	if !c.IsDeleted("") {
-		return c.Update(filter.NewProjector(j).WithPK().WithValue(filter.Set{c.Deleted.Name(): filter.Now()}), f)
+		return c.SoftDelete().Update(filter.NewProjector(j).WithPK().WithValue(c.AsDeleted(), filter.Now()), f)
 	}
 	err := c.Validate(j)
 	if err != nil {
