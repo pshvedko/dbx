@@ -123,7 +123,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	v, nn, vv, t := 0, j.Names(), j.Values(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
-			a = c.DeletionClause(a)
+			a = c.DeleteClause(a)
 		}
 		if c.Unused(n) {
 			continue
@@ -255,7 +255,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 			k[n] = o
 			continue
 		case c.IsDeleted(n):
-			w = c.DeletionClause(w)
+			w = c.DeleteClause(w)
 			if none {
 				continue
 			}
@@ -352,7 +352,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			up = n
 			continue
 		case c.IsDeleted(n):
-			w = c.DeletionClause(w)
+			w = c.DeleteClause(w)
 			if none {
 				continue
 			}
