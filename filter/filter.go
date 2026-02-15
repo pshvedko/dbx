@@ -120,83 +120,12 @@ func Now() Special {
 	return "NOW()"
 }
 
-//type Joiner interface {
-//	To() Projector
-//}
-//
-//type To[T Projector] struct {
-//	v T
-//	k []string
-//}
-//
-//func (j To[T]) To() Projector {
-//	var t T
-//	return t
-//}
-//
-//func JoinTo[T Projector](v T, k ...string) Joiner {
-//	return To[T]{v: v, k: k}
-//}
-//
-//type Ref[T Projector] struct {
-//	v *T
-//	k []string
-//}
-//
-//func (j Ref[T]) To() Projector {
-//	var t T
-//	return t
-//}
-//
-//func JoinAny[T Projector](v *T, k ...string) Joiner {
-//	return Ref[T]{v: v, k: k}
-//}
-//
-//type Many[T Projector] struct {
-//	v *[]T
-//	k []string
-//}
-//
-//func (j Many[T]) To() Projector {
-//	var t T
-//	return t
-//}
-//
-//func JoinMany[T Projector](v *[]T, k ...string) Joiner {
-//	return Many[T]{v: v, k: k}
-//}
-
 func NilIfZero[T any](v T) (any, bool) {
 	if reflect.ValueOf(v).IsZero() {
 		return nil, true
 	}
 	return v, false
 }
-
-//type Scanned interface {
-//	~int64 | ~float64 | ~bool | ~[]byte | ~string | time.Time
-//}
-//
-//type Nullable[T Scanned] struct {
-//	v *T
-//}
-//
-//func (n Nullable[T]) Scan(v any) error {
-//	switch x := v.(type) {
-//	case nil:
-//	case T:
-//		*n.v = x
-//	}
-//	return nil
-//}
-//
-//func Nil[T Scanned](v *T) Nullable[T] {
-//	return Nullable[T]{v: v}
-//}
-//
-//func Scan[T sql.Scanner](v T) Nullable[T] {
-//	return Nullable[T]{v: v}
-//}
 
 type Injectable[T Fielder] []T
 
@@ -213,8 +142,6 @@ func (o *Injectable[T]) Put(j Projector) {
 		panic(v)
 	}
 }
-
-func (o *Injectable[T]) Cleanup() { *o = (*o)[:0] }
 
 type Formatter interface {
 	Size() int

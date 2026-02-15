@@ -6,10 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
 )
-
-type UserList = filter.Injectable[User]
 
 func (obj User) Self() filter.Copier {
 	return obj
@@ -102,3 +101,5 @@ func (obj User) String() string {
 	}
 	return b.String()
 }
+
+type UserList = dbx.Array[User]

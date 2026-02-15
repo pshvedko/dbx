@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
 )
 {{range .Types}}
-type {{.Type}}List = filter.Injectable[{{.Type}}]
-
 func (obj {{.Type}}) Self() filter.Copier {
 	return obj
 }
@@ -78,4 +77,6 @@ func (obj {{.Type}}) String() string {
 	_, _ = fmt.Fprintf(b, "{{$begin}}{{.Alias}}=%v{{$end}}", obj.{{.Name}}){{end}}{{end}}
 	return b.String()
 }
+
+type {{.Type}}List = dbx.Array[{{.Type}}]
 {{end}}

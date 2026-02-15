@@ -123,3 +123,15 @@ func Delete1[T filter.Fielder](ctx context.Context, db request.Connector, o *T, 
 	}
 	return r.End(err)
 }
+
+type Array[T filter.Fielder] filter.Injectable[T]
+
+func (a Array[T]) Get() filter.Projector {
+	return filter.Injectable[T](a).Get()
+}
+
+func (a *Array[T]) Put(j filter.Projector) {
+	(*filter.Injectable[T])(a).Put(j)
+}
+
+func (a *Array[T]) Cleanup() { *a = (*a)[:0] }
