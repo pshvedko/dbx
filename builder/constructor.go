@@ -80,15 +80,24 @@ func (c *Constructor) Unreturned(n string) bool {
 
 func (c *Constructor) Validate(f filter.Fielder) error {
 	columns := f.Columns()
+	size := 0
+	fund := 0
+	for name := range columns {
+		size += len(name)
+		fund++
+	}
 	for _, fields := range c.Column.Names() {
 		for name := range fields {
+			size += len(name)
 			_, ok := columns[name]
 			if !ok {
 				return fmt.Errorf("unknown column: %s", name)
 			}
 		}
 	}
-	return c.Output(len(columns) >> 1)
+	c.Grow(size<<2 + size)
+	c.Alloc(fund >> 1)
+	return nil
 }
 
 type Counter struct {
@@ -98,7 +107,7 @@ type Counter struct {
 }
 
 func (c *Counter) Count() (string, int, error) {
-	c.Grow(256)
+	c.Grow(16 + len(c.q))
 	_, err := c.WriteString("SELECT COUNT(*)")
 	if err != nil {
 		return "", 0, err
@@ -111,7 +120,6 @@ func (c *Counter) Count() (string, int, error) {
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
-	c.Grow(256)
 	err := c.Validate(j)
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -296,7 +304,6 @@ func (c *Constructor) Sort(y Order) *Constructor {
 }
 
 func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, []any, []any, error) {
-	c.Grow(256)
 	err := c.Validate(j)
 	if err != nil {
 		return "", nil, nil, err
@@ -395,7 +402,6 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 }
 
 func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
-	c.Grow(256)
 	if c.IsUpdate() {
 		return c.Update(j)
 	}
@@ -495,7 +501,6 @@ func (c *Constructor) SoftDelete() *Constructor {
 }
 
 func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any, []any, error) {
-	c.Grow(256)
 	if !c.IsDeleted("") {
 		return c.SoftDelete().Update(filter.NewProjector(j).WithPK().WithValue(c.AsDeleted(), filter.Now()), f)
 	}

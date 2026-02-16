@@ -178,7 +178,6 @@ func (f *Filter) Collation(t filter.Type, k fmt.Formatter, v any) (int, error) {
 	}
 }
 
-func (f *Filter) Output(n int) error {
+func (f *Filter) Alloc(n int) {
 	f.v = make([]any, 0, n)
-	return nil
 }
