@@ -130,7 +130,7 @@ func TestConstructor_Select(t *testing.T) {
 				y: []any{"-id"},
 			},
 			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY "o"."id" DESC`,
-			want1: nil,
+			want1: []any{},
 			want2: []any{&o.ID},
 		},
 		{
@@ -142,7 +142,7 @@ func TestConstructor_Select(t *testing.T) {
 				y: []any{"1"},
 			},
 			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1`,
-			want1: nil,
+			want1: []any{},
 			want2: []any{&o.ID},
 		},
 		{
@@ -154,7 +154,7 @@ func TestConstructor_Select(t *testing.T) {
 				y: []any{-1},
 			},
 			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1 DESC`,
-			want1: nil,
+			want1: []any{},
 			want2: []any{&o.ID},
 		},
 		{
@@ -384,7 +384,7 @@ func TestConstructor_Delete(t *testing.T) {
 				o: nil,
 			},
 			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4"`,
-			want1:   nil,
+			want1:   []any{},
 			want2:   o.Places(),
 			wantErr: nil,
 		},
@@ -396,7 +396,7 @@ func TestConstructor_Delete(t *testing.T) {
 				o: []request.Option{request.WithField{"id", "time_1"}},
 			},
 			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."time_1"`,
-			want1:   nil,
+			want1:   []any{},
 			want2:   []any{&o.ID, &o.Time1},
 			wantErr: nil,
 		},
@@ -408,7 +408,7 @@ func TestConstructor_Delete(t *testing.T) {
 				o: []request.Option{request.WithField{"id", "time_1"}, request.WithReturnField{"id"}},
 			},
 			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id"`,
-			want1:   nil,
+			want1:   []any{},
 			want2:   []any{&o.ID},
 			wantErr: nil,
 		},
@@ -420,7 +420,7 @@ func TestConstructor_Delete(t *testing.T) {
 				o: []request.Option{request.WithField{"id", "time_1"}, request.WithReturnField{"id"}, request.WithoutReturning()},
 			},
 			want:    `DELETE FROM "objects" AS "o" RETURNING 1`,
-			want1:   nil,
+			want1:   []any{},
 			want2:   []any{new(int64)},
 			wantErr: nil,
 		},
@@ -481,4 +481,31 @@ func TestConstructor_Delete(t *testing.T) {
 			require.Equal(t, tt.want2, got2)
 		})
 	}
+}
+
+func BenchmarkConstructor_Select(b *testing.B) {
+	r, err := request.NewWithOption([]request.Option{
+		request.WithCreated("time_1"),
+		request.WithUpdated("time_2"),
+		request.WithDeleted("time_4")})
+	if err != nil {
+		b.Fatal(err)
+	}
+	var o, l uint = 100, 200
+	var f filter.Filter = filter.And{
+		filter.Eq{"int_8": 'A', "bool_2": true},
+		filter.In{"string_1": []any{"yellow", "green"}, "int_16": []any{1, 2, 3}, "float_32": []any{0.0}},
+		filter.Or{
+			filter.Gt{"int_64": nil}, filter.Na{"string_2": `%ing`},
+		},
+	}
+	var p string
+	for i := 0; i < b.N; i++ {
+		_, p, _, _, err = r.Constructor().Range(&o, &l).Sort([]any{-1, "time_1"}).Select(&model.Object{}, f)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+	_ = p
+	// SELECT "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32","o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4" FROM "objects" AS "o" WHERE ( ( ( "o"."bool_2" IS TRUE AND "o"."int_8" = $1 ) AND ( "o"."float_32" = ANY($2) AND "o"."int_16" = ANY($3) AND "o"."string_1" = ANY($4) ) AND ( "o"."int_64" > NULL OR "o"."string_2" NOT LIKE $5 ) ) AND "o"."time_4" IS NULL ) ORDER BY 1 DESC, "o"."time_1" OFFSET $6 LIMIT $7
 }

@@ -66,20 +66,8 @@ type Constructor struct {
 	Z bool
 }
 
-func (c *Constructor) Width() (int, bool) {
-	return 0, false
-}
-
-func (c *Constructor) Precision() (int, bool) {
-	return 0, false
-}
-
-func (c *Constructor) Flag(int) bool {
-	return false
-}
-
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
-	return fmt.Fprintf(c, format, a...)
+	return fmt.Fprintf(c, format, a...) // FIXME
 }
 
 func (c *Constructor) Unused(n string) bool {
@@ -100,7 +88,7 @@ func (c *Constructor) Validate(f filter.Fielder) error {
 			}
 		}
 	}
-	return nil
+	return c.Output(len(columns) >> 1)
 }
 
 type Counter struct {
@@ -132,10 +120,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	var a filter.And
-	if f != nil {
-		a = append(a, f)
-	}
+	a := filter.And{f}
 	v, nn, vv, t := 0, j.Names(), j.Places(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
@@ -150,7 +135,11 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 				return nil, "", nil, nil, err
 			}
 		}
-		_, err = fmt.Fprintf(c, " %q", Field{t, n})
+		err = c.WriteByte(' ')
+		if err != nil {
+			return nil, "", nil, nil, err
+		}
+		_, err = fmt.Fprint(c, Field{t, n})
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -158,7 +147,23 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		v++
 	}
 	n := c.Len()
-	_, err = fmt.Fprintf(c, " FROM %q AS %q", j.Table(), t)
+	_, err = c.WriteString(" FROM \"")
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	_, err = c.WriteString(j.Table())
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	_, err = c.WriteString("\" AS \"")
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	_, err = c.WriteString(t)
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+	err = c.WriteByte('"')
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -182,7 +187,6 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	z := c.Size()
 	if c.R.o != nil {
 		_, err = fmt.Fprintf(c, " OFFSET %v", c.Add(*c.R.o))
@@ -362,7 +366,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		if c.Unreturned(n) {
 			continue
 		}
-		_, err = c.Printf("%v %q", Comma(v), Field{t, n})
+		_, err = c.Printf("%v %v", Comma(v), Field{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -370,7 +374,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		v++
 	}
 	if v == 0 {
-		_, err = c.Write([]byte{' ', '1'})
+		_, err = c.WriteString(" 1")
 		if err != nil {
 			return "", nil, nil, err
 		}

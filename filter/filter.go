@@ -19,23 +19,30 @@ func (t Table) Table() string {
 
 type Column [2]string
 
+var (
+	among = []byte{'"', '.', '"'}
+	quote = []byte{'"'}
+	space = []byte{' '}
+	comma = []byte{','}
+)
+
 func (c Column) Format(f fmt.State, _ rune) {
-	_, _ = f.Write([]byte{'"'})
+	_, _ = f.Write(quote)
 	_, _ = io.WriteString(f, c[0])
-	_, _ = f.Write([]byte{'"', '.', '"'})
+	_, _ = f.Write(among)
 	_, _ = io.WriteString(f, c[1])
-	_, _ = f.Write([]byte{'"'})
+	_, _ = f.Write(quote)
 }
 
 func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	if len(ff) > 1 {
-		_, err = fmt.Fprint(b, "( ")
+		_, err = b.WriteString("( ")
 		if err != nil {
 			return err
 		}
 		defer func() {
 			if err == nil {
-				_, err = fmt.Fprint(b, " )")
+				_, err = b.WriteString(" )")
 			}
 		}()
 	}
@@ -45,7 +52,15 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 			continue
 		}
 		if i > 0 {
-			_, err = fmt.Fprint(b, " ", o, " ")
+			_, err = b.Write(space)
+			if err != nil {
+				return
+			}
+			_, err = b.WriteString(o)
+			if err != nil {
+				return
+			}
+			_, err = b.Write(space)
 			if err != nil {
 				return err
 			}
@@ -89,19 +104,27 @@ func Straight[T any, M interface {
 		return nn
 	}
 	if len(oo) > 1 {
-		_, err = fmt.Fprint(b, "( ")
+		_, err = b.WriteString("( ")
 		if err != nil {
 			return
 		}
 		defer func() {
 			if err == nil {
-				_, err = fmt.Fprint(b, " )")
+				_, err = b.WriteString(" )")
 			}
 		}()
 	}
 	for i, f := range ff {
 		if i > 0 {
-			_, err = fmt.Fprint(b, " ", o, " ")
+			_, err = b.Write(space)
+			if err != nil {
+				return
+			}
+			_, err = b.WriteString(o)
+			if err != nil {
+				return
+			}
+			_, err = b.Write(space)
 			if err != nil {
 				return
 			}
@@ -161,7 +184,7 @@ type Builder interface {
 	io.Writer
 	io.StringWriter
 	fmt.Stringer
-	Print(Type, any, any) (int, error)
+	Print(Type, fmt.Formatter, any) (int, error)
 	Formatter
 }
 
@@ -169,9 +192,15 @@ type PK []string
 
 func (pk PK) Format(f fmt.State, _ rune) {
 	if len(pk) > 0 {
-		_, _ = fmt.Fprintf(f, "%q", pk[0])
+		_, _ = f.Write(quote)
+		_, _ = io.WriteString(f, pk[0])
+		_, _ = f.Write(quote)
 		for _, k := range pk[1:] {
-			_, _ = fmt.Fprintf(f, ", %q", k)
+			_, _ = f.Write(comma)
+			_, _ = f.Write(space)
+			_, _ = f.Write(quote)
+			_, _ = io.WriteString(f, k)
+			_, _ = f.Write(quote)
 		}
 	}
 }
@@ -326,7 +355,10 @@ func (a Array) Value() (driver.Value, error) {
 	}
 	for i, v := range a {
 		if i > 0 {
-			b.WriteByte(',')
+			err = b.WriteByte(',')
+			if err != nil {
+				return nil, err
+			}
 		}
 		switch x := v.(type) {
 		case nil:
@@ -339,9 +371,28 @@ func (a Array) Value() (driver.Value, error) {
 				_, err = b.WriteString("FALSE")
 			}
 		case Time:
-			_, err = b.Write(x.AppendFormat(make([]byte, 0, len(RFC3339MICRO)), RFC3339MICRO))
-		case string, fmt.Stringer:
-			_, err = fmt.Fprintf(&b, "%q", v)
+			var t [len(RFC3339MICRO)]byte
+			_, err = b.Write(x.AppendFormat(t[:0], RFC3339MICRO))
+		case fmt.Stringer:
+			err = b.WriteByte('"')
+			if err != nil {
+				return nil, err
+			}
+			_, err = b.WriteString(x.String())
+			if err != nil {
+				return nil, err
+			}
+			err = b.WriteByte('"')
+		case string:
+			err = b.WriteByte('"')
+			if err != nil {
+				return nil, err
+			}
+			_, err = b.WriteString(x)
+			if err != nil {
+				return nil, err
+			}
+			err = b.WriteByte('"')
 		default:
 			_, err = fmt.Fprint(&b, v)
 		}
