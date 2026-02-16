@@ -66,6 +66,18 @@ type Constructor struct {
 	Z bool
 }
 
+func (c *Constructor) Width() (int, bool) {
+	return 0, false
+}
+
+func (c *Constructor) Precision() (int, bool) {
+	return 0, false
+}
+
+func (c *Constructor) Flag(int) bool {
+	return false
+}
+
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
 	return fmt.Fprintf(c, format, a...)
 }
@@ -247,7 +259,11 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				return err
 			}
 		}
-		_, err = fmt.Fprintf(c, " %v", f)
+		err = c.WriteByte(' ')
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprint(c, f)
 		if err != nil {
 			return err
 		}
