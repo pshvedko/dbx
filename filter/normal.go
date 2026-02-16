@@ -5,7 +5,7 @@ type True struct{}
 func (f True) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f True) To(b Builder, _ Projector) error {
-	_, err := b.Print(EQ, nil, true)
+	_, err := b.Collation(EQ, nil, true)
 	return err
 }
 
@@ -14,7 +14,7 @@ type False struct{}
 func (f False) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f False) To(b Builder, _ Projector) error {
-	_, err := b.Print(EQ, nil, false)
+	_, err := b.Collation(EQ, nil, false)
 	return err
 }
 

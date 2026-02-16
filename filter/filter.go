@@ -129,7 +129,7 @@ func Straight[T any, M interface {
 				return
 			}
 		}
-		_, err = b.Print(oo.Type(), Column{j.Table(), f}, oo[f])
+		_, err = b.Collation(oo.Type(), Column{j.Table(), f}, oo[f])
 		if err != nil {
 			return
 		}
@@ -184,7 +184,7 @@ type Builder interface {
 	io.Writer
 	io.StringWriter
 	fmt.Stringer
-	Print(Type, fmt.Formatter, any) (int, error)
+	Collation(Type, fmt.Formatter, any) (int, error)
 	Formatter
 }
 

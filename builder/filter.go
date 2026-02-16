@@ -136,7 +136,7 @@ func (f *Filter) IN(k, v fmt.Formatter) (int, error) {
 	return 0, nil
 }
 
-func (f *Filter) Print(t filter.Type, k fmt.Formatter, v any) (int, error) {
+func (f *Filter) Collation(t filter.Type, k fmt.Formatter, v any) (int, error) {
 	switch t {
 	case filter.EQ:
 		switch v.(type) {

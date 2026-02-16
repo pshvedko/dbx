@@ -18,8 +18,8 @@ func (o Order) Error() string {
 }
 
 type Ranger struct {
-	o *uint
-	l *uint
+	O *uint
+	L *uint
 }
 
 type Access struct {
@@ -188,14 +188,22 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	z := c.Size()
-	if c.R.o != nil {
-		_, err = fmt.Fprintf(c, " OFFSET %v", c.Add(*c.R.o))
+	if c.R.O != nil {
+		_, err = c.WriteString(" OFFSET ")
+		if err != nil {
+			return nil, "", nil, nil, err
+		}
+		_, err = fmt.Fprint(c, c.Add(*c.R.O))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
-	if c.R.l != nil {
-		_, err = fmt.Fprintf(c, " LIMIT %v", c.Add(*c.R.l))
+	if c.R.L != nil {
+		_, err = c.WriteString(" LIMIT ")
+		if err != nil {
+			return nil, "", nil, nil, err
+		}
+		_, err = fmt.Fprint(c, c.Add(*c.R.L))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -276,7 +284,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 }
 
 func (c *Constructor) Range(o, l *uint) *Constructor {
-	c.R.o, c.R.l = o, l
+	c.R.O, c.R.L = o, l
 	return c
 }
 
