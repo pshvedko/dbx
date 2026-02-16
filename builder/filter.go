@@ -8,6 +8,12 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
+type FormatFunc func(fmt.State, rune)
+
+func (f FormatFunc) Format(w fmt.State, r rune) {
+	f(w, r)
+}
+
 type Comma int
 
 var (
@@ -79,12 +85,28 @@ func (f *Filter) Values() []any {
 	return f.v
 }
 
+var holders = make([]fmt.Formatter, 0, 32)
+
+func init() {
+	for i := 0; i < cap(holders); i++ {
+		var buf [20]byte
+		b := strconv.AppendInt(buf[:0], int64(i), 10)
+		holders = append(holders, FormatFunc(func(f fmt.State, r rune) {
+			_, _ = f.Write(place)
+			_, _ = f.Write(b)
+		}))
+	}
+}
+
 func (f *Filter) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
 	}
 	f.v = append(f.v, v)
+	if len(f.v) < len(holders) {
+		return holders[len(f.v)]
+	}
 	return Holder(len(f.v))
 }
 
