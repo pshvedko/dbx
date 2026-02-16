@@ -130,7 +130,7 @@ func TestFilter_To(t *testing.T) {
 			if err := tt.f.To(&b, &model.Object{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			got, got1 := b.String(), b.Values()
+			got, got1 := b.String(), b.Places()
 			if got != tt.want {
 				t.Errorf("To() got = %v, want %v", got, tt.want)
 			}

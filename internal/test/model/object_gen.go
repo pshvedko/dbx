@@ -40,7 +40,7 @@ func (Object) Columns() map[string]int {
 	return ObjectColumns
 }
 
-func (obj *Object) Values() []any {
+func (obj *Object) Places() []any {
 	return []any{&obj.ID, &obj.UUID2, &obj.UUID3, &obj.UUID4, &obj.Bool1, &obj.Bool2, &obj.Bool3, &obj.Bool4, &obj.Float32, &obj.Float64, &obj.Int8, &obj.Int16, &obj.Int32, &obj.Int64, &obj.String1, &obj.String2, &obj.String3, &obj.String4, &obj.Time1, &obj.Time2, &obj.Time3, &obj.Time4}
 }
 

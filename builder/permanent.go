@@ -14,7 +14,7 @@ type Permanent struct {
 
 func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
 	n := b.Size()
-	for _, v := range p.Values() {
+	for _, v := range p.Places() {
 		b.Value(v)
 	}
 	if n == 0 {

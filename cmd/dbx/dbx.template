@@ -40,7 +40,7 @@ func ({{.Type}}) Columns() map[string]int {
     return {{.Type}}Columns
 }
 
-func (obj *{{.Type}}) Values() []any {
+func (obj *{{.Type}}) Places() []any {
 	return []any{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}&obj.{{.Name}}{{end -}} }
 }
 

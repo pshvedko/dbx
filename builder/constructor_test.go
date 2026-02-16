@@ -145,6 +145,28 @@ func TestConstructor_Select(t *testing.T) {
 			want1: nil,
 			want2: []any{&o.ID},
 		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{-1},
+			},
+			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1 DESC`,
+			want1: nil,
+			want2: []any{&o.ID},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{2},
+			},
+			wantErr1: fmt.Errorf("illegal position: 2"),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -363,7 +385,7 @@ func TestConstructor_Delete(t *testing.T) {
 			},
 			want:    `DELETE FROM "objects" AS "o" RETURNING "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4"`,
 			want1:   nil,
-			want2:   o.Values(),
+			want2:   o.Places(),
 			wantErr: nil,
 		},
 		{

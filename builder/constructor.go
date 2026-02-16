@@ -124,7 +124,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if f != nil {
 		a = append(a, f)
 	}
-	v, nn, vv, t := 0, j.Names(), j.Values(), c.Alias(j.Table())
+	v, nn, vv, t := 0, j.Names(), j.Places(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
 			a = c.DeleteClause(a)
@@ -166,7 +166,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		}
 	}
 	m := c.Len()
-	err = c.WriteOrder(j, t)
+	err = c.WriteOrder(j, t, v)
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -186,21 +186,12 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	}
 	q := c.String()
 	if c.Z || z == c.Size() {
-		return nil, q, c.Values(), vv[:v], nil
+		return nil, q, c.Places(), vv[:v], nil
 	}
-	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
+	return &Counter{q: q[n:m], z: z}, q, c.Places(), vv[:v], nil
 }
 
-type By [2]fmt.Formatter
-
-func (b By) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(f, "%v", b[0])
-	if b[1] != nil {
-		_, _ = fmt.Fprintf(f, " %v", b[1])
-	}
-}
-
-func (c *Constructor) WriteOrder(j filter.Projector, t string) error {
+func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 	if len(c.O) == 0 {
 		return nil
 	}
@@ -211,6 +202,16 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string) error {
 	for i, y := range c.O {
 		var f fmt.Formatter
 		switch y := y.(type) {
+		case int:
+			if y == 0 {
+				f = filter.Random()
+			} else if y > v || y < -v {
+				return fmt.Errorf("illegal position: %d", y)
+			} else if y < 0 {
+				f = By{filter.Special(strconv.Itoa(-y)), DESC}
+			} else {
+				f = By{filter.Special(strconv.Itoa(y)), ASC}
+			}
 		case string:
 			if len(y) == 0 {
 				continue
@@ -275,7 +276,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 	if err != nil {
 		return "", nil, nil, err
 	}
-	u, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
+	u, nn, vv, pk := 0, j.Names(), j.Places(), j.PK()
 	if len(ff) == 0 && len(pk) == 0 {
 		return "", nil, nil, fmt.Errorf("unknown primary key")
 	}
@@ -360,7 +361,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		vv[v] = new(int64)
 		v++
 	}
-	return c.String(), c.Values(), vv[:v], nil
+	return c.String(), c.Places(), vv[:v], nil
 }
 
 func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
@@ -381,7 +382,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if err != nil {
 		return "", nil, nil, err
 	}
-	a, nn, vv, pk := 0, j.Names(), j.Values(), j.PK()
+	a, nn, vv, pk := 0, j.Names(), j.Places(), j.PK()
 	uu := make([]string, 0, len(vv)-len(pk))
 	w := filter.And{}
 	var up string
@@ -472,7 +473,7 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if err != nil {
 		return "", nil, nil, err
 	}
-	nn, vv, t := j.Names(), j.Values(), c.Alias(j.Table())
+	nn, vv, t := j.Names(), j.Places(), c.Alias(j.Table())
 	_, err = c.Printf(`DELETE FROM`+` %q AS %q`, j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err

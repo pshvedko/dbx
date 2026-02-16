@@ -32,6 +32,15 @@ const (
 	DEFAULT Keyword = "DEFAULT"
 )
 
+type By [2]fmt.Formatter
+
+func (b By) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprintf(f, "%v", b[0])
+	if b[1] != nil {
+		_, _ = fmt.Fprintf(f, " %v", b[1])
+	}
+}
+
 type Filter struct {
 	strings.Builder
 	v []any
@@ -55,7 +64,7 @@ func (f *Filter) Size() int {
 	return len(f.v)
 }
 
-func (f *Filter) Values() []any {
+func (f *Filter) Places() []any {
 	return f.v
 }
 

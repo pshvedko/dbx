@@ -40,7 +40,7 @@ func (User) Columns() map[string]int {
 	return UserColumns
 }
 
-func (obj *User) Values() []any {
+func (obj *User) Places() []any {
 	return []any{&obj.ID, &obj.DomainID, &obj.Login, &obj.Active, &obj.UserRoles, &obj.Created, &obj.Updated, &obj.Deleted}
 }
 

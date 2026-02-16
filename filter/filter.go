@@ -120,6 +120,10 @@ func Now() Special {
 	return "NOW()"
 }
 
+func Random() Special {
+	return "RANDOM()"
+}
+
 func NilIfZero[T any](v T) (any, bool) {
 	if reflect.ValueOf(v).IsZero() {
 		return nil, true
@@ -146,7 +150,7 @@ func (o *Injectable[T]) Inject(j Projector) {
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
-	Values() []any
+	Places() []any
 }
 
 type Builder interface {
@@ -177,8 +181,8 @@ func (pk PK) Have(n string) bool {
 	return false
 }
 
-type Valuer interface {
-	Values() []any
+type Placer interface {
+	Places() []any
 }
 
 type Fielder interface {
@@ -202,7 +206,7 @@ type Copier interface {
 
 type Projector interface {
 	Fielder
-	Valuer
+	Placer
 	Table() string
 }
 
