@@ -21,13 +21,11 @@ func (h Holder) Format(f fmt.State, _ rune) {
 	_, _ = fmt.Fprint(f, "$", int(h))
 }
 
-type Keyword string
-
-func (k Keyword) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprint(f, string(k))
-}
+type Keyword = filter.Special
 
 const (
+	ASC     Keyword = "ASC"
+	DESC    Keyword = "DESC"
 	NULL    Keyword = "NULL"
 	TRUE    Keyword = "TRUE"
 	FALSE   Keyword = "FALSE"

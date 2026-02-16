@@ -169,7 +169,7 @@ func (db DB) TestListIn(t *testing.T) {
 	require.ElementsMatch(t, model.ObjectList{{ID: ID1}, {ID: ID2}, {ID: ID3}, {ID: ID4}, {ID: ID5}}, oo)
 	oo.Cleanup()
 	total, err = dbx.List(context.TODO(), db, &oo,
-		filter.In{"time_3": {"YESTERDAY", filter.Now(), time.Now(), time.UnixMicro(0)}}, nil, nil, []string{"id"}, request.WithField{"id"})
+		filter.In{"time_3": {"YESTERDAY", filter.Now(), time.Now(), time.UnixMicro(0)}}, nil, nil, []any{"id"}, request.WithField{"id"})
 	require.NoError(t, err)
 	require.EqualValues(t, 5, total)
 	require.ElementsMatch(t, model.ObjectList{{ID: ID1}, {ID: ID2}, {ID: ID3}, {ID: ID4}, {ID: ID5}}, oo)
@@ -297,7 +297,7 @@ func (db DB) TestList(t *testing.T) {
 		f  filter.Filter
 		o  *uint
 		l  *uint
-		y  []string
+		y  []any
 		oo []request.Option
 	}
 	tests := []struct {
@@ -315,7 +315,7 @@ func (db DB) TestList(t *testing.T) {
 				f:  nil,
 				o:  nil,
 				l:  nil,
-				y:  []string{"id"},
+				y:  []any{"id"},
 				oo: []request.Option{request.WithField{"id"}},
 			},
 			want:    5,
@@ -329,7 +329,7 @@ func (db DB) TestList(t *testing.T) {
 				f:  nil,
 				o:  nil,
 				l:  nil,
-				y:  []string{"id"},
+				y:  []any{"id"},
 				oo: []request.Option{request.WithField{"id"}, request.DeletedOnly},
 			},
 			want:    2,
@@ -343,7 +343,7 @@ func (db DB) TestList(t *testing.T) {
 				f:  nil,
 				o:  nil,
 				l:  nil,
-				y:  []string{"id"},
+				y:  []any{"id"},
 				oo: []request.Option{request.WithField{"id"}, request.DeletedFree},
 			},
 			want:    7,
@@ -357,7 +357,7 @@ func (db DB) TestList(t *testing.T) {
 				f:  filter.Eq{"time_1": time.Unix(0, 0), "int_64": nil},
 				o:  util.PtrUint(1),
 				l:  util.PtrUint(3),
-				y:  []string{"-id"},
+				y:  []any{"-id"},
 				oo: []request.Option{request.WithField{"id", "string_2"}},
 			},
 			want: 5,

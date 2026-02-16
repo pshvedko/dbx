@@ -63,7 +63,7 @@ func GetObject(ctx context.Context, db dbx.DBX, id uuid.UUID, options ...request
 	return &obj, nil
 }
 
-func ListObject(ctx context.Context, db dbx.DBX, f filter.Filter, offset *uint, limit *uint, order []string, options ...request.Option) (uint, []Object, error) {
+func ListObject(ctx context.Context, db dbx.DBX, f filter.Filter, offset *uint, limit *uint, order []any, options ...request.Option) (uint, []Object, error) {
 	var arr ObjectList
 	total, err := dbx.List(ctx, db, &arr, f, offset, limit, order, options...)
 	if err != nil {

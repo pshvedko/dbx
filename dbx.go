@@ -72,7 +72,7 @@ func Get(ctx context.Context, db request.Connector, j filter.Projector, f filter
 	return r.End(err)
 }
 
-func List(ctx context.Context, db request.Connector, i filter.Injector, f filter.Filter, o, l *uint, y []string, oo ...request.Option) (uint, error) {
+func List(ctx context.Context, db request.Connector, i filter.Injector, f filter.Filter, o, l *uint, y []any, oo ...request.Option) (uint, error) {
 	r, err := request.New(ctx, db, oo...)
 	if err != nil {
 		return 0, err
@@ -136,6 +136,6 @@ func (a *FlatArray[T]) Inject(j filter.Projector) {
 
 func (a *FlatArray[T]) Cleanup() { *a = (*a)[:0] }
 
-func (a *FlatArray[T]) Load(ctx context.Context, db request.Connector, f filter.Filter, o, l *uint, y []string, oo ...request.Option) (uint, error) {
+func (a *FlatArray[T]) Load(ctx context.Context, db request.Connector, f filter.Filter, o, l *uint, y []any, oo ...request.Option) (uint, error) {
 	return List(ctx, db, a, f, o, l, y, oo...)
 }

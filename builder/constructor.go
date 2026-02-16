@@ -2,17 +2,20 @@ package builder
 
 import (
 	"fmt"
+	"github.com/pshvedko/dbx/filter"
 	"strconv"
 	"strings"
-
-	"github.com/pshvedko/dbx/filter"
 )
 
 type Table = filter.Table
 
 type Field = filter.Column
 
-type Order []string
+type Order []any
+
+func (o Order) Error() string {
+	return fmt.Sprintf("invalid order: %s", []any(o))
+}
 
 type Ranger struct {
 	o *uint
@@ -58,8 +61,8 @@ type Constructor struct {
 	Access
 	Aliases
 	Mode
-	p Ranger
-	y Order
+	R Ranger
+	O Order
 	Z bool
 }
 
@@ -163,47 +166,20 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		}
 	}
 	m := c.Len()
-	if len(c.y) > 0 {
-		_, err = c.WriteString(" ORDER BY")
-		if err != nil {
-			return nil, "", nil, nil, err
-		}
-		for i, y := range c.y {
-			if len(y) == 0 {
-				continue
-			}
-			var o string
-			switch y[0] {
-			case '-':
-				o = " DESC"
-				fallthrough
-			case '+':
-				y = y[1:]
-			}
-			if len(y) == 0 {
-				continue
-			}
-			if i > 0 {
-				err = c.WriteByte(',')
-				if err != nil {
-					return nil, "", nil, nil, err
-				}
-			}
-			_, err = fmt.Fprintf(c, " %q%s", Field{t, y}, o)
-			if err != nil {
-				return nil, "", nil, nil, err
-			}
-		}
+	err = c.WriteOrder(j, t)
+	if err != nil {
+		return nil, "", nil, nil, err
 	}
+
 	z := c.Size()
-	if c.p.o != nil {
-		_, err = fmt.Fprintf(c, " OFFSET %v", c.Add(*c.p.o))
+	if c.R.o != nil {
+		_, err = fmt.Fprintf(c, " OFFSET %v", c.Add(*c.R.o))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
-	if c.p.l != nil {
-		_, err = fmt.Fprintf(c, " LIMIT %v", c.Add(*c.p.l))
+	if c.R.l != nil {
+		_, err = fmt.Fprintf(c, " LIMIT %v", c.Add(*c.R.l))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -215,13 +191,76 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
 }
 
+type By [2]fmt.Formatter
+
+func (b By) Format(f fmt.State, _ rune) {
+	_, _ = fmt.Fprintf(f, "%v", b[0])
+	if b[1] != nil {
+		_, _ = fmt.Fprintf(f, " %v", b[1])
+	}
+}
+
+func (c *Constructor) WriteOrder(j filter.Projector, t string) error {
+	if len(c.O) == 0 {
+		return nil
+	}
+	_, err := c.WriteString(" ORDER BY")
+	if err != nil {
+		return err
+	}
+	for i, y := range c.O {
+		var f fmt.Formatter
+		switch y := y.(type) {
+		case string:
+			if len(y) == 0 {
+				continue
+			}
+			var o fmt.Formatter
+			switch y[0] {
+			case '-':
+				o = DESC
+				fallthrough
+			case '+':
+				y = y[1:]
+				if len(y) == 0 {
+					return c.O
+				}
+			}
+			_, ok := j.Columns()[y]
+			if !ok {
+				if len(y) == 0 || strings.ContainsFunc(y, func(r rune) bool {
+					return r < '0' || r > '9'
+				}) {
+					return fmt.Errorf("unknown column: %s", y)
+				}
+				f = By{filter.Special(y), o}
+			} else {
+				f = By{Field{t, y}, o}
+			}
+		default:
+			return fmt.Errorf("unknown column: %v", y)
+		}
+		if i > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return err
+			}
+		}
+		_, err = fmt.Fprintf(c, " %v", f)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *Constructor) Range(o, l *uint) *Constructor {
-	c.p.o, c.p.l = o, l
+	c.R.o, c.R.l = o, l
 	return c
 }
 
 func (c *Constructor) Sort(y Order) *Constructor {
-	c.y = y
+	c.O = y
 	return c
 }
 

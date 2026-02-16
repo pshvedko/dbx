@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/uuid"
@@ -24,14 +25,16 @@ func TestConstructor_Select(t *testing.T) {
 		y builder.Order
 	}
 	tests := []struct {
-		name    string
-		args    args
-		want    string
-		want1   []any
-		want2   []any
-		want3   string
-		want4   int
-		wantErr error
+		name     string
+		args     args
+		want     string
+		want1    []any
+		want2    []any
+		want3    string
+		want4    int
+		wantErr  error
+		wantErr1 error
+		wantErr2 error
 	}{
 		// TODO: Add test cases.
 		{
@@ -79,11 +82,10 @@ func TestConstructor_Select(t *testing.T) {
 				l: util.PtrUint(20),
 				y: nil,
 			},
-			want:    `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
-			want1:   []any{uint(10), uint(20)},
-			want2:   []any{},
-			want3:   `SELECT COUNT(*) FROM "objects" AS "o" WHERE TRUE`,
-			wantErr: nil,
+			want:  `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
+			want1: []any{uint(10), uint(20)},
+			want2: []any{},
+			want3: `SELECT COUNT(*) FROM "objects" AS "o" WHERE TRUE`,
 		},
 		{
 			name: "",
@@ -95,10 +97,53 @@ func TestConstructor_Select(t *testing.T) {
 				l: util.PtrUint(20),
 				y: nil,
 			},
-			want:    `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
-			want1:   []any{uint(10), uint(20)},
-			want2:   []any{},
-			wantErr: nil,
+			want:  `SELECT FROM "objects" AS "o" WHERE TRUE OFFSET $1 LIMIT $2`,
+			want1: []any{uint(10), uint(20)},
+			want2: []any{},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{"+"},
+			},
+			wantErr1: builder.Order{"+"},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{"any"},
+			},
+			wantErr1: fmt.Errorf("unknown column: any"),
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{"-id"},
+			},
+			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY "o"."id" DESC`,
+			want1: nil,
+			want2: []any{&o.ID},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: filter.Eq{},
+				o: []request.Option{request.WithField{"id"}},
+				y: []any{"1"},
+			},
+			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1`,
+			want1: nil,
+			want2: []any{&o.ID},
 		},
 	}
 	for _, tt := range tests {
@@ -107,7 +152,7 @@ func TestConstructor_Select(t *testing.T) {
 			require.ErrorIs(t, err, tt.wantErr)
 			z, got, got1, got2, err := r.Constructor().Range(tt.args.b, tt.args.l).Sort(tt.args.y).Select(tt.args.j, tt.args.f)
 			t.Log(got)
-			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, err, tt.wantErr1)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.want1, got1)
 			require.Equal(t, tt.want2, got2)
@@ -117,7 +162,7 @@ func TestConstructor_Select(t *testing.T) {
 			}
 			got3, got4, err := z.Count()
 			t.Log(got3)
-			require.ErrorIs(t, err, tt.wantErr)
+			require.Equal(t, err, tt.wantErr2)
 			require.Equal(t, tt.want3, got3)
 			require.Equal(t, tt.want4, got4)
 		})
