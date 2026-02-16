@@ -10,20 +10,14 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-func (obj User) Self() filter.Copier {
-	return obj
+func (User) Table() string {
+	return UserTable
 }
+
+var UserPK = []string{"id"}
 
 func (User) PK() filter.PK {
-	return []string{"id"}
-}
-
-func (obj User) Copy() filter.Projector {
-	return &obj
-}
-
-func (obj User) Table() string {
-	return UserTable
+	return UserPK
 }
 
 var UserNames = []string{"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted"}
@@ -38,6 +32,14 @@ var UserColumns = map[string]int{"id": 0, "domain_id": 1, "login": 2, "active": 
 // Columns returns READ ONLY name map
 func (User) Columns() map[string]int {
 	return UserColumns
+}
+
+func (obj User) Self() filter.Copier {
+	return obj
+}
+
+func (obj User) Copy() filter.Projector {
+	return &obj
 }
 
 func (obj *User) Places() []any {

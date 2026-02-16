@@ -10,20 +10,14 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 {{range .Types}}
-func (obj {{.Type}}) Self() filter.Copier {
-	return obj
+func ({{.Type}}) Table() string {
+	return {{.Type}}Table
 }
+
+var {{.Type}}PK = []string{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}"{{end}}{{end -}} }
 
 func ({{.Type}}) PK() filter.PK {
-	return []string{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}"{{end}}{{end -}} }
-}
-
-func (obj {{.Type}}) Copy() filter.Projector {
-	return &obj
-}
-
-func (obj {{.Type}}) Table() string {
-	return {{.Type}}Table
+	return {{.Type}}PK
 }
 
 var {{.Type}}Names = []string{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}} }
@@ -38,6 +32,14 @@ var {{.Type}}Columns = map[string]int{ {{- range $index, $_ := .Fields}}{{if $in
 // Columns returns READ ONLY name map
 func ({{.Type}}) Columns() map[string]int {
     return {{.Type}}Columns
+}
+
+func (obj {{.Type}}) Self() filter.Copier {
+	return obj
+}
+
+func (obj {{.Type}}) Copy() filter.Projector {
+	return &obj
 }
 
 func (obj *{{.Type}}) Places() []any {

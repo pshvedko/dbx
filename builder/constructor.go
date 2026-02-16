@@ -210,9 +210,9 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	}
 	q := c.String()
 	if c.Z || z == c.Size() {
-		return nil, q, c.Places(), vv[:v], nil
+		return nil, q, c.Values(), vv[:v], nil
 	}
-	return &Counter{q: q[n:m], z: z}, q, c.Places(), vv[:v], nil
+	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
 }
 
 func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
@@ -262,6 +262,8 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 			} else {
 				f = By{Field{t, y}, o}
 			}
+		case filter.Special:
+			f = y
 		default:
 			return fmt.Errorf("unknown column: %v", y)
 		}
@@ -389,7 +391,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		vv[v] = new(int64)
 		v++
 	}
-	return c.String(), c.Places(), vv[:v], nil
+	return c.String(), c.Values(), vv[:v], nil
 }
 
 func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {

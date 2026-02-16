@@ -37,7 +37,7 @@ func ExampleNewPermanent() {
 
 		fmt.Println(b)
 
-		for i, v := range b.Places() {
+		for i, v := range b.Values() {
 			fmt.Print("$", i+1, " = ", v, "\n")
 		}
 	}

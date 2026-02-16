@@ -10,20 +10,14 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-func (obj Object) Self() filter.Copier {
-	return obj
+func (Object) Table() string {
+	return ObjectTable
 }
+
+var ObjectPK = []string{"id"}
 
 func (Object) PK() filter.PK {
-	return []string{"id"}
-}
-
-func (obj Object) Copy() filter.Projector {
-	return &obj
-}
-
-func (obj Object) Table() string {
-	return ObjectTable
+	return ObjectPK
 }
 
 var ObjectNames = []string{"id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4"}
@@ -38,6 +32,14 @@ var ObjectColumns = map[string]int{"id": 0, "uuid_2": 1, "uuid_3": 2, "uuid_4": 
 // Columns returns READ ONLY name map
 func (Object) Columns() map[string]int {
 	return ObjectColumns
+}
+
+func (obj Object) Self() filter.Copier {
+	return obj
+}
+
+func (obj Object) Copy() filter.Projector {
+	return &obj
 }
 
 func (obj *Object) Places() []any {

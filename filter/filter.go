@@ -177,7 +177,7 @@ func (o *Injectable[T]) Inject(j Projector) {
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
-	Places() []any
+	Values() []any
 }
 
 type Builder interface {

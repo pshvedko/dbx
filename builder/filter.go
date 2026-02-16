@@ -75,7 +75,7 @@ func (f *Filter) Size() int {
 	return len(f.v)
 }
 
-func (f *Filter) Places() []any {
+func (f *Filter) Values() []any {
 	return f.v
 }
 
