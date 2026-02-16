@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pshvedko/dbx/filter"
@@ -18,7 +19,10 @@ func (c Comma) Format(f fmt.State, _ rune) {
 type Holder int
 
 func (h Holder) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprint(f, "$", int(h))
+	_, _ = f.Write([]byte{'$'})
+	var buf [20]byte
+	b := strconv.AppendInt(buf[:0], int64(h), 10)
+	_, _ = f.Write(b)
 }
 
 type Keyword = filter.Special
@@ -34,10 +38,11 @@ const (
 
 type By [2]fmt.Formatter
 
-func (b By) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(f, "%v", b[0])
+func (b By) Format(f fmt.State, r rune) {
+	b[0].Format(f, r)
 	if b[1] != nil {
-		_, _ = fmt.Fprintf(f, " %v", b[1])
+		_, _ = f.Write([]byte{' '})
+		b[1].Format(f, r)
 	}
 }
 

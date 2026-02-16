@@ -20,7 +20,11 @@ func (t Table) Table() string {
 type Column [2]string
 
 func (c Column) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprintf(f, "%q.%q", c[0], c[1])
+	_, _ = f.Write([]byte{'"'})
+	_, _ = io.WriteString(f, c[0])
+	_, _ = f.Write([]byte{'"', '.', '"'})
+	_, _ = io.WriteString(f, c[1])
+	_, _ = f.Write([]byte{'"'})
 }
 
 func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
@@ -113,7 +117,7 @@ func Straight[T any, M interface {
 type Special string
 
 func (s Special) Format(f fmt.State, _ rune) {
-	_, _ = fmt.Fprint(f, string(s))
+	_, _ = io.WriteString(f, string(s))
 }
 
 func Now() Special {
