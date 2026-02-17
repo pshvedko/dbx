@@ -213,11 +213,17 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 			return nil, "", nil, nil, err
 		}
 	}
-	q := c.String()
 	if c.Z || z == c.Size() {
-		return nil, q, c.Values(), vv[:v], nil
+		return nil, c.String(), c.Values(), vv[:v], nil
 	}
-	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
+	return c.Count(n, m, z), c.String(), c.Values(), vv[:v], nil
+}
+
+func (c *Constructor) Count(n int, m int, z int) *Counter {
+	return &Counter{
+		q: c.String()[n:m],
+		z: z,
+	}
 }
 
 func (c *Constructor) Copy(w io.WriterTo) (int64, error) {

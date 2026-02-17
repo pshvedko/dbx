@@ -18,7 +18,6 @@ func (f FormatFunc) Format(w fmt.State, r rune) {
 type Comma int
 
 var (
-	place = []byte{'$'}
 	comma = []byte{','}
 	space = []byte{' '}
 	dummy = []byte{' ', '1'}
@@ -37,13 +36,9 @@ func (h Holder) Format(f fmt.State, _ rune) {
 }
 
 func (h Holder) WriteTo(w io.Writer) (int64, error) {
-	u1, err := w.Write(place)
-	if err != nil {
-		return int64(u1), err
-	}
-	var b [20]byte
-	u2, err := w.Write(strconv.AppendInt(b[:0], int64(h), 10))
-	return int64(u1 + u2), err
+	b := [21]byte{'$'}
+	n, err := w.Write(strconv.AppendInt(b[:1], int64(h), 10))
+	return int64(n), err
 }
 
 type Keyword = filter.Special
@@ -64,16 +59,16 @@ func (b By) Format(f fmt.State, _ rune) {
 }
 
 func (b By) WriteTo(w io.Writer) (int64, error) {
-	u1, err := b[0].WriteTo(w)
+	n1, err := b[0].WriteTo(w)
 	if err != nil || b[1] == nil {
-		return u1, err
+		return n1, err
 	}
 	_, err = w.Write(space)
 	if err != nil {
-		return u1, err
+		return n1, err
 	}
-	u2, err := b[1].WriteTo(w)
-	return u1 + 1 + u2, err
+	n2, err := b[1].WriteTo(w)
+	return n1 + 1 + n2, err
 }
 
 type Filter struct {
@@ -110,12 +105,11 @@ var holders = make([]fmt.Formatter, 0, DefaultHolderCacheSize)
 func init() {
 	for i := 0; i < cap(holders); i++ {
 		h := [21]byte{'$'}
-		b := strconv.AppendInt(h[:1], int64(i), 10)
-		holders = append(holders, func() FormatFunc {
+		holders = append(holders, func(b []byte) FormatFunc {
 			return func(f fmt.State, r rune) {
 				_, _ = f.Write(b)
 			}
-		}())
+		}(strconv.AppendInt(h[:1], int64(i), 10)))
 	}
 }
 
