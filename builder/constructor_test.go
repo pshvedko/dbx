@@ -531,9 +531,9 @@ func BenchmarkConstructor_Select(b *testing.B) {
 	var j model.Object
 	var o, l uint = 100, 200
 	var f filter.Filter = filter.And{
-		//filter.Eq{"int_8": `111`, "bool_2": true},
-		//filter.In{"string_1": []any{"yellow", "green"}, "int_16": []any{1, 2, 3}, "float_32": []any{0.0}},
-		//filter.Or{filter.Gt{"int_64": 0}, filter.Na{"string_2": `%ing`}},
+		filter.Eq{"int_8": `111`, "bool_2": true},
+		filter.In{"string_1": []any{"yellow", "green"}, "int_16": []any{1, 2, 3}, "float_32": []any{0.0}},
+		filter.Or{filter.Gt{"int_64": 0}, filter.Na{"string_2": `%ing`}},
 	}
 	var q string
 	for i := 0; i < b.N; i++ {
@@ -542,8 +542,8 @@ func BenchmarkConstructor_Select(b *testing.B) {
 			b.Fatal(err)
 		}
 		switch q {
-		case `SELECT "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4" FROM "objects" AS "o" WHERE ( ( ( "o"."bool_2" IS TRUE AND "o"."int_8" = $1 ) AND ( "o"."float_32" = ANY($2) AND "o"."int_16" = ANY($3) AND "o"."string_1" = ANY($4) ) AND ( "o"."int_64" > $5 OR "o"."string_2" NOT LIKE $6 ) ) AND "o"."time_4" IS NULL ) ORDER BY 1 DESC, "o"."time_1" OFFSET $7 LIMIT $8`:
+		// case `SELECT "o"."id", "o"."uuid_2", "o"."uuid_3", "o"."uuid_4", "o"."bool_1", "o"."bool_2", "o"."bool_3", "o"."bool_4", "o"."float_32", "o"."float_64", "o"."int_8", "o"."int_16", "o"."int_32", "o"."int_64", "o"."string_1", "o"."string_2", "o"."string_3", "o"."string_4", "o"."time_1", "o"."time_2", "o"."time_3", "o"."time_4" FROM "objects" AS "o" WHERE ( ( ( "o"."bool_2" IS TRUE AND "o"."int_8" = $1 ) AND ( "o"."float_32" = ANY($2) AND "o"."int_16" = ANY($3) AND "o"."string_1" = ANY($4) ) AND ( "o"."int_64" > $5 OR "o"."string_2" NOT LIKE $6 ) ) AND "o"."time_4" IS NULL ) ORDER BY 1 DESC, "o"."time_1" OFFSET $7 LIMIT $8`:
 		}
 	}
-	b.Log(q)
+	// b.Log(q)
 }

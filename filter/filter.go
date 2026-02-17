@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 type Table struct {
@@ -102,15 +103,26 @@ func (e ErrNoSuchField) Error() string {
 	return fmt.Sprintln("no field:", ff)
 }
 
+type Pool[T ~[]string | ~map[string]struct{}] sync.Pool
+
+func (p *Pool[T]) Get() T { return (*sync.Pool)(p).Get().(T) }
+
+func (p *Pool[T]) Put(x T) { (*sync.Pool)(p).Put(x) }
+
+var (
+	poolErrNoSuchField = Pool[ErrNoSuchField]{New: func() any { return make(ErrNoSuchField, 32) }}
+	poolNameField      = Pool[[]string]{New: func() any { return make([]string, 0, 32) }}
+)
+
 func Straight[T any, M interface {
 	~map[string]T
 	Type() Type
 }](b Builder, j Projector, o string, oo M) (err error) {
-	nn := make(ErrNoSuchField, len(oo))
+	nn := poolErrNoSuchField.Get()
 	for k := range oo {
 		nn[k] = struct{}{}
 	}
-	ff := make([]string, 0, len(oo))
+	ff := poolNameField.Get()
 	for _, k := range j.Names() {
 		_, ok := oo[k]
 		if ok {
@@ -121,6 +133,11 @@ func Straight[T any, M interface {
 	if len(nn) > 0 {
 		return nn
 	}
+	clear(nn)
+	poolErrNoSuchField.Put(nn)
+	defer func() {
+		poolNameField.Put(ff[:0])
+	}()
 	if len(oo) > 1 {
 		_, err = b.WriteString("( ")
 		if err != nil {
@@ -213,6 +230,7 @@ type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
 	Values() []any
+	Len() int
 }
 
 type Builder interface {
