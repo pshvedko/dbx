@@ -3,6 +3,7 @@ package builder
 import (
 	"fmt"
 	"github.com/pshvedko/dbx/filter"
+	"io"
 	"strconv"
 	"strings"
 )
@@ -147,7 +148,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = Column{t, n}.WriteTo(c)
+		_, err = c.Copy(Column{t, n})
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -221,6 +222,10 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, q, c.Values(), vv[:v], nil
 	}
 	return &Counter{q: q[n:m], z: z}, q, c.Values(), vv[:v], nil
+}
+
+func (c *Constructor) Copy(w io.WriterTo) (int64, error) {
+	return w.WriteTo(c)
 }
 
 func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
