@@ -8,14 +8,10 @@ import (
 	"strings"
 )
 
-type Table = filter.Table
-
-type Column = filter.Column
-
 type Order []any
 
 func (o Order) Error() string {
-	return fmt.Sprintf("invalid order: %s", []any(o))
+	return fmt.Sprintf("invalid order: %q", []any(o))
 }
 
 type Ranger struct {
@@ -148,7 +144,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = c.Copy(Column{t, n})
+		_, err = c.Copy(filter.Column{t, n})
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -181,7 +177,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	w := c.Len()
-	err = a.To(c, Table{Projector: j, Alias: t})
+	err = a.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -237,23 +233,41 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 		return err
 	}
 	for i, y := range c.O {
-		var f fmt.Formatter
+		if i > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return err
+			}
+		}
+		err = c.WriteByte(' ')
+		if err != nil {
+			return err
+		}
 		switch y := y.(type) {
 		case int:
 			if y == 0 {
-				f = filter.Random()
+				_, err = filter.Random().WriteTo(c)
+				if err != nil {
+					return err
+				}
 			} else if y > v || y < -v {
 				return fmt.Errorf("illegal position: %d", y)
 			} else if y < 0 {
-				f = By{filter.Special(strconv.Itoa(-y)), DESC}
+				//				_, err = c.Copy(By{filter.Int(-y), DESC})
+				if err != nil {
+					return err
+				}
 			} else {
-				f = By{filter.Special(strconv.Itoa(y)), ASC}
+				_, err = c.Copy(By{filter.Int(y), ASC})
+				if err != nil {
+					return err
+				}
 			}
 		case string:
 			if len(y) == 0 {
-				continue
+				return c.O
 			}
-			var o fmt.Formatter
+			var o io.WriterTo
 			switch y[0] {
 			case '-':
 				o = DESC
@@ -271,28 +285,23 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				}) {
 					return fmt.Errorf("unknown column: %s", y)
 				}
-				f = By{filter.Special(y), o}
+				_, err = c.Copy(By{filter.Special(y), o})
+				if err != nil {
+					return err
+				}
 			} else {
-				f = By{Column{t, y}, o}
+				_, err = c.Copy(By{filter.Column{t, y}, o})
+				if err != nil {
+					return err
+				}
 			}
 		case filter.Special:
-			f = y
-		default:
-			return fmt.Errorf("unknown column: %v", y)
-		}
-		if i > 0 {
-			err = c.WriteByte(',')
+			_, err = y.WriteTo(c)
 			if err != nil {
 				return err
 			}
-		}
-		err = c.WriteByte(' ')
-		if err != nil {
-			return err
-		}
-		_, err = fmt.Fprint(c, f)
-		if err != nil {
-			return err
+		default:
+			return fmt.Errorf("unknown column: %v", y)
 		}
 	}
 	return nil
@@ -371,7 +380,7 @@ func (c *Constructor) WriteWhere(j filter.Projector, t string, f filter.Filter) 
 	if err != nil {
 		return err
 	}
-	err = f.To(c, Table{Projector: j, Alias: t})
+	err = f.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
 		return err
 	}
@@ -388,7 +397,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		if c.Unreturned(n) {
 			continue
 		}
-		_, err = c.Printf("%v %v", Comma(v), Column{t, n})
+		_, err = c.Printf("%v %v", Comma(v), filter.Column{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}

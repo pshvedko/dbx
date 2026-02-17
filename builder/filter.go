@@ -58,14 +58,23 @@ const (
 	DEFAULT Keyword = "DEFAULT"
 )
 
-type By [2]fmt.Formatter
+type By [2]io.WriterTo
 
-func (b By) Format(f fmt.State, r rune) {
-	b[0].Format(f, r)
-	if b[1] != nil {
-		_, _ = f.Write(space)
-		b[1].Format(f, r)
+func (b By) Format(f fmt.State, _ rune) {
+	_, _ = b.WriteTo(f)
+}
+
+func (b By) WriteTo(w io.Writer) (int64, error) {
+	u1, err := b[0].WriteTo(w)
+	if err != nil || b[1] == nil {
+		return u1, err
 	}
+	_, err = w.Write(space)
+	if err != nil {
+		return u1, err
+	}
+	u2, err := b[1].WriteTo(w)
+	return u1 + 1 + u2, err
 }
 
 type Filter struct {

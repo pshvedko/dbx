@@ -493,14 +493,14 @@ func BenchmarkConstructor_Select(b *testing.B) {
 		b.Fatal(err)
 	}
 	var j model.Object
-	var o, l uint = 100, 200
+	//	var o, l uint = 100, 200
 	var f filter.Filter = filter.And{
-		filter.Eq{"int_8": `111`, "bool_2": true},
-		filter.In{"string_1": []any{"yellow", "green"}, "int_16": []any{1, 2, 3}, "float_32": []any{0.0}},
-		filter.Or{filter.Gt{"int_64": 0}, filter.Na{"string_2": `%ing`}},
+		//filter.Eq{"int_8": `111`, "bool_2": true},
+		//filter.In{"string_1": []any{"yellow", "green"}, "int_16": []any{1, 2, 3}, "float_32": []any{0.0}},
+		//filter.Or{filter.Gt{"int_64": 0}, filter.Na{"string_2": `%ing`}},
 	}
 	for i := 0; i < b.N; i++ {
-		_, _, _, _, err = r.Constructor().Range(&o, &l).Sort([]any{-1, "time_1"}).Select(&j, f)
+		_, _, _, _, err = r.Constructor().Sort([]any{-1, "time_1"}).Select(&j, f)
 		if err != nil {
 			b.Fatal(err)
 		}

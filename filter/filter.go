@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -154,10 +155,27 @@ func Straight[T any, M interface {
 	return
 }
 
+type Int int64
+
+func (i Int) Format(f fmt.State, _ rune) {
+	_, _ = i.WriteTo(f)
+}
+
+func (i Int) WriteTo(w io.Writer) (int64, error) {
+	var b [20]byte
+	n, err := w.Write(strconv.AppendInt(b[:0], int64(i), 10))
+	return int64(n), err
+}
+
 type Special string
 
 func (s Special) Format(f fmt.State, _ rune) {
-	_, _ = io.WriteString(f, string(s))
+	_, _ = s.WriteTo(f)
+}
+
+func (s Special) WriteTo(w io.Writer) (int64, error) {
+	n, err := io.WriteString(w, string(s))
+	return int64(n), err
 }
 
 func Now() Special {
