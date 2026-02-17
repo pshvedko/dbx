@@ -159,18 +159,33 @@ var (
 )
 
 func (f *Filter) EQ(k, v fmt.Formatter) (int, error) {
-	_, _ = fmt.Fprint(f, k)
-	_, _ = f.Write(equal)
-	_, _ = fmt.Fprint(f, v)
-	return 0, nil
+	n1, err := fmt.Fprint(f, k)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := f.Write(equal)
+	if err != nil {
+		return n1 + n2, err
+	}
+	n3, err := fmt.Fprint(f, v)
+	return n1 + n2 + n3, err
 }
 
 func (f *Filter) IN(k, v fmt.Formatter) (int, error) {
-	_, _ = fmt.Fprint(f, k)
-	_, _ = f.Write(inner)
-	_, _ = fmt.Fprint(f, v)
-	_, _ = f.Write(end)
-	return 0, nil
+	n1, err := fmt.Fprint(f, k)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := f.Write(inner)
+	if err != nil {
+		return n1 + n2, err
+	}
+	n3, err := fmt.Fprint(f, v)
+	if err != nil {
+		return n1 + n2 + n3, err
+	}
+	n4, err := f.Write(end)
+	return n1 + n2 + n3 + n4, err
 }
 
 func (f *Filter) Collation(t filter.Type, k fmt.Formatter, v any) (int, error) {
