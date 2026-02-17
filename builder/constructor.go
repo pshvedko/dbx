@@ -253,7 +253,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 			} else if y > v || y < -v {
 				return fmt.Errorf("illegal position: %d", y)
 			} else if y < 0 {
-				//				_, err = c.Copy(By{filter.Int(-y), DESC})
+				_, err = c.Copy(By{filter.Int(-y), DESC})
 				if err != nil {
 					return err
 				}
