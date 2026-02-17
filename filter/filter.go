@@ -155,7 +155,7 @@ func Straight[T any, M interface {
 	return
 }
 
-type Int int64
+type Int int
 
 func (i Int) Format(f fmt.State, _ rune) {
 	_, _ = i.WriteTo(f)

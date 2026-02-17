@@ -41,9 +41,8 @@ func (h Holder) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return int64(u1), err
 	}
-	var buf [20]byte
-	b := strconv.AppendInt(buf[:0], int64(h), 10)
-	u2, err := w.Write(b)
+	var b [20]byte
+	u2, err := w.Write(strconv.AppendInt(b[:0], int64(h), 10))
 	return int64(u1 + u2), err
 }
 
