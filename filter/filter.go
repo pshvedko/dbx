@@ -162,11 +162,11 @@ type Injectable[T Fielder] []T
 
 func (o Injectable[T]) Element() Projector {
 	var x T
-	return x.Copy()
+	return x.Self()
 }
 
 func (o *Injectable[T]) Inject(j Projector) {
-	switch v := j.Self().(type) {
+	switch v := j.Copy().(type) {
 	case T:
 		*o = append(*o, v)
 	default:
@@ -205,7 +205,7 @@ func (pk PK) Format(f fmt.State, _ rune) {
 	}
 }
 
-func (pk PK) Have(n string) bool {
+func (pk PK) Contains(n string) bool {
 	for _, k := range pk {
 		if k == n {
 			return true
@@ -233,8 +233,8 @@ type Injector interface {
 }
 
 type Copier interface {
-	Copy() Projector
-	Self() Copier
+	Self() Projector
+	Copy() Copier
 }
 
 type Projector interface {

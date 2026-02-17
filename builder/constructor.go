@@ -326,7 +326,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 		switch {
 		case c.IsUpdated(n):
 			v = DEFAULT
-		case pk.Have(n):
+		case pk.Contains(n):
 			if none {
 				return "", nil, nil, fmt.Errorf("invalid primary key")
 			}
@@ -437,7 +437,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			continue
 		case none && auto:
 			continue
-		case pk.Have(n):
+		case pk.Contains(n):
 		default:
 			uu = append(uu, n)
 		}

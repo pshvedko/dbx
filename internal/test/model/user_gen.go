@@ -22,23 +22,21 @@ func (User) PK() filter.PK {
 
 var UserNames = []string{"id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted"}
 
-// Names returns READ ONLY name slice
 func (User) Names() []string {
 	return UserNames
 }
 
 var UserColumns = map[string]int{"id": 0, "domain_id": 1, "login": 2, "active": 3, "user_roles": 4, "created": 5, "updated": 6, "deleted": 7}
 
-// Columns returns READ ONLY name map
 func (User) Columns() map[string]int {
 	return UserColumns
 }
 
-func (obj User) Self() filter.Copier {
+func (obj User) Copy() filter.Copier {
 	return obj
 }
 
-func (obj User) Copy() filter.Projector {
+func (obj User) Self() filter.Projector {
 	return &obj
 }
 
