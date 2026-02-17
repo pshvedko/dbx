@@ -391,7 +391,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		v++
 	}
 	if v == 0 {
-		_, err = c.WriteString(" 1")
+		_, err = c.Write(dummy)
 		if err != nil {
 			return "", nil, nil, err
 		}

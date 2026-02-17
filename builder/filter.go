@@ -20,6 +20,7 @@ var (
 	place = []byte{'$'}
 	comma = []byte{','}
 	space = []byte{' '}
+	dummy = []byte{' ', '1'}
 )
 
 func (c Comma) Format(f fmt.State, _ rune) {
@@ -85,16 +86,19 @@ func (f *Filter) Values() []any {
 	return f.v
 }
 
-var holders = make([]fmt.Formatter, 0, 32)
+const DefaultHolderCacheSize = 32
+
+var holders = make([]fmt.Formatter, 0, DefaultHolderCacheSize)
 
 func init() {
 	for i := 0; i < cap(holders); i++ {
-		var buf [20]byte
-		b := strconv.AppendInt(buf[:0], int64(i), 10)
-		holders = append(holders, FormatFunc(func(f fmt.State, r rune) {
-			_, _ = f.Write(place)
-			_, _ = f.Write(b)
-		}))
+		h := [21]byte{'$'}
+		b := strconv.AppendInt(h[:1], int64(i), 10)
+		holders = append(holders, func() FormatFunc {
+			return func(f fmt.State, r rune) {
+				_, _ = f.Write(b)
+			}
+		}())
 	}
 }
 
