@@ -27,11 +27,28 @@ var (
 )
 
 func (c Column) Format(f fmt.State, _ rune) {
-	_, _ = f.Write(quote)
-	_, _ = io.WriteString(f, c[0])
-	_, _ = f.Write(among)
-	_, _ = io.WriteString(f, c[1])
-	_, _ = f.Write(quote)
+	_, _ = c.WriteTo(f)
+}
+
+func (c Column) WriteTo(w io.Writer) (int64, error) {
+	u1, err := w.Write(quote)
+	if err != nil {
+		return int64(u1), err
+	}
+	u2, err := io.WriteString(w, c[0])
+	if err != nil {
+		return int64(u1 + u2), err
+	}
+	u3, err := w.Write(among)
+	if err != nil {
+		return int64(u1 + u2 + u3), err
+	}
+	u4, err := io.WriteString(w, c[1])
+	if err != nil {
+		return int64(u1 + u2 + u3 + u4), err
+	}
+	u5, err := w.Write(quote)
+	return int64(u1 + u2 + u3 + u4 + u5), err
 }
 
 func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {

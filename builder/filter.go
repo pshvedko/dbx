@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 
@@ -32,10 +33,18 @@ func (c Comma) Format(f fmt.State, _ rune) {
 type Holder int
 
 func (h Holder) Format(f fmt.State, _ rune) {
-	_, _ = f.Write(place)
+	_, _ = h.WriteTo(f)
+}
+
+func (h Holder) WriteTo(w io.Writer) (int64, error) {
+	u1, err := w.Write(place)
+	if err != nil {
+		return int64(u1), err
+	}
 	var buf [20]byte
 	b := strconv.AppendInt(buf[:0], int64(h), 10)
-	_, _ = f.Write(b)
+	u2, err := w.Write(b)
+	return int64(u1 + u2), err
 }
 
 type Keyword = filter.Special

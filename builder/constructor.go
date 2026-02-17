@@ -9,7 +9,7 @@ import (
 
 type Table = filter.Table
 
-type Field = filter.Column
+type Column = filter.Column
 
 type Order []any
 
@@ -56,7 +56,7 @@ func (m Mode) IsUpdate() bool { return m == 2 }
 
 type Constructor struct {
 	Filter
-	Column
+	Fielder
 	Modify
 	Access
 	Aliases
@@ -86,7 +86,7 @@ func (c *Constructor) Validate(f filter.Fielder) error {
 		size += len(name)
 		fund++
 	}
-	for _, fields := range c.Column.Names() {
+	for _, fields := range c.Fielder.Names() {
 		for name := range fields {
 			size += len(name)
 			_, ok := columns[name]
@@ -147,7 +147,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = fmt.Fprint(c, Field{t, n})
+		_, err = Column{t, n}.WriteTo(c)
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -268,7 +268,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				}
 				f = By{filter.Special(y), o}
 			} else {
-				f = By{Field{t, y}, o}
+				f = By{Column{t, y}, o}
 			}
 		case filter.Special:
 			f = y
@@ -383,7 +383,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		if c.Unreturned(n) {
 			continue
 		}
-		_, err = c.Printf("%v %v", Comma(v), Field{t, n})
+		_, err = c.Printf("%v %v", Comma(v), Column{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -488,7 +488,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 }
 
 type UnusedColumn struct {
-	Column
+	Fielder
 }
 
 func (UnusedColumn) Used(string) bool {
@@ -496,7 +496,7 @@ func (UnusedColumn) Used(string) bool {
 }
 
 func (c *Constructor) SoftDelete() *Constructor {
-	c.Column = UnusedColumn{Column: c.Column}
+	c.Fielder = UnusedColumn{Fielder: c.Fielder}
 	return c
 }
 

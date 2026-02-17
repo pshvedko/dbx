@@ -146,7 +146,7 @@ func (r *Request) withField(i int, b bool, kk ...string) error {
 
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
-		Column: func() builder.Column {
+		Fielder: func() builder.Fielder {
 			if r.x[0] || len(r.f[0]) == 0 {
 				return builder.ExcludedColumn(r.f)
 			}

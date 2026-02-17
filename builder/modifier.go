@@ -4,7 +4,7 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-type Column interface {
+type Fielder interface {
 	Used(string) bool
 	Names() [2]map[string]int
 	Returned(string) bool
