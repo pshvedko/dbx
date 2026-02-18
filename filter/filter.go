@@ -103,7 +103,7 @@ func (e ErrNoSuchField) Error() string {
 	return fmt.Sprintln("no field:", ff)
 }
 
-type Pool[T ~[]string | ~map[string]struct{}] sync.Pool
+type Pool[T any] sync.Pool
 
 func (p *Pool[T]) Get() T { return (*sync.Pool)(p).Get().(T) }
 
@@ -133,11 +133,8 @@ func Straight[T any, M interface {
 	if len(nn) > 0 {
 		return nn
 	}
-	clear(nn)
 	poolErrNoSuchField.Put(nn)
-	defer func() {
-		poolNameField.Put(ff[:0])
-	}()
+	defer func() { poolNameField.Put(ff[:0]) }()
 	if len(oo) > 1 {
 		_, err = b.WriteString("( ")
 		if err != nil {

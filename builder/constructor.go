@@ -27,10 +27,10 @@ type Access struct {
 type Aliases map[rune]int
 
 func (a Aliases) Alias(t string) string {
-	var i int
-	var r, k rune
-	for i, r = range t {
-		if i > 0 {
+	var k rune
+	for i, r := range t {
+		if i != 0 {
+			t = t[:i]
 			break
 		}
 		k = r
@@ -38,9 +38,9 @@ func (a Aliases) Alias(t string) string {
 	n := a[k]
 	a[k]++
 	if n == 0 {
-		return t[:i]
+		return t
 	}
-	return t[:i] + strconv.Itoa(n)
+	return t + strconv.Itoa(n)
 }
 
 type Mode int
@@ -116,6 +116,10 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
+var (
+	poolFilterAnd = filter.Pool[filter.And]{New: func() any { return make(filter.And, 0, 2) }}
+)
+
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
 	err := c.Validate(j)
 	if err != nil {
@@ -125,7 +129,9 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	a := filter.And{f}
+	a := poolFilterAnd.Get()
+	a = append(a, f)
+	defer func() { poolFilterAnd.Put(a[:0]) }()
 	v, nn, vv, t := 0, j.Names(), j.Places(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
@@ -168,11 +174,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	err = c.WriteByte('"')
-	if err != nil {
-		return nil, "", nil, nil, err
-	}
-	_, err = c.WriteString(" WHERE ")
+	_, err = c.WriteString("\" WHERE ")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -216,10 +218,10 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if c.Z || z == c.Size() {
 		return nil, c.String(), c.Values(), vv[:v], nil
 	}
-	return c.Count(n, m, z), c.String(), c.Values(), vv[:v], nil
+	return c.NewCounter(n, m, z), c.String(), c.Values(), vv[:v], nil
 }
 
-func (c *Constructor) Count(n int, m int, z int) *Counter {
+func (c *Constructor) NewCounter(n int, m int, z int) *Counter {
 	return &Counter{
 		q: c.String()[n:m],
 		z: z,
@@ -264,7 +266,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 					return err
 				}
 			} else {
-				_, err = c.Copy(By{filter.Int(y), ASC})
+				_, err = c.Copy(filter.Int(y))
 				if err != nil {
 					return err
 				}
@@ -434,7 +436,11 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		return "", nil, nil, err
 	}
 	t := c.Alias(j.Table())
-	_, err = c.Printf(" %q AS %q (", j.Table(), t)
+	err = c.WriteTable(j.Table(), t)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	_, err = c.WriteString(" (")
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -529,7 +535,11 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 		return "", nil, nil, err
 	}
 	nn, vv, t := j.Names(), j.Places(), c.Alias(j.Table())
-	_, err = c.Printf(`DELETE FROM`+` %q AS %q`, j.Table(), t)
+	_, err = c.WriteString("DELETE FROM")
+	if err != nil {
+		return "", nil, nil, err
+	}
+	err = c.WriteTable(j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -540,3 +550,28 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	}
 	return c.WriteReturning(t, nn, vv)
 }
+
+func (c *Constructor) WriteTable(t, a string) error {
+	_, err := c.WriteString(" \"")
+	if err != nil {
+		return err
+	}
+	_, err = c.WriteString(t)
+	if err != nil {
+		return err
+	}
+	_, err = c.WriteString("\" AS \"")
+	if err != nil {
+		return err
+	}
+	_, err = c.WriteString(a)
+	if err != nil {
+		return err
+	}
+	return c.WriteByte('"')
+}
+
+// go test -bench=BenchmarkConstructor_Select -memprofile mem.out
+//go tool pprof -alloc_objects mem.out
+//(pprof) list WriteTo
+//(pprof) list Format

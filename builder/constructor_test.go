@@ -189,7 +189,7 @@ func TestConstructor_Select(t *testing.T) {
 				o: []request.Option{request.WithField{"id"}},
 				y: []any{1},
 			},
-			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1 ASC`,
+			want:  `SELECT "o"."id" FROM "objects" AS "o" WHERE TRUE ORDER BY 1`,
 			want1: []any{},
 			want2: []any{&o.ID},
 		},
@@ -524,6 +524,7 @@ func BenchmarkConstructor_Select(b *testing.B) {
 		request.WithCreated("time_1"),
 		request.WithUpdated("time_2"),
 		request.WithDeleted("time_4"),
+		request.WithoutCount(),
 	})
 	if err != nil {
 		b.Fatal(err)
@@ -546,5 +547,56 @@ func BenchmarkConstructor_Select(b *testing.B) {
 		default:
 			b.Fatal(q)
 		}
+	}
+}
+
+func TestAliases_Alias(t *testing.T) {
+	a := builder.Aliases{}
+	type args struct {
+		t string
+	}
+	tests := []struct {
+		name string
+		args args
+		want string
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{t: "object"},
+			want: "o",
+		},
+		{
+			name: "",
+			args: args{t: "origin"},
+			want: "o1",
+		},
+		{
+			name: "",
+			args: args{t: "o"},
+			want: "o2",
+		},
+		{
+			name: "",
+			args: args{t: "a"},
+			want: "a",
+		},
+		{
+			name: "",
+			args: args{t: "any"},
+			want: "a1",
+		},
+		{
+			name: "",
+			args: args{t: "any"},
+			want: "a2",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := a.Alias(tt.args.t); got != tt.want {
+				t.Errorf("Alias() = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
