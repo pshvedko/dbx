@@ -315,8 +315,6 @@ func IsEmpty(f Filter) bool {
 
 	case Formatter:
 		return v.Size() == 0 && v.Len() == 0
-	case Builder:
-		return v.Size() == 0 && v.Len() == 0
 
 	default:
 		panic(v)

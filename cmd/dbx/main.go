@@ -186,6 +186,10 @@ type class struct {
 	Fields []field
 }
 
+func (c class) Snake() string {
+	return strcase.ToScreamingSnake(c.Type)
+}
+
 func (c class) IsAuto() bool {
 	for _, f := range c.Fields {
 		if f.IsAuto() || f.IsPrimary() {

@@ -14,6 +14,10 @@ func ({{.Type}}) Table() string {
 	return {{.Type}}Table
 }
 
+func ({{.Type}}) Name() string {
+	return "{{.Snake}}"
+}
+
 var {{.Type}}PK = []string{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}"{{end}}{{end -}} }
 
 func ({{.Type}}) PK() filter.PK {

@@ -69,6 +69,12 @@ func (e ErrNoSuchField) Error() string {
 	return fmt.Sprintln("no field:", ff)
 }
 
+type Map[K comparable, V any] sync.Map
+
+func (m *Map[K, V]) Get(k K) (V, bool) { v, ok := (*sync.Map)(m).Load(k); return v.(V), ok }
+
+func (m *Map[K, V]) Put(k K, v V) { (*sync.Map)(m).Store(k, v) }
+
 type Pool[T any] sync.Pool
 
 func (p *Pool[T]) Get() T { return (*sync.Pool)(p).Get().(T) }
@@ -212,6 +218,7 @@ type Placer interface {
 
 type Fielder interface {
 	PK() PK
+	Name() string
 	Names() []string
 	Columns() map[string]int
 	Value(int) (any, bool, bool) // value, none, auto

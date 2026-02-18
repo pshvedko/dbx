@@ -9,10 +9,14 @@ import (
 )
 
 type Permanent struct {
+	I string
 	Filter
 }
 
 func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
+	if p.I != j.Name() {
+		return fmt.Errorf("permanent filter mismatch: %q <> %q", p.I, j.Table())
+	}
 	n := b.Size()
 	for _, v := range p.Values() {
 		b.Value(v)
@@ -29,11 +33,23 @@ func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
 		}
 		for _, s := range w[1:] {
 			if len(s) > 0 && s[0] == '$' {
-				if i, err := strconv.Atoi(s[1:]); err == nil && i > 0 {
-					s = fmt.Sprint("$", i+n)
+				i, err := strconv.Atoi(s[1:])
+				if err == nil && i > 0 {
+					_, err = b.WriteString(" $")
+					if err != nil {
+						return err
+					}
+					_, err = b.AppendInt(i + n)
+					if err != nil {
+						return err
+					}
+					continue
 				}
 			}
-			_, err = b.Write([]byte{' '})
+			err = b.WriteByte(' ')
+			if err != nil {
+				return err
+			}
 			_, err = b.WriteString(s)
 			if err != nil {
 				return err
@@ -43,8 +59,8 @@ func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
 	return nil
 }
 
-func NewPermanent(f filter.Filter, j filter.Projector) (filter.Filter, error) {
-	var p Permanent
+func NewPermanent(j filter.Projector, f filter.Filter) (filter.Filter, error) {
+	p := Permanent{I: j.Name()}
 	err := f.To(&p, j)
 	if err != nil {
 		return nil, err
@@ -52,6 +68,6 @@ func NewPermanent(f filter.Filter, j filter.Projector) (filter.Filter, error) {
 	return &p, nil
 }
 
-func NewBuilder() filter.Builder {
+func New() filter.Builder {
 	return &Filter{}
 }

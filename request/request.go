@@ -31,6 +31,10 @@ type Request struct {
 		c string
 	}
 	z bool
+	h struct {
+		o Origin
+		c Keeper
+	}
 }
 
 func (r *Request) closer() io.Closer {

@@ -14,6 +14,10 @@ func (Object) Table() string {
 	return ObjectTable
 }
 
+func (Object) Name() string {
+	return "OBJECT"
+}
+
 var ObjectPK = []string{"id"}
 
 func (Object) PK() filter.PK {

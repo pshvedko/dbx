@@ -14,6 +14,10 @@ func (User) Table() string {
 	return UserTable
 }
 
+func (User) Name() string {
+	return "USER"
+}
+
 var UserPK = []string{"id"}
 
 func (User) PK() filter.PK {

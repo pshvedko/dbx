@@ -3,8 +3,10 @@ package request
 import (
 	"context"
 	"database/sql"
+	"runtime"
 
 	"github.com/pshvedko/dbx/builder"
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Option interface {
@@ -136,3 +138,32 @@ const (
 	PutCreate
 	PutUpdate
 )
+
+type Origin struct {
+	file string
+	line int
+}
+
+type Key struct {
+	Origin
+	static string
+}
+
+type Keeper interface {
+	Get(Key) (string, bool)
+	Put(Key, string)
+}
+
+func WithCache(c Keeper) OptionFunc {
+	_, file, line, _ := runtime.Caller(1)
+	println(file, line)
+	return func(r *Request) error {
+		r.h.o = Origin{file: file, line: line}
+		r.h.c = c
+		return nil
+	}
+}
+
+type Cache struct {
+	filter.Map[Key, string]
+}
