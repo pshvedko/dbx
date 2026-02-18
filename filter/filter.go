@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
-	"strconv"
+	"slices"
 	"strings"
 	"sync"
 )
@@ -19,45 +19,11 @@ func (t Table) Table() string {
 	return t.Alias
 }
 
-type Column [2]string
-
-var (
-	among = []byte{'"', '.', '"'}
-	quote = []byte{'"'}
-	space = []byte{' '}
-	comma = []byte{','}
-)
-
-func (c Column) Format(f fmt.State, _ rune) {
-	_, _ = c.WriteTo(f)
-}
-
-func (c Column) WriteTo(w io.Writer) (int64, error) {
-	u1, err := w.Write(quote)
-	if err != nil {
-		return int64(u1), err
-	}
-	u2, err := io.WriteString(w, c[0])
-	if err != nil {
-		return int64(u1 + u2), err
-	}
-	u3, err := w.Write(among)
-	if err != nil {
-		return int64(u1 + u2 + u3), err
-	}
-	u4, err := io.WriteString(w, c[1])
-	if err != nil {
-		return int64(u1 + u2 + u3 + u4), err
-	}
-	u5, err := w.Write(quote)
-	return int64(u1 + u2 + u3 + u4 + u5), err
-}
-
 func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 	if len(ff) > 1 {
 		_, err = b.WriteString("( ")
 		if err != nil {
-			return err
+			return
 		}
 		defer func() {
 			if err == nil {
@@ -71,7 +37,7 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 			continue
 		}
 		if i > 0 {
-			_, err = b.Write(space)
+			err = b.WriteByte(' ')
 			if err != nil {
 				return
 			}
@@ -79,9 +45,9 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 			if err != nil {
 				return
 			}
-			_, err = b.Write(space)
+			err = b.WriteByte(' ')
 			if err != nil {
-				return err
+				return
 			}
 		}
 		err = f.To(b, j)
@@ -90,7 +56,7 @@ func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
 		}
 		i++
 	}
-	return err
+	return
 }
 
 type ErrNoSuchField map[string]struct{}
@@ -146,9 +112,10 @@ func Straight[T any, M interface {
 			}
 		}()
 	}
+	t := j.Table()
 	for i, f := range ff {
 		if i > 0 {
-			_, err = b.Write(space)
+			err = b.WriteByte(' ')
 			if err != nil {
 				return
 			}
@@ -156,29 +123,21 @@ func Straight[T any, M interface {
 			if err != nil {
 				return
 			}
-			_, err = b.Write(space)
+			err = b.WriteByte(' ')
 			if err != nil {
 				return
 			}
 		}
-		_, err = b.Collation(oo.Type(), Column{j.Table(), f}, oo[f])
+		_, err = b.AppendColumn(t, f)
+		if err != nil {
+			return
+		}
+		_, err = b.Append(oo.Type(), oo[f])
 		if err != nil {
 			return
 		}
 	}
 	return
-}
-
-type Int int
-
-func (i Int) Format(f fmt.State, _ rune) {
-	_, _ = i.WriteTo(f)
-}
-
-func (i Int) WriteTo(w io.Writer) (int64, error) {
-	var b [20]byte
-	n, err := w.Write(strconv.AppendInt(b[:0], int64(i), 10))
-	return int64(n), err
 }
 
 type Special string
@@ -232,36 +191,19 @@ type Formatter interface {
 
 type Builder interface {
 	io.Writer
+	io.ByteWriter
 	io.StringWriter
 	fmt.Stringer
-	Collation(Type, fmt.Formatter, any) (int, error)
+	Append(Type, any) (int, error)
+	AppendInt(int) (int64, error)
+	AppendColumn(string, string) (int64, error)
 	Formatter
 }
 
 type PK []string
 
-func (pk PK) Format(f fmt.State, _ rune) {
-	if len(pk) > 0 {
-		_, _ = f.Write(quote)
-		_, _ = io.WriteString(f, pk[0])
-		_, _ = f.Write(quote)
-		for _, k := range pk[1:] {
-			_, _ = f.Write(comma)
-			_, _ = f.Write(space)
-			_, _ = f.Write(quote)
-			_, _ = io.WriteString(f, k)
-			_, _ = f.Write(quote)
-		}
-	}
-}
-
 func (pk PK) Contains(n string) bool {
-	for _, k := range pk {
-		if k == n {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(pk, n)
 }
 
 type Placer interface {
@@ -303,11 +245,15 @@ func (f And) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f And) To(b Builder, j Projector) error { return Conjunction(b, j, "AND", f) }
 
+func (f And) Type() Type { return AND }
+
 type Or []Filter
 
 func (f Or) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f Or) To(b Builder, j Projector) error { return Conjunction(b, j, "OR", f) }
+
+func (f Or) Type() Type { return OR }
 
 type Eq map[string]any
 

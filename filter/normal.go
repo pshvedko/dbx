@@ -5,18 +5,22 @@ type True struct{}
 func (f True) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f True) To(b Builder, _ Projector) error {
-	_, err := b.Collation(EQ, nil, true)
+	_, err := b.Append(TRUE, true)
 	return err
 }
+
+func (f True) Type() Type { return TRUE }
 
 type False struct{}
 
 func (f False) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f False) To(b Builder, _ Projector) error {
-	_, err := b.Collation(EQ, nil, false)
+	_, err := b.Append(FALSE, false)
 	return err
 }
+
+func (f False) Type() Type { return FALSE }
 
 func Expand(t Filter) Filter {
 	switch f := t.(type) {

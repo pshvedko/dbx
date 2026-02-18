@@ -21,6 +21,8 @@ var (
 	comma = []byte{','}
 	space = []byte{' '}
 	dummy = []byte{' ', '1'}
+	among = []byte{'"', '.', '"'}
+	quote = []byte{'"'}
 )
 
 func (c Comma) Format(f fmt.State, _ rune) {
@@ -39,6 +41,45 @@ func (h Holder) WriteTo(w io.Writer) (int64, error) {
 	b := [21]byte{'$'}
 	n, err := w.Write(strconv.AppendInt(b[:1], int64(h), 10))
 	return int64(n), err
+}
+
+type Int int
+
+func (i Int) Format(f fmt.State, _ rune) {
+	_, _ = i.WriteTo(f)
+}
+
+func (i Int) WriteTo(w io.Writer) (int64, error) {
+	var b [20]byte
+	n, err := w.Write(strconv.AppendInt(b[:0], int64(i), 10))
+	return int64(n), err
+}
+
+type Column [2]string
+
+func (c Column) Format(f fmt.State, _ rune) {
+	_, _ = c.WriteTo(f)
+}
+
+func (c Column) WriteTo(w io.Writer) (int64, error) {
+	u1, err := w.Write(quote)
+	if err != nil {
+		return int64(u1), err
+	}
+	u2, err := io.WriteString(w, c[0])
+	if err != nil {
+		return int64(u1 + u2), err
+	}
+	u3, err := w.Write(among)
+	if err != nil {
+		return int64(u1 + u2 + u3), err
+	}
+	u4, err := io.WriteString(w, c[1])
+	if err != nil {
+		return int64(u1 + u2 + u3 + u4), err
+	}
+	u5, err := w.Write(quote)
+	return int64(u1 + u2 + u3 + u4 + u5), err
 }
 
 type Keyword = filter.Special
@@ -137,19 +178,27 @@ func (f *Filter) Flag(int) bool {
 	return false
 }
 
+func (f *Filter) AppendInt(i int) (int64, error) {
+	return Int(i).WriteTo(f)
+}
+
+func (f *Filter) AppendColumn(t string, c string) (int64, error) {
+	return Column{t, c}.WriteTo(f)
+}
+
 const (
-	Eq = "%v = %v"
-	Is = "%v IS %v"
-	Ne = "%v <> %v"
-	Si = "%v IS NOT %v"
-	Ge = "%v >= %v"
-	Gt = "%v > %v"
-	Le = "%v <= %v"
-	Lt = "%v < %v"
-	In = "%v = ANY(%v)"
-	Ni = "%v <> ALL(%v)"
-	As = "%v LIKE %v"
-	Na = "%v NOT LIKE %v"
+	Eq = " = %v"
+	Is = " IS %v"
+	Ne = " <> %v"
+	Si = " IS NOT %v"
+	Ge = " >= %v"
+	Gt = " > %v"
+	Le = " <= %v"
+	Lt = " < %v"
+	In = " = ANY(%v)"
+	Ni = " <> ALL(%v)"
+	As = " LIKE %v"
+	Na = " NOT LIKE %v"
 )
 
 var (
@@ -158,69 +207,58 @@ var (
 	end   = []byte{')'}
 )
 
-func (f *Filter) EQ(k, v fmt.Formatter) (int, error) {
-	n1, err := fmt.Fprint(f, k)
+func (f *Filter) EQ(v fmt.Formatter) (int, error) {
+	n1, err := f.Write(equal)
 	if err != nil {
 		return n1, err
 	}
-	n2, err := f.Write(equal)
+	n2, err := fmt.Fprint(f, v)
+	return n1 + n2, err
+}
+
+func (f *Filter) IN(v fmt.Formatter) (int, error) {
+	n1, err := f.Write(inner)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := fmt.Fprint(f, v)
 	if err != nil {
 		return n1 + n2, err
 	}
-	n3, err := fmt.Fprint(f, v)
+	n3, err := f.Write(end)
 	return n1 + n2 + n3, err
 }
 
-func (f *Filter) IN(k, v fmt.Formatter) (int, error) {
-	n1, err := fmt.Fprint(f, k)
-	if err != nil {
-		return n1, err
-	}
-	n2, err := f.Write(inner)
-	if err != nil {
-		return n1 + n2, err
-	}
-	n3, err := fmt.Fprint(f, v)
-	if err != nil {
-		return n1 + n2 + n3, err
-	}
-	n4, err := f.Write(end)
-	return n1 + n2 + n3 + n4, err
-}
-
-func (f *Filter) Collation(t filter.Type, k fmt.Formatter, v any) (int, error) {
+func (f *Filter) Append(t filter.Type, v any) (int, error) {
 	switch t {
 	case filter.EQ:
 		switch v.(type) {
 		case nil, bool:
-			if k == nil {
-				return fmt.Fprint(f, f.Value(v))
-			}
-			return fmt.Fprintf(f, Is, k, f.Value(v))
+			return fmt.Fprintf(f, Is, f.Value(v))
 		}
-		return f.EQ(k, f.Value(v))
+		return f.EQ(f.Value(v))
 	case filter.NE:
 		switch v.(type) {
 		case nil, bool:
-			return fmt.Fprintf(f, Si, k, f.Value(v))
+			return fmt.Fprintf(f, Si, f.Value(v))
 		}
-		return fmt.Fprintf(f, Ne, k, f.Value(v))
+		return fmt.Fprintf(f, Ne, f.Value(v))
 	case filter.GE:
-		return fmt.Fprintf(f, Ge, k, f.Value(v))
+		return fmt.Fprintf(f, Ge, f.Value(v))
 	case filter.GT:
-		return fmt.Fprintf(f, Gt, k, f.Value(v))
+		return fmt.Fprintf(f, Gt, f.Value(v))
 	case filter.LE:
-		return fmt.Fprintf(f, Le, k, f.Value(v))
+		return fmt.Fprintf(f, Le, f.Value(v))
 	case filter.LT:
-		return fmt.Fprintf(f, Lt, k, f.Value(v))
+		return fmt.Fprintf(f, Lt, f.Value(v))
 	case filter.AS:
-		return fmt.Fprintf(f, As, k, f.Value(v))
+		return fmt.Fprintf(f, As, f.Value(v))
 	case filter.NA:
-		return fmt.Fprintf(f, Na, k, f.Value(v))
+		return fmt.Fprintf(f, Na, f.Value(v))
 	case filter.IN:
-		return f.IN(k, f.Value(v))
+		return f.IN(f.Value(v))
 	case filter.NI:
-		return fmt.Fprintf(f, Ni, k, f.Value(v))
+		return fmt.Fprintf(f, Ni, f.Value(v))
 	case filter.FALSE, filter.TRUE:
 		return fmt.Fprint(f, f.Value(v))
 	case filter.AND, filter.OR:

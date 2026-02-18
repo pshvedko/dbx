@@ -150,7 +150,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = c.Copy(filter.Column{t, n})
+		_, err = Column{t, n}.WriteTo(c)
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -228,10 +228,6 @@ func (c *Constructor) NewCounter(n int, m int, z int) *Counter {
 	}
 }
 
-func (c *Constructor) Copy(w io.WriterTo) (int64, error) {
-	return w.WriteTo(c)
-}
-
 func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 	if len(c.O) == 0 {
 		return nil
@@ -253,20 +249,15 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 		}
 		switch y := y.(type) {
 		case int:
-			if y == 0 {
-				_, err = filter.Random().WriteTo(c)
-				if err != nil {
-					return err
-				}
-			} else if y > v || y < -v {
+			if y == 0 || y > v || y < -v {
 				return fmt.Errorf("illegal position: %d", y)
 			} else if y < 0 {
-				_, err = c.Copy(By{filter.Int(-y), DESC})
+				_, err = By{Int(-y), DESC}.WriteTo(c)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err = c.Copy(filter.Int(y))
+				_, err = Int(y).WriteTo(c)
 				if err != nil {
 					return err
 				}
@@ -293,12 +284,12 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				}) {
 					return fmt.Errorf("unknown column: %s", y)
 				}
-				_, err = c.Copy(By{filter.Special(y), o})
+				_, err = By{Keyword(y), o}.WriteTo(c)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err = c.Copy(By{filter.Column{t, y}, o})
+				_, err = By{Column{t, y}, o}.WriteTo(c)
 				if err != nil {
 					return err
 				}
@@ -405,7 +396,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 		if c.Unreturned(n) {
 			continue
 		}
-		_, err = c.Printf("%v %v", Comma(v), filter.Column{t, n})
+		_, err = c.Printf("%v %v", Comma(v), Column{t, n})
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -489,7 +480,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 		return "", nil, nil, err
 	}
 	if c.IsModify() && len(pk) > 0 {
-		_, err = c.Printf(" ON CONFLICT ( %v ) DO UPDATE SET", pk)
+		err = c.WriteOnConflictDoUpdateSet(pk)
 		if err != nil {
 			return "", nil, nil, err
 		}
@@ -571,7 +562,28 @@ func (c *Constructor) WriteTable(t, a string) error {
 	return c.WriteByte('"')
 }
 
-// go test -bench=BenchmarkConstructor_Select -memprofile mem.out
-//go tool pprof -alloc_objects mem.out
-//(pprof) list WriteTo
-//(pprof) list Format
+func (c *Constructor) WriteOnConflictDoUpdateSet(pk []string) error {
+	if len(pk) == 0 {
+		return fmt.Errorf("empty primary key")
+	}
+	_, err := c.WriteString(" ON CONFLICT ( \"")
+	if err != nil {
+		return err
+	}
+	_, err = c.WriteString(pk[0])
+	if err != nil {
+		return err
+	}
+	for _, k := range pk[1:] {
+		_, err = c.WriteString("\", \"")
+		if err != nil {
+			return err
+		}
+		_, err = c.WriteString(k)
+		if err != nil {
+			return err
+		}
+	}
+	_, err = c.WriteString("\" ) DO UPDATE SET")
+	return err
+}
