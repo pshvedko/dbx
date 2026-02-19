@@ -14,45 +14,43 @@ import (
 func TestKey_To(t *testing.T) {
 	j := model.Object{}
 	k := builder.Key{}
-	f := filter.And{
-		filter.Eq{
-			"int_8":  "\\x0f01",
-			"bool_2": true},
-		filter.In{
-			"string_1": []any{"yellow", "green"},
-			"int_16":   []any{1., 2., 3.},
-			"float_32": []any{.0}},
-		filter.Or{
-			filter.Gt{
-				"int_64": 0.},
-			filter.Na{
-				"string_2": `%ing`}},
-	}
+	f := __f
+
+	k.Alloc(16)
+	k.Grow(128)
 
 	err := f.To(&k, &j)
-	if err != nil {
-		return
-	}
+	require.NoError(t, err)
 
 	t.Logf("%s", &k)
-	t.Log(k.String())
+}
+
+const KEY = `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`
+
+func BenchmarkKey(b *testing.B) {
+	j := model.Object{}
+	f := __f
+	var q string
+	for i := 0; i < b.N; i++ {
+		k := builder.Key{}
+		k.Alloc(16)
+		k.Grow(128)
+		err := f.To(&k, &j)
+		if err != nil {
+			b.Fatal(err)
+		}
+		q = k.String()
+		switch q {
+		case KEY:
+		default:
+			//			b.Fatal(q)
+		}
+	}
+	//b.Logf(q)
 }
 
 func TestUnmarshalJSON(t *testing.T) {
-	f := filter.And{
-		filter.Eq{
-			"int_8":  "\\x0f01",
-			"bool_2": true},
-		filter.In{
-			"string_1": []any{"yellow", "green"},
-			"int_16":   []any{1., 2., 3.},
-			"float_32": []any{.0}},
-		filter.Or{
-			filter.Gt{
-				"int_64": 0.},
-			filter.Na{
-				"string_2": `%ing`}},
-	}
+	f := __f
 
 	j, err := filter.MarshalJSON(f)
 	require.NoError(t, err)
@@ -63,7 +61,7 @@ func TestUnmarshalJSON(t *testing.T) {
 	err = json.Unmarshal(j, &m)
 	require.NoError(t, err)
 
-	t.Logf("%+v", m)
+	t.Logf("%v", m)
 
 	x, err := filter.UnmarshalJSON(j)
 	require.NoError(t, err)

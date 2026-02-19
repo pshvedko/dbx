@@ -2,13 +2,12 @@ package builder
 
 import (
 	"fmt"
-
 	"github.com/pshvedko/dbx/filter"
 )
 
-func Conjunct(b filter.Builder, j filter.Projector, u uint8, ff []filter.Filter) (err error) {
+func Conjunct(b filter.Builder, j filter.Projector, u bool, ff []filter.Filter) (err error) {
 	if len(ff) > 1 {
-		_, err = b.WriteString("( ")
+		_, err = b.AppendParenthesis(true)
 		if err != nil {
 			return
 		}
@@ -19,7 +18,7 @@ func Conjunct(b filter.Builder, j filter.Projector, u uint8, ff []filter.Filter)
 			continue
 		}
 		if i > 0 {
-			_, err = b.Write(union[u])
+			_, err = b.AppendVia(u)
 			if err != nil {
 				return
 			}
@@ -37,37 +36,29 @@ func Conjunct(b filter.Builder, j filter.Projector, u uint8, ff []filter.Filter)
 				return
 			}
 		}
-		_, err = b.WriteString(" )")
+		_, err = b.AppendParenthesis(false)
 	}
 	return
 }
 
-type ErrNoSuchField map[string]struct{}
+type ErrNoSuchField map[string]int
 
 func (e ErrNoSuchField) Error() string {
-	ff := make([]string, 0, len(e))
-	for f := range e {
-		ff = append(ff, f)
-	}
-	return fmt.Sprintln("no such field:", ff)
+	return fmt.Sprintf("no such field: %v", map[string]int(e))
 }
-
-type Field []string
 
 var (
 	poolErrNoSuchField = filter.Pool[ErrNoSuchField]{New: func() any { return make(ErrNoSuchField, 32) }}
-	poolField          = filter.Pool[Field]{New: func() any { return make(Field, 0, 32) }}
 )
 
-func Straight[T any, M interface {
+func StraightTo[T any, M interface {
 	~map[string]T
 	Type() filter.Type
-}](b filter.Builder, j filter.Projector, u uint8, oo M) (err error) {
-	nn := poolErrNoSuchField.Get()
+}](b filter.Builder, j filter.Projector, u bool, oo M) (err error) {
+	nn, ff := b.Supply()
 	for k := range oo {
-		nn[k] = struct{}{}
+		nn[k]++
 	}
-	ff := poolField.Get()
 	for _, k := range j.Names() {
 		_, ok := oo[k]
 		if ok {
@@ -76,12 +67,11 @@ func Straight[T any, M interface {
 		}
 	}
 	if len(nn) > 0 {
-		return nn
+		return ErrNoSuchField(nn)
 	}
-	poolErrNoSuchField.Put(nn)
-	defer func() { poolField.Put(ff[:0]) }()
+	b.Reuse(nn, ff)
 	if len(oo) > 1 {
-		_, err = b.WriteString("( ")
+		_, err = b.AppendParenthesis(true)
 		if err != nil {
 			return
 		}
@@ -89,22 +79,49 @@ func Straight[T any, M interface {
 	t := j.Table()
 	for i, f := range ff {
 		if i > 0 {
-			_, err = b.Write(union[u])
+			_, err = b.AppendVia(u)
 			if err != nil {
 				return
 			}
 		}
-		_, err = b.AppendColumn(t, f)
+		_, err = b.AppendColumn(t, f, j.Columns())
 		if err != nil {
 			return
 		}
-		_, err = b.Append(oo.Type(), oo[f])
+		_, err = b.AppendValue(oo.Type(), oo[f])
 		if err != nil {
 			return
 		}
 	}
 	if len(oo) > 1 {
-		_, err = b.WriteString(" )")
+		_, err = b.AppendParenthesis(false)
 	}
 	return
+}
+
+func Straight(b filter.Builder, j filter.Projector, u bool, f filter.Filter) error {
+	switch x := f.(type) {
+	case filter.Eq:
+		return StraightTo(b, j, u, x)
+	case filter.Ne:
+		return StraightTo(b, j, u, x)
+	case filter.Ge:
+		return StraightTo(b, j, u, x)
+	case filter.Gt:
+		return StraightTo(b, j, u, x)
+	case filter.Le:
+		return StraightTo(b, j, u, x)
+	case filter.Lt:
+		return StraightTo(b, j, u, x)
+	case filter.As:
+		return StraightTo(b, j, u, x)
+	case filter.Na:
+		return StraightTo(b, j, u, x)
+	case filter.In:
+		return StraightTo(b, j, u, x)
+	case filter.Ni:
+		return StraightTo(b, j, u, x)
+	default:
+		panic(x)
+	}
 }

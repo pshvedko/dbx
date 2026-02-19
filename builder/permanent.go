@@ -10,7 +10,7 @@ import (
 
 type Permanent struct {
 	I string
-	Filter
+	Builder
 }
 
 func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
@@ -61,6 +61,7 @@ func (p *Permanent) To(b filter.Builder, j filter.Projector) error {
 
 func NewPermanent(j filter.Projector, f filter.Filter) (filter.Filter, error) {
 	p := Permanent{I: j.Name()}
+	p.Alloc(j.Len() << 1)
 	err := f.To(&p, j)
 	if err != nil {
 		return nil, err
@@ -68,6 +69,8 @@ func NewPermanent(j filter.Projector, f filter.Filter) (filter.Filter, error) {
 	return &p, nil
 }
 
-func NewBuilder() filter.Builder {
-	return &Filter{}
+func NewBuilder(n int) filter.Builder {
+	b := &Builder{}
+	b.Alloc(n)
+	return b
 }

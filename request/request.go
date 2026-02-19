@@ -35,6 +35,7 @@ type Request struct {
 		o Origin
 		c Keeper
 	}
+	w func()
 }
 
 func (r *Request) closer() io.Closer {
@@ -95,7 +96,20 @@ func NewWithOption(options ...[]Option) (*Request, error) {
 }
 
 func New(ctx context.Context, db Connector, oo ...Option) (*Request, error) {
-	return NewWithOption(db.Option(), oo, []Option{makeConnect(ctx, db)})
+	return NewWithOption([]Option{makeDefer(func() {})}, db.Option(), oo, []Option{makeConnect(ctx, db)})
+}
+
+func makeDefer(f func()) OptionFunc {
+	return func(r *Request) error {
+		w := r.w
+		r.w = func() {
+			if w != nil {
+				w()
+			}
+			f()
+		}
+		return nil
+	}
 }
 
 func (r *Request) Apply(a *Request) error {
@@ -120,6 +134,8 @@ func (r *Request) End(err error) error {
 			err = errors.Join(err1, err2)
 		}
 	}
+	r.w()
+	r.w = nil
 	r.c = nil
 	r.o = nil
 	r.f = [2]map[string]int{nil, nil}
@@ -160,7 +176,9 @@ func (r *Request) Constructor() *builder.Constructor {
 			Owner: r.a.u,
 			Group: r.a.g,
 		},
-		Aliases: builder.Aliases{},
+		Aliases: make(builder.Aliases, 2),
+		And:     make(filter.And, 0, 2),
+		Donner:  func() {},
 		Modify: builder.Modify{
 			Created: r.s.c,
 			Updated: r.s.u,

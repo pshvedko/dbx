@@ -186,6 +186,10 @@ type class struct {
 	Fields []field
 }
 
+func (c class) Len() int {
+	return len(c.Fields)
+}
+
 func (c class) Snake() string {
 	return strcase.ToScreamingSnake(c.Type)
 }

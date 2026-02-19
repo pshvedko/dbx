@@ -5,7 +5,7 @@ type True struct{}
 func (f True) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f True) To(b Builder, _ Projector) error {
-	_, err := b.Append(TRUE, true)
+	_, err := b.AppendValue(TRUE, true)
 	return err
 }
 
@@ -16,7 +16,7 @@ type False struct{}
 func (f False) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
 func (f False) To(b Builder, _ Projector) error {
-	_, err := b.Append(FALSE, false)
+	_, err := b.AppendValue(FALSE, false)
 	return err
 }
 

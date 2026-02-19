@@ -14,6 +14,10 @@ func (User) Table() string {
 	return UserTable
 }
 
+func (User) Len() int {
+	return 8
+}
+
 func (User) Name() string {
 	return "USER"
 }

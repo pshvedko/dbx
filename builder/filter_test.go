@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"bytes"
 	"github.com/pshvedko/dbx/internal/test/model"
 	"reflect"
 	"testing"
@@ -22,7 +23,7 @@ func TestFilter_To(t *testing.T) {
 			name:  "",
 			f:     filter.Eq{},
 			want:  ``,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
@@ -58,7 +59,7 @@ func TestFilter_To(t *testing.T) {
 			name:  "",
 			f:     filter.And{},
 			want:  ``,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
@@ -76,7 +77,7 @@ func TestFilter_To(t *testing.T) {
 			name:  "",
 			f:     filter.Or{},
 			want:  ``,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
@@ -106,43 +107,43 @@ func TestFilter_To(t *testing.T) {
 			name:  "",
 			f:     filter.Ge{"time_1": filter.Now()},
 			want:  `"objects"."time_1" >= NOW()`,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
 			f:     filter.True{},
 			want:  `TRUE`,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
 			f:     filter.False{},
 			want:  `FALSE`,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
 			f:     filter.Or{filter.And{}},
 			want:  ``,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
 			f:     filter.Or{filter.And{}, filter.And{}},
 			want:  `( TRUE )`,
-			want1: nil,
+			want1: []any{},
 		},
 		{
 			name:  "",
 			f:     filter.Or{filter.And{}, filter.And{filter.Eq{}, filter.Ne{}}},
 			want:  `( TRUE )`,
-			want1: nil,
+			want1: []any{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := builder.Filter{}
-			if err := tt.f.To(&b, &model.Object{}); (err != nil) != tt.wantErr {
+			b := builder.NewBuilder(32)
+			if err := tt.f.To(b, &model.Object{}); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()
@@ -151,6 +152,62 @@ func TestFilter_To(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got1, tt.want1) {
 				t.Errorf("To() got1 = %v, want %v", got1, tt.want1)
+			}
+		})
+	}
+}
+
+func TestHolder_AppendTo(t *testing.T) {
+	tests := []struct {
+		name    string
+		h       builder.Holder
+		wantW   string
+		want    int
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:    "",
+			h:       0,
+			wantW:   "$0",
+			want:    2,
+			wantErr: false,
+		},
+		{
+			name:    "",
+			h:       10,
+			wantW:   "$10",
+			want:    3,
+			wantErr: false,
+		},
+		{
+			name:    "",
+			h:       100,
+			wantW:   "$100",
+			want:    4,
+			wantErr: false,
+		},
+		{
+			name:    "",
+			h:       1000,
+			wantW:   "$1000",
+			want:    5,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			w := &bytes.Buffer{}
+			got, err := tt.h.AppendTo(w)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("AppendTo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if gotW := w.String(); gotW != tt.wantW {
+				t.Errorf("AppendTo() gotW = %v, want %v", gotW, tt.wantW)
+			}
+			if got != tt.want {
+				t.Errorf("AppendTo() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

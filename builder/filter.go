@@ -9,12 +9,6 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-type FormatFunc func(fmt.State, rune)
-
-func (f FormatFunc) Format(w fmt.State, r rune) {
-	f(w, r)
-}
-
 type Comma int
 
 var (
@@ -23,7 +17,7 @@ var (
 	dummy = []byte{' ', '1'}
 	among = []byte{'"', '.', '"'}
 	quote = []byte{'"'}
-	union = [2][]byte{{' ', 'O', 'R', ' '}, {' ', 'A', 'N', 'D', ' '}}
+	place = []byte{'$'}
 )
 
 func (c Comma) Format(f fmt.State, _ rune) {
@@ -35,52 +29,57 @@ func (c Comma) Format(f fmt.State, _ rune) {
 type Holder int
 
 func (h Holder) Format(f fmt.State, _ rune) {
-	_, _ = h.WriteTo(f)
+	_, _ = h.AppendTo(f)
 }
 
-func (h Holder) WriteTo(w io.Writer) (int64, error) {
-	b := [21]byte{'$'}
-	n, err := w.Write(strconv.AppendInt(b[:1], int64(h), 10))
-	return int64(n), err
+func (h Holder) AppendTo(w io.Writer) (int, error) {
+	n1, err := w.Write(place)
+	if err != nil {
+		return n1, err
+	}
+	n2, err := Integer(h).AppendTo(w)
+	return n1 + n2, err
 }
 
-type Int int
+type Integer int
 
-func (i Int) Format(f fmt.State, _ rune) {
-	_, _ = i.WriteTo(f)
+func (i Integer) Format(f fmt.State, _ rune) {
+	_, _ = i.AppendTo(f)
 }
 
-func (i Int) WriteTo(w io.Writer) (int64, error) {
+func (i Integer) AppendTo(w io.Writer) (int, error) {
+	if int(i) < len(integers) {
+		return w.Write(integers[i])
+	}
 	var b [20]byte
-	n, err := w.Write(strconv.AppendInt(b[:0], int64(i), 10))
-	return int64(n), err
+	return w.Write(strconv.AppendInt(b[:0], int64(i), 10))
 }
 
 type Column [2]string
 
 func (c Column) Format(f fmt.State, _ rune) {
-	_, _ = c.WriteTo(f)
+	_, _ = c.AppendTo(f)
 }
 
-func (c Column) WriteTo(w io.Writer) (int64, error) {
+func (c Column) AppendTo(w io.Writer) (int, error) {
 	u1, err := w.Write(quote)
 	if err != nil {
-		return int64(u1), err
+		return u1, err
 	}
 	u2, err := io.WriteString(w, c[0])
 	if err != nil {
-		return int64(u1 + u2), err
+		return u1 + u2, err
 	}
 	u3, err := w.Write(among)
 	if err != nil {
-		return int64(u1 + u2 + u3), err
+		return u1 + u2 + u3, err
 	}
 	u4, err := io.WriteString(w, c[1])
 	if err != nil {
-		return int64(u1 + u2 + u3 + u4), err
+		return u1 + u2 + u3 + u4, err
 	}
 	u5, err := w.Write(quote)
-	return int64(u1 + u2 + u3 + u4 + u5), err
+	return u1 + u2 + u3 + u4 + u5, err
 }
 
 type Keyword = filter.Special
@@ -94,14 +93,18 @@ const (
 	DEFAULT Keyword = "DEFAULT"
 )
 
-type By [2]io.WriterTo
-
-func (b By) Format(f fmt.State, _ rune) {
-	_, _ = b.WriteTo(f)
+type AppenderTo interface {
+	AppendTo(io.Writer) (int, error)
 }
 
-func (b By) WriteTo(w io.Writer) (int64, error) {
-	n1, err := b[0].WriteTo(w)
+type By [2]AppenderTo
+
+func (b By) Format(f fmt.State, _ rune) {
+	_, _ = b.AppendTo(f)
+}
+
+func (b By) AppendTo(w io.Writer) (int, error) {
+	n1, err := b[0].AppendTo(w)
 	if err != nil || b[1] == nil {
 		return n1, err
 	}
@@ -109,16 +112,18 @@ func (b By) WriteTo(w io.Writer) (int64, error) {
 	if err != nil {
 		return n1, err
 	}
-	n2, err := b[1].WriteTo(w)
+	n2, err := b[1].AppendTo(w)
 	return n1 + 1 + n2, err
 }
 
-type Filter struct {
+type Builder struct {
 	strings.Builder
 	v []any
+	f []string
+	m map[string]int
 }
 
-func (f *Filter) Value(v any) fmt.Formatter {
+func (f *Builder) Value(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case nil:
 		return NULL
@@ -132,59 +137,70 @@ func (f *Filter) Value(v any) fmt.Formatter {
 	}
 }
 
-func (f *Filter) Size() int {
-	return len(f.v)
-}
-
-func (f *Filter) Values() []any {
-	return f.v
-}
-
-const DefaultHolderCacheSize = 32
-
-var holders = make([]fmt.Formatter, 0, DefaultHolderCacheSize)
-
-func init() {
-	for i := 0; i < cap(holders); i++ {
-		h := [21]byte{'$'}
-		holders = append(holders, func(b []byte) FormatFunc {
-			return func(f fmt.State, r rune) {
-				_, _ = f.Write(b)
-			}
-		}(strconv.AppendInt(h[:1], int64(i), 10)))
-	}
-}
-
-func (f *Filter) Add(v any) fmt.Formatter {
+func (f *Builder) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
 	}
 	f.v = append(f.v, v)
-	if len(f.v) < len(holders) {
-		return holders[len(f.v)]
-	}
 	return Holder(len(f.v))
 }
 
-func (f *Filter) Width() (int, bool) {
+func (f *Builder) Size() int {
+	return len(f.v)
+}
+
+func (f *Builder) Values() []any {
+	return f.v
+}
+
+func (f *Builder) Alloc(n int) {
+	f.v = make([]any, 0, 8+n)
+	f.f = make([]string, 0, 8+n>>1)
+}
+
+func (f *Builder) Supply() (map[string]int, []string) {
+	m := poolErrNoSuchField.Get()
+	return m, f.f[:0]
+}
+
+func (f *Builder) Reuse(m map[string]int, v []string) {
+	poolErrNoSuchField.Put(m)
+	f.f = v
+}
+
+func (f *Builder) Width() (int, bool) {
 	return 0, false
 }
 
-func (f *Filter) Precision() (int, bool) {
+func (f *Builder) Precision() (int, bool) {
 	return 0, false
 }
 
-func (f *Filter) Flag(int) bool {
+func (f *Builder) Flag(int) bool {
 	return false
 }
 
-func (f *Filter) AppendInt(i int) (int64, error) {
-	return Int(i).WriteTo(f)
+func (f *Builder) AppendInt(i int) (int, error) {
+	return Integer(i).AppendTo(f)
 }
 
-func (f *Filter) AppendColumn(t string, c string) (int64, error) {
-	return Column{t, c}.WriteTo(f)
+func (f *Builder) AppendColumn(t string, c string, m map[string]int) (int, error) {
+	return Column{t, c}.AppendTo(f)
+}
+
+func (f *Builder) AppendVia(b bool) (int, error) {
+	if b {
+		return f.WriteString(" AND ")
+	}
+	return f.WriteString(" OR ")
+}
+
+func (f *Builder) AppendParenthesis(b bool) (int, error) {
+	if b {
+		return f.WriteString("( ")
+	}
+	return f.WriteString(" )")
 }
 
 const (
@@ -202,35 +218,29 @@ const (
 	Na = " NOT LIKE %v"
 )
 
-var (
-	equal = []byte{' ', '=', ' '}
-	inner = []byte{' ', '=', ' ', 'A', 'N', 'Y', '('}
-	end   = []byte{')'}
-)
-
-func (f *Filter) EQ(v fmt.Formatter) (int, error) {
-	n1, err := f.Write(equal)
+func (f *Builder) EQ(v fmt.Formatter) (int, error) {
+	n1, err := f.WriteString(" = ")
 	if err != nil {
 		return n1, err
 	}
-	n2, err := fmt.Fprint(f, v)
+	n2, err := f.AppendFormat(v)
 	return n1 + n2, err
 }
 
-func (f *Filter) IN(v fmt.Formatter) (int, error) {
-	n1, err := f.Write(inner)
+func (f *Builder) IN(v fmt.Formatter) (int, error) {
+	n1, err := f.WriteString(" = ANY(")
 	if err != nil {
 		return n1, err
 	}
-	n2, err := fmt.Fprint(f, v)
+	n2, err := f.AppendFormat(v)
 	if err != nil {
 		return n1 + n2, err
 	}
-	n3, err := f.Write(end)
-	return n1 + n2 + n3, err
+	err = f.WriteByte(')')
+	return n1 + n2 + 1, err
 }
 
-func (f *Filter) Append(t filter.Type, v any) (int, error) {
+func (f *Builder) AppendValue(t filter.Type, v any) (int, error) {
 	switch t {
 	case filter.EQ:
 		switch v.(type) {
@@ -261,7 +271,7 @@ func (f *Filter) Append(t filter.Type, v any) (int, error) {
 	case filter.NI:
 		return fmt.Fprintf(f, Ni, f.Value(v))
 	case filter.FALSE, filter.TRUE:
-		return fmt.Fprint(f, f.Value(v))
+		return f.AppendFormat(f.Value(v))
 	case filter.AND, filter.OR:
 		fallthrough
 	default:
@@ -269,43 +279,18 @@ func (f *Filter) Append(t filter.Type, v any) (int, error) {
 	}
 }
 
-func (f *Filter) Conjunct(j filter.Projector, u uint8, ff []filter.Filter) error {
+func (f *Builder) Conjunct(j filter.Projector, u bool, ff []filter.Filter) error {
 	return Conjunct(f, j, u, ff)
 }
 
-func (f *Filter) Straight(j filter.Projector, u uint8, x filter.Filter) error {
-	switch x := x.(type) {
-	case filter.Eq:
-		return Straight(f, j, u, x)
-	case filter.Ne:
-		return Straight(f, j, u, x)
-	case filter.Ge:
-		return Straight(f, j, u, x)
-	case filter.Gt:
-		return Straight(f, j, u, x)
-	case filter.Le:
-		return Straight(f, j, u, x)
-	case filter.Lt:
-		return Straight(f, j, u, x)
-	case filter.As:
-		return Straight(f, j, u, x)
-	case filter.Na:
-		return Straight(f, j, u, x)
-	case filter.In:
-		return Straight(f, j, u, x)
-	case filter.Ni:
-		return Straight(f, j, u, x)
-	case filter.And:
-		return Conjunct(f, j, u, x)
-	case filter.Or:
-		return Conjunct(f, j, u, x)
-	case filter.True, filter.False:
-		return nil
-	default:
-		panic(x)
-	}
+func (f *Builder) Straight(j filter.Projector, u bool, x filter.Filter) error {
+	return Straight(f, j, u, x)
 }
 
-func (f *Filter) Alloc(n int) {
-	f.v = make([]any, 0, n)
+func (f *Builder) AppendFormat(x fmt.Formatter) (int, error) {
+	switch x := x.(type) {
+	case AppenderTo:
+		return x.AppendTo(f)
+	}
+	return fmt.Fprint(f, x)
 }

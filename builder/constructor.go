@@ -3,7 +3,6 @@ package builder
 import (
 	"fmt"
 	"github.com/pshvedko/dbx/filter"
-	"io"
 	"strconv"
 	"strings"
 )
@@ -51,8 +50,12 @@ func (m Mode) IsCreate() bool { return m == 1 }
 
 func (m Mode) IsUpdate() bool { return m == 2 }
 
+type Donner func()
+
+func (f Donner) Done() { f() }
+
 type Constructor struct {
-	Filter
+	Builder
 	Fielder
 	Modify
 	Access
@@ -61,6 +64,8 @@ type Constructor struct {
 	R Ranger
 	O Order
 	Z bool
+	Donner
+	filter.And
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
@@ -75,7 +80,7 @@ func (c *Constructor) Unreturned(n string) bool {
 	return !c.Returned(n)
 }
 
-func (c *Constructor) Validate(f filter.Fielder) error {
+func (c *Constructor) Adjust(f filter.Fielder) error {
 	columns := f.Columns()
 	size := 0
 	fund := 0
@@ -116,26 +121,21 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
-var (
-	poolFilterAnd = filter.Pool[filter.And]{New: func() any { return make(filter.And, 0, 2) }}
-)
-
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
-	err := c.Validate(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
+	defer c.Done()
 	_, err = c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	a := poolFilterAnd.Get()
-	a = append(a, f)
-	defer func() { poolFilterAnd.Put(a[:0]) }()
+	w := c.Where(f)
 	v, nn, vv, t := 0, j.Names(), j.Places(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
-			a = c.DeleteClause(a)
+			w = c.WithDeleted(w)
 		}
 		if c.Unreturned(n) || c.Unused(n) {
 			continue
@@ -150,7 +150,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = Column{t, n}.WriteTo(c)
+		_, err = Column{t, n}.AppendTo(c)
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -178,18 +178,18 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	w := c.Len()
-	err = a.To(c, filter.Table{Projector: j, Alias: t})
+	m := c.Len()
+	err = w.To(c, filter.Table{Projector: j, Alias: t})
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	if w == c.Len() {
+	if m == c.Len() {
 		_, err = c.WriteString("TRUE")
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
 	}
-	m := c.Len()
+	m = c.Len()
 	err = c.WriteOrder(j, t, v)
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -200,7 +200,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = fmt.Fprint(c, c.Add(*c.R.O))
+		_, err = c.AppendFormat(c.Add(*c.R.O))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -210,7 +210,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
-		_, err = fmt.Fprint(c, c.Add(*c.R.L))
+		_, err = c.AppendFormat(c.Add(*c.R.L))
 		if err != nil {
 			return nil, "", nil, nil, err
 		}
@@ -252,12 +252,12 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 			if y == 0 || y > v || y < -v {
 				return fmt.Errorf("illegal position: %d", y)
 			} else if y < 0 {
-				_, err = By{Int(-y), DESC}.WriteTo(c)
+				_, err = By{Integer(-y), DESC}.AppendTo(c)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err = Int(y).WriteTo(c)
+				_, err = Integer(y).AppendTo(c)
 				if err != nil {
 					return err
 				}
@@ -266,7 +266,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 			if len(y) == 0 {
 				return c.O
 			}
-			var o io.WriterTo
+			var o AppenderTo
 			switch y[0] {
 			case '-':
 				o = DESC
@@ -284,18 +284,18 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				}) {
 					return fmt.Errorf("unknown column: %s", y)
 				}
-				_, err = By{Keyword(y), o}.WriteTo(c)
+				_, err = By{Keyword(y), o}.AppendTo(c)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err = By{Column{t, y}, o}.WriteTo(c)
+				_, err = By{Column{t, y}, o}.AppendTo(c)
 				if err != nil {
 					return err
 				}
 			}
 		case filter.Special:
-			_, err = y.WriteTo(c)
+			_, err = y.AppendTo(c)
 			if err != nil {
 				return err
 			}
@@ -317,10 +317,11 @@ func (c *Constructor) Sort(y Order) *Constructor {
 }
 
 func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, []any, []any, error) {
-	err := c.Validate(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
+	defer c.Done()
 	t := c.Alias(j.Table())
 	_, err = c.Printf("UPDATE %q AS %q SET", j.Table(), t)
 	if err != nil {
@@ -346,7 +347,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 			k[n] = o
 			continue
 		case c.IsDeleted(n):
-			w = c.DeleteClause(w)
+			w = c.WithDeleted(w)
 			if none {
 				continue
 			}
@@ -418,10 +419,11 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if c.IsUpdate() {
 		return c.Update(j)
 	}
-	err := c.Validate(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
+	defer c.Done()
 	_, err = c.WriteString("INSERT INTO")
 	if err != nil {
 		return "", nil, nil, err
@@ -446,7 +448,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 			up = n
 			continue
 		case c.IsDeleted(n):
-			w = c.DeleteClause(w)
+			w = c.WithDeleted(w)
 			if none {
 				continue
 			}
@@ -521,7 +523,7 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if !c.IsDeleted("") {
 		return c.SoftDelete().Update(filter.NewProjector(j).WithPK().WithValue(c.AsDeleted(), filter.Now()), f)
 	}
-	err := c.Validate(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -586,4 +588,8 @@ func (c *Constructor) WriteOnConflictDoUpdateSet(pk []string) error {
 	}
 	_, err = c.WriteString("\" ) DO UPDATE SET")
 	return err
+}
+
+func (c *Constructor) Where(ff ...filter.Filter) filter.And {
+	return append(c.And, ff...)
 }

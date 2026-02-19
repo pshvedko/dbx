@@ -14,6 +14,10 @@ func (Object) Table() string {
 	return ObjectTable
 }
 
+func (Object) Len() int {
+	return 22
+}
+
 func (Object) Name() string {
 	return "OBJECT"
 }

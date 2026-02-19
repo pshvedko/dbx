@@ -14,6 +14,10 @@ func ({{.Type}}) Table() string {
 	return {{.Type}}Table
 }
 
+func ({{.Type}}) Len() int {
+	return {{.Len}}
+}
+
 func ({{.Type}}) Name() string {
 	return "{{.Snake}}"
 }
