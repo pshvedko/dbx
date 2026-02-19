@@ -269,7 +269,7 @@ func (f *Filter) Append(t filter.Type, v any) (int, error) {
 }
 
 func (f *Filter) Conjunct(j filter.Projector, o string, ff []filter.Filter) error {
-	return Conjunction(f, j, o, ff)
+	return Conjunct(f, j, o, ff)
 }
 
 func (f *Filter) Straight(j filter.Projector, o string, x filter.Filter) error {
@@ -294,6 +294,12 @@ func (f *Filter) Straight(j filter.Projector, o string, x filter.Filter) error {
 		return Straight(f, j, o, x)
 	case filter.Ni:
 		return Straight(f, j, o, x)
+	case filter.And:
+		return Conjunct(f, j, o, x)
+	case filter.Or:
+		return Conjunct(f, j, o, x)
+	case filter.True, filter.False:
+		return nil
 	default:
 		panic(x)
 	}

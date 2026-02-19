@@ -6,7 +6,7 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-func Conjunction(b filter.Builder, j filter.Projector, o string, ff []filter.Filter) (err error) {
+func Conjunct(b filter.Builder, j filter.Projector, o string, ff []filter.Filter) (err error) {
 	if len(ff) > 1 {
 		_, err = b.WriteString("( ")
 		if err != nil {
@@ -65,7 +65,7 @@ func (e Field) Erase() Field {
 
 var (
 	poolErrNoSuchField = filter.Pool[ErrNoSuchField]{New: func() any { return make(ErrNoSuchField, 32) }}
-	poolNameField      = filter.Pool[Field]{New: func() any { return make(Field, 0, 32) }}
+	poolField          = filter.Pool[Field]{New: func() any { return make(Field, 0, 32) }}
 )
 
 func Straight[T any, M interface {
@@ -76,7 +76,7 @@ func Straight[T any, M interface {
 	for k := range oo {
 		nn[k] = struct{}{}
 	}
-	ff := poolNameField.Get()
+	ff := poolField.Get()
 	for _, k := range j.Names() {
 		_, ok := oo[k]
 		if ok {
@@ -88,7 +88,7 @@ func Straight[T any, M interface {
 		return nn
 	}
 	poolErrNoSuchField.Put(nn)
-	defer func() { poolNameField.Put(ff.Erase()) }()
+	defer func() { poolField.Put(ff.Erase()) }()
 	if len(oo) > 1 {
 		_, err = b.WriteString("( ")
 		if err != nil {
