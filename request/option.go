@@ -156,7 +156,6 @@ type Keeper interface {
 
 func WithCache(c Keeper) OptionFunc {
 	_, file, line, _ := runtime.Caller(1)
-	println(file, line)
 	return func(r *Request) error {
 		r.h.o = Origin{file: file, line: line}
 		r.h.c = c

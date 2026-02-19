@@ -284,3 +284,11 @@ func (r *Request) Delete(ctx context.Context, i filter.Injector, f filter.Filter
 	}
 	return rows.Err()
 }
+
+func (r *Request) WithOption(oo ...Option) error {
+	err := r.apply(oo...)
+	if err != nil {
+		return err
+	}
+	return nil
+}
