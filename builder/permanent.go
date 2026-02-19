@@ -68,6 +68,6 @@ func NewPermanent(j filter.Projector, f filter.Filter) (filter.Filter, error) {
 	return &p, nil
 }
 
-func New() filter.Builder {
+func NewBuilder() filter.Builder {
 	return &Filter{}
 }

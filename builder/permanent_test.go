@@ -30,7 +30,7 @@ func ExampleNewPermanent() {
 		filter.And{filter.Eq{"id": uuid.UUID{}}, filter.Or{filter.In{"string_2": []any{"green", "yellow"}}, p}},
 		filter.And{p, p},
 	} {
-		b := builder.New()
+		b := builder.NewBuilder()
 		err = f.To(b, &o)
 		if err != nil {
 			fmt.Println(err)

@@ -265,3 +265,12 @@ func OperationJSON[T any, M interface {
 	}
 	return json.Marshal(a)
 }
+
+func UnmarshalJSON(j []byte) (Filter, error) {
+	var e Expression
+	err := json.Unmarshal(j, &e)
+	if err != nil {
+		return nil, err
+	}
+	return e.Filter()
+}

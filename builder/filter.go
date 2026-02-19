@@ -23,6 +23,7 @@ var (
 	dummy = []byte{' ', '1'}
 	among = []byte{'"', '.', '"'}
 	quote = []byte{'"'}
+	union = [2][]byte{{' ', 'O', 'R', ' '}, {' ', 'A', 'N', 'D', ' '}}
 )
 
 func (c Comma) Format(f fmt.State, _ rune) {
@@ -268,36 +269,36 @@ func (f *Filter) Append(t filter.Type, v any) (int, error) {
 	}
 }
 
-func (f *Filter) Conjunct(j filter.Projector, o string, ff []filter.Filter) error {
-	return Conjunct(f, j, o, ff)
+func (f *Filter) Conjunct(j filter.Projector, u uint8, ff []filter.Filter) error {
+	return Conjunct(f, j, u, ff)
 }
 
-func (f *Filter) Straight(j filter.Projector, o string, x filter.Filter) error {
+func (f *Filter) Straight(j filter.Projector, u uint8, x filter.Filter) error {
 	switch x := x.(type) {
 	case filter.Eq:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Ne:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Ge:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Gt:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Le:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Lt:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.As:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Na:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.In:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.Ni:
-		return Straight(f, j, o, x)
+		return Straight(f, j, u, x)
 	case filter.And:
-		return Conjunct(f, j, o, x)
+		return Conjunct(f, j, u, x)
 	case filter.Or:
-		return Conjunct(f, j, o, x)
+		return Conjunct(f, j, u, x)
 	case filter.True, filter.False:
 		return nil
 	default:
