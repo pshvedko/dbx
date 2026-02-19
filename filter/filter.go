@@ -10,65 +10,6 @@ import (
 	"sync"
 )
 
-type Table struct {
-	Projector
-	Alias string
-}
-
-func (t Table) Table() string {
-	return t.Alias
-}
-
-func Conjunction(b Builder, j Projector, o string, ff []Filter) (err error) {
-	if len(ff) > 1 {
-		_, err = b.WriteString("( ")
-		if err != nil {
-			return
-		}
-		defer func() {
-			if err == nil {
-				_, err = b.WriteString(" )")
-			}
-		}()
-	}
-	var i int
-	for _, f := range ff {
-		if IsEmpty(f) {
-			continue
-		}
-		if i > 0 {
-			err = b.WriteByte(' ')
-			if err != nil {
-				return
-			}
-			_, err = b.WriteString(o)
-			if err != nil {
-				return
-			}
-			err = b.WriteByte(' ')
-			if err != nil {
-				return
-			}
-		}
-		err = f.To(b, j)
-		if err != nil {
-			return err
-		}
-		i++
-	}
-	return
-}
-
-type ErrNoSuchField map[string]struct{}
-
-func (e ErrNoSuchField) Error() string {
-	ff := make([]string, 0, len(e))
-	for f := range e {
-		ff = append(ff, f)
-	}
-	return fmt.Sprintln("no field:", ff)
-}
-
 type Map[K comparable, V any] sync.Map
 
 func (m *Map[K, V]) Get(k K) (V, bool) { v, ok := (*sync.Map)(m).Load(k); return v.(V), ok }
@@ -81,69 +22,13 @@ func (p *Pool[T]) Get() T { return (*sync.Pool)(p).Get().(T) }
 
 func (p *Pool[T]) Put(x T) { (*sync.Pool)(p).Put(x) }
 
-var (
-	poolErrNoSuchField = Pool[ErrNoSuchField]{New: func() any { return make(ErrNoSuchField, 32) }}
-	poolNameField      = Pool[[]string]{New: func() any { return make([]string, 0, 32) }}
-)
+type Table struct {
+	Projector
+	Alias string
+}
 
-func Straight[T any, M interface {
-	~map[string]T
-	Type() Type
-}](b Builder, j Projector, o string, oo M) (err error) {
-	nn := poolErrNoSuchField.Get()
-	for k := range oo {
-		nn[k] = struct{}{}
-	}
-	ff := poolNameField.Get()
-	for _, k := range j.Names() {
-		_, ok := oo[k]
-		if ok {
-			ff = append(ff, k)
-			delete(nn, k)
-		}
-	}
-	if len(nn) > 0 {
-		return nn
-	}
-	poolErrNoSuchField.Put(nn)
-	defer func() { poolNameField.Put(ff[:0]) }()
-	if len(oo) > 1 {
-		_, err = b.WriteString("( ")
-		if err != nil {
-			return
-		}
-		defer func() {
-			if err == nil {
-				_, err = b.WriteString(" )")
-			}
-		}()
-	}
-	t := j.Table()
-	for i, f := range ff {
-		if i > 0 {
-			err = b.WriteByte(' ')
-			if err != nil {
-				return
-			}
-			_, err = b.WriteString(o)
-			if err != nil {
-				return
-			}
-			err = b.WriteByte(' ')
-			if err != nil {
-				return
-			}
-		}
-		_, err = b.AppendColumn(t, f)
-		if err != nil {
-			return
-		}
-		_, err = b.Append(oo.Type(), oo[f])
-		if err != nil {
-			return
-		}
-	}
-	return
+func (t Table) Table() string {
+	return t.Alias
 }
 
 type Special string
@@ -188,11 +73,21 @@ func (o *Injectable[T]) Inject(j Projector) {
 	}
 }
 
+type Rectifier interface {
+	Straight(Projector, string, Filter) error
+}
+
+type Unifier interface {
+	Conjunct(Projector, string, []Filter) error
+}
+
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
 	Values() []any
 	Len() int
+	Rectifier
+	Unifier
 }
 
 type Builder interface {
@@ -250,7 +145,7 @@ type And []Filter
 
 func (f And) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f And) To(b Builder, j Projector) error { return Conjunction(b, j, "AND", f) }
+func (f And) To(b Builder, j Projector) error { return b.Conjunct(j, "AND", f) }
 
 func (f And) Type() Type { return AND }
 
@@ -258,7 +153,7 @@ type Or []Filter
 
 func (f Or) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Or) To(b Builder, j Projector) error { return Conjunction(b, j, "OR", f) }
+func (f Or) To(b Builder, j Projector) error { return b.Conjunct(j, "OR", f) }
 
 func (f Or) Type() Type { return OR }
 
@@ -266,7 +161,7 @@ type Eq map[string]any
 
 func (f Eq) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Eq) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Eq) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Eq) Type() Type { return EQ }
 
@@ -274,7 +169,7 @@ type Ne map[string]any
 
 func (f Ne) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ne) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Ne) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Ne) Type() Type { return NE }
 
@@ -282,7 +177,7 @@ type Ge map[string]any
 
 func (f Ge) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ge) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Ge) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Ge) Type() Type { return GE }
 
@@ -290,7 +185,7 @@ type Gt map[string]any
 
 func (f Gt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Gt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Gt) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Gt) Type() Type { return GT }
 
@@ -298,7 +193,7 @@ type Le map[string]any
 
 func (f Le) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Le) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Le) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Le) Type() Type { return LE }
 
@@ -306,7 +201,7 @@ type Lt map[string]any
 
 func (f Lt) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Lt) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Lt) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Lt) Type() Type { return LT }
 
@@ -314,7 +209,7 @@ type As map[string]string
 
 func (f As) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f As) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f As) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f As) Type() Type { return AS }
 
@@ -322,7 +217,7 @@ type Na map[string]string
 
 func (f Na) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Na) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Na) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Na) Type() Type { return NA }
 
@@ -330,7 +225,7 @@ type In map[string]Array
 
 func (f In) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f In) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f In) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f In) Type() Type { return IN }
 
@@ -338,7 +233,7 @@ type Ni map[string]Array
 
 func (f Ni) MarshalJSON() ([]byte, error) { return MarshalJSON(f) }
 
-func (f Ni) To(b Builder, j Projector) error { return Straight(b, j, "AND", f) }
+func (f Ni) To(b Builder, j Projector) error { return b.Straight(j, "AND", f) }
 
 func (f Ni) Type() Type { return NI }
 

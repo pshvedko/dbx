@@ -268,6 +268,37 @@ func (f *Filter) Append(t filter.Type, v any) (int, error) {
 	}
 }
 
+func (f *Filter) Conjunct(j filter.Projector, o string, ff []filter.Filter) error {
+	return Conjunction(f, j, o, ff)
+}
+
+func (f *Filter) Straight(j filter.Projector, o string, x filter.Filter) error {
+	switch x := x.(type) {
+	case filter.Eq:
+		return Straight(f, j, o, x)
+	case filter.Ne:
+		return Straight(f, j, o, x)
+	case filter.Ge:
+		return Straight(f, j, o, x)
+	case filter.Gt:
+		return Straight(f, j, o, x)
+	case filter.Le:
+		return Straight(f, j, o, x)
+	case filter.Lt:
+		return Straight(f, j, o, x)
+	case filter.As:
+		return Straight(f, j, o, x)
+	case filter.Na:
+		return Straight(f, j, o, x)
+	case filter.In:
+		return Straight(f, j, o, x)
+	case filter.Ni:
+		return Straight(f, j, o, x)
+	default:
+		panic(x)
+	}
+}
+
 func (f *Filter) Alloc(n int) {
 	f.v = make([]any, 0, n)
 }
