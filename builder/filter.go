@@ -159,6 +159,10 @@ func (f *Builder) Alloc(n int) {
 	f.f = make([]string, 0, 8+n>>1)
 }
 
+var (
+	poolErrNoSuchField = filter.Pool[map[string]int]{New: func() any { return make(map[string]int, 32) }}
+)
+
 func (f *Builder) Supply() (map[string]int, []string) {
 	m := poolErrNoSuchField.Get()
 	return m, f.f[:0]

@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"fmt"
 	"github.com/pshvedko/dbx/filter"
 )
 
@@ -74,4 +75,67 @@ func (k *Key) Conjunct(j filter.Projector, u bool, ff []filter.Filter) (err erro
 	}
 	_, err = k.AppendParenthesis(false)
 	return
+}
+
+type Origin struct {
+	File string
+	Line int
+}
+
+type Hash struct {
+	Origin
+	static string
+}
+
+type Keeper interface {
+	Get(Hash) (string, bool)
+	Put(Hash, string)
+}
+
+type Cache struct {
+	Origin
+	Keeper
+}
+
+func (c Cache) IsCacheEnabled() bool {
+	return c.Keeper != nil && c.Origin.File != "" && c.Origin.Line != 0
+}
+
+func WritePresentRanges(idx []int) {
+	y := true // разрешено печатать индексы
+	z := 0    // индекс начала интервала
+	for i, x := range idx {
+		if x == 0 { // поле не в списке, пропускаем
+			if !y { // было запрещено печатать,
+				y = true // разрешаем печатать
+				switch i - z {
+				case 0: // такое невозможно!
+					panic(i)
+				case 1: // напечатан только один, добавить нечего
+				case 2: // напечатано два, между соседними "-" не влезет
+					println(",")
+					println(i - 1) // конец интервала
+				default: // больше двух, ставим "-" закрывая интервал
+					println("-")
+					println(i - 1) // конец интервала
+				}
+				println(",") // закрываем интервал
+			}
+			// тут было разрешено печатать, но нечего
+			continue
+		}
+
+		if y { // можно печатать индексы
+			println(i) // печатаем начало интервала
+			z = i      // запоминаем начало интервала
+			y = false  // запретим печатать индексы
+		}
+		// тут нельзя печатать индексы
+	}
+
+	if !y { // вышли из цикла и запрещено печатать
+		println("-")
+	}
+
+	println("===", fmt.Sprint(idx))
 }

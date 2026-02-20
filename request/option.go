@@ -139,30 +139,15 @@ const (
 	PutUpdate
 )
 
-type Origin struct {
-	file string
-	line int
-}
-
-type Key struct {
-	Origin
-	static string
-}
-
-type Keeper interface {
-	Get(Key) (string, bool)
-	Put(Key, string)
-}
-
-func WithCache(c Keeper) OptionFunc {
+func WithCache(c builder.Keeper) OptionFunc {
 	_, file, line, _ := runtime.Caller(1)
 	return func(r *Request) error {
-		r.h.o = Origin{file: file, line: line}
+		r.h.o = builder.Origin{File: file, Line: line}
 		r.h.c = c
 		return nil
 	}
 }
 
 type Cache struct {
-	filter.Map[Key, string]
+	filter.Map[builder.Hash, string]
 }

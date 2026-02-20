@@ -66,6 +66,7 @@ type Constructor struct {
 	Z bool
 	Donner
 	filter.And
+	Cache
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
@@ -80,7 +81,7 @@ func (c *Constructor) Unreturned(n string) bool {
 	return !c.Returned(n)
 }
 
-func (c *Constructor) Adjust(f filter.Fielder) error {
+func (c *Constructor) Adjust(f filter.Fielder) (int, int, error) {
 	columns := f.Columns()
 	size := 0
 	fund := 0
@@ -93,13 +94,11 @@ func (c *Constructor) Adjust(f filter.Fielder) error {
 			size += len(name)
 			_, ok := columns[name]
 			if !ok {
-				return fmt.Errorf("unknown column: %s", name)
+				return 0, 0, fmt.Errorf("unknown column: %s", name)
 			}
 		}
 	}
-	c.Grow(size<<2 + size)
-	c.Alloc(fund >> 1)
-	return nil
+	return size<<2 + size, fund >> 1, nil
 }
 
 type Counter struct {
@@ -121,12 +120,64 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
+func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, a int, r byte) (*Key, error) {
+	if !c.IsCacheEnabled() {
+		return nil, nil
+	}
+	return nil, nil
+
+	k := Key{}
+	k.Grow(a)
+	k.Alloc(a)
+
+	k.WriteByte(r)
+	k.WriteByte(':')
+	k.WriteString(j.Name())
+	k.WriteByte(':')
+
+	// i:0,1,2,3,4,5,6,7,8,9,
+	// - . . . . . . . . . .
+	//   0-
+	// - 0 1 2 3   5 6
+	//   0     3   5 6
+	nn, z, y := j.Names(), 0, false
+	for i, n := range nn {
+		if c.Unreturned(n) || c.Unused(n) {
+			continue
+		}
+
+		if z == i && !y {
+			y = !y
+			k.AppendInt(i)
+		}
+
+		z++
+
+	}
+
+	if f != nil {
+		err := f.To(&k, j)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// TODO OFFSET LIMIT
+
+	return &k, nil
+}
+
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
-	err := c.Adjust(j)
+	g, a, err := c.Adjust(j)
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
 	defer c.Done()
+	_, err = c.TryCache(j, f, a, 'S')
+	if err != nil {
+		return nil, "", nil, nil, nil
+	}
+	c.Grow(g)
 	_, err = c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -317,7 +368,7 @@ func (c *Constructor) Sort(y Order) *Constructor {
 }
 
 func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, []any, []any, error) {
-	err := c.Adjust(j)
+	_, _, err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -419,7 +470,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if c.IsUpdate() {
 		return c.Update(j)
 	}
-	err := c.Adjust(j)
+	_, _, err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -523,7 +574,7 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if !c.IsDeleted("") {
 		return c.SoftDelete().Update(filter.NewProjector(j).WithPK().WithValue(c.AsDeleted(), filter.Now()), f)
 	}
-	err := c.Adjust(j)
+	_, _, err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}

@@ -32,8 +32,8 @@ type Request struct {
 	}
 	z bool
 	h struct {
-		o Origin
-		c Keeper
+		o builder.Origin
+		c builder.Keeper
 	}
 	w func()
 }
@@ -143,6 +143,7 @@ func (r *Request) End(err error) error {
 	r.t = false
 	r.e = false
 	r.z = false
+	r.h.c = nil
 	return err
 }
 
@@ -191,8 +192,9 @@ func (r *Request) Constructor() *builder.Constructor {
 				return builder.DeletedNone(r.s.d)
 			}(),
 		},
-		Mode: r.p.Mode(),
-		Z:    r.z,
+		Cache: builder.Cache{Origin: r.h.o, Keeper: r.h.c},
+		Mode:  r.p.Mode(),
+		Z:     r.z,
 	}
 }
 

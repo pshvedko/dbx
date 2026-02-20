@@ -47,10 +47,6 @@ func (e ErrNoSuchField) Error() string {
 	return fmt.Sprintf("no such field: %v", map[string]int(e))
 }
 
-var (
-	poolErrNoSuchField = filter.Pool[ErrNoSuchField]{New: func() any { return make(ErrNoSuchField, 32) }}
-)
-
 func StraightTo[T any, M interface {
 	~map[string]T
 	Type() filter.Type
@@ -69,7 +65,7 @@ func StraightTo[T any, M interface {
 	if len(nn) > 0 {
 		return ErrNoSuchField(nn)
 	}
-	b.Reuse(nn, ff)
+	defer b.Reuse(nn, ff)
 	if len(oo) > 1 {
 		_, err = b.AppendParenthesis(true)
 		if err != nil {

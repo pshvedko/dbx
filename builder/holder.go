@@ -20,7 +20,7 @@ func init() {
 	var i, n, x int
 	for cap(b) > x {
 		b = strconv.AppendInt(b, int64(i), 10)
-		integers = append(integers, b)
+		integers = append(integers, b[:len(b):len(b)])
 		b = b[len(b):]
 		i++
 		n, x = 10, 1

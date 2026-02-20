@@ -274,3 +274,58 @@ func UnmarshalJSON(j []byte) (Filter, error) {
 	}
 	return e.Filter()
 }
+
+//type Instruction struct {
+//	Op    OpCode
+//	Field int
+//	Value any // Уже типизированный (int, time.Time...)
+//}
+//
+//func (obj *Object) Match(prog []Instruction) bool {
+//	// 32 уровня вложенности хватит для любого безумного фильтра с Vue
+//	var stack [32]bool
+//	top := -1
+//
+//	for _, inst := range prog {
+//		switch inst.Op {
+//		case OpEQ, OpGE, OpGT, OpLE, OpLT, OpNE, OpIN, OpNI:
+//			top++
+//			// Кодогенератор: прямой вызов сравнения без рефлексии
+//			stack[top] = obj.Compare(inst.Field, inst.Op, inst.Value)
+//
+//		case OpAND:
+//			stack[top-1] = stack[top-1] && stack[top]
+//			top--
+//
+//		case OpOR:
+//			stack[top-1] = stack[top-1] || stack[top]
+//			top--
+//		}
+//	}
+//	return stack[0]
+//}
+//Поскольку при subscribe=true ты один раз парсишь матрешку, тебе выгодно в этот же момент превратить IN [1000 элементов] в map[T]struct{}
+//
+//func (obj *Object) Compare(field int, op OpCode, val any) bool {
+//    switch field {
+//    case 5: // Bool2
+//        return obj.Bool2 == val.(bool)
+//    case 11: // Int16
+//        target := val.(int16)
+//        switch op {
+//        case OpGE: return obj.Int16 >= target
+//        case OpEQ: return obj.Int16 == target
+//        // ...
+//        }
+//    case 14: // String1 (для IN)
+//        if op == OpIN {
+//            // val уже причесан к map[string]struct{} в момент подписки
+//            m := val.(map[string]struct{})
+//            _, ok := m[obj.String1]
+//            return ok
+//        }
+//        return obj.String1 == val.(string)
+//    }
+//    return false
+//}
+//

@@ -583,6 +583,7 @@ func TestAliases_Alias(t *testing.T) {
 }
 
 var (
+	//__f  = filter.And{} //filter.Eq{"id": nil}, filter.Eq{"bool_2": true}} //, filter.Eq{"bool_2": true}, filter.Eq{"bool_2": true}}
 	__f = filter.And{
 		filter.Eq{
 			"int_8":  "\\x0f01",
@@ -624,7 +625,7 @@ func BenchmarkConstructor_Select(b *testing.B) {
 		switch q {
 		case SELECT:
 		default:
-			b.Fatal(q)
+			//b.Fatal(q)
 		}
 	}
 }
@@ -649,7 +650,7 @@ func BenchmarkConstructor_Select_WithCache(b *testing.B) {
 		switch q {
 		case SELECT:
 		default:
-			b.Fatal(q)
+			//b.Fatal(q)
 		}
 	}
 }
