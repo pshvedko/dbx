@@ -81,7 +81,7 @@ func (c *Constructor) Unreturned(n string) bool {
 	return !c.Returned(n)
 }
 
-func (c *Constructor) Adjust(f filter.Fielder) (int, int, error) {
+func (c *Constructor) Adjust(f filter.Fielder) error { // TODO ДЛЯ IN ДЕЛАТЬ &Array
 	columns := f.Columns()
 	size := 0
 	fund := 0
@@ -94,11 +94,13 @@ func (c *Constructor) Adjust(f filter.Fielder) (int, int, error) {
 			size += len(name)
 			_, ok := columns[name]
 			if !ok {
-				return 0, 0, fmt.Errorf("unknown column: %s", name)
+				return fmt.Errorf("unknown column: %s", name)
 			}
 		}
 	}
-	return size<<2 + size, fund >> 1, nil
+	c.Grow(size<<2 + size)
+	c.Alloc(fund >> 1)
+	return nil
 }
 
 type Counter struct {
@@ -120,43 +122,38 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
-func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, a int, r byte) (*Key, error) {
+func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, r byte) (*Key, error) {
 	if !c.IsCacheEnabled() {
 		return nil, nil
 	}
-	return nil, nil
 
 	k := Key{}
-	k.Grow(a)
-	k.Alloc(a)
+	k.Grow(128)
+	k.Alloc(0) // FIXME
 
-	k.WriteByte(r)
-	k.WriteByte(':')
-	k.WriteString(j.Name())
-	k.WriteByte(':')
-
-	// i:0,1,2,3,4,5,6,7,8,9,
-	// - . . . . . . . . . .
-	//   0-
-	// - 0 1 2 3   5 6
-	//   0     3   5 6
-	nn, z, y := j.Names(), 0, false
-	for i, n := range nn {
-		if c.Unreturned(n) || c.Unused(n) {
-			continue
-		}
-
-		if z == i && !y {
-			y = !y
-			k.AppendInt(i)
-		}
-
-		z++
-
+	err := k.WriteByte(r)
+	if err != nil {
+		return nil, err
+	}
+	err = k.WriteByte(':')
+	if err != nil {
+		return nil, err
+	}
+	_, err = k.WriteString(j.Name())
+	if err != nil {
+		return nil, err
+	}
+	err = k.WriteByte(':')
+	if err != nil {
+		return nil, err
+	}
+	err = k.WriteIndices(j, c)
+	if err != nil {
+		return nil, err
 	}
 
 	if f != nil {
-		err := f.To(&k, j)
+		err = f.To(&k, j)
 		if err != nil {
 			return nil, err
 		}
@@ -168,16 +165,15 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, a int, r byt
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
-	g, a, err := c.Adjust(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
 	defer c.Done()
-	_, err = c.TryCache(j, f, a, 'S')
+	_, err = c.TryCache(j, f, 'S')
 	if err != nil {
 		return nil, "", nil, nil, nil
 	}
-	c.Grow(g)
 	_, err = c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
@@ -188,7 +184,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		if c.IsDeleted(n) {
 			w = c.WithDeleted(w)
 		}
-		if c.Unreturned(n) || c.Unused(n) {
+		if c.Unreturned(n) {
 			continue
 		}
 		if v > 0 {
@@ -368,7 +364,7 @@ func (c *Constructor) Sort(y Order) *Constructor {
 }
 
 func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, []any, []any, error) {
-	_, _, err := c.Adjust(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -470,7 +466,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if c.IsUpdate() {
 		return c.Update(j)
 	}
-	_, _, err := c.Adjust(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
@@ -574,10 +570,11 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 	if !c.IsDeleted("") {
 		return c.SoftDelete().Update(filter.NewProjector(j).WithPK().WithValue(c.AsDeleted(), filter.Now()), f)
 	}
-	_, _, err := c.Adjust(j)
+	err := c.Adjust(j)
 	if err != nil {
 		return "", nil, nil, err
 	}
+	defer c.Done()
 	nn, vv, t := j.Names(), j.Places(), c.Alias(j.Table())
 	_, err = c.WriteString("DELETE FROM")
 	if err != nil {

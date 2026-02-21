@@ -2,6 +2,7 @@ package builder_test
 
 import (
 	"encoding/json"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,11 +20,12 @@ func TestConstructor_TryCache(t *testing.T) {
 		request.WithUpdated("time_2"),
 		request.WithDeleted("time_4"),
 		request.WithoutCount(),
+		request.WithoutReturning(),
 		request.WithCache(&__c),
 	})
 	require.NoError(t, err)
 
-	k, err := r.Constructor().Range(&__o, &__l).Sort(__y).TryCache(&j, __f, 16, '$')
+	k, err := r.Constructor().Range(&__o, &__l).Sort(__y).TryCache(&j, __f, '$')
 	require.NoError(t, err)
 	require.NotZero(t, k)
 
@@ -62,7 +64,7 @@ func BenchmarkKey(b *testing.B) {
 		switch q {
 		case KEY:
 		default:
-			//b.Fatal(q)
+			b.Fatal(q)
 		}
 	}
 }
@@ -86,18 +88,126 @@ func TestUnmarshalJSON(t *testing.T) {
 	require.Equal(t, f, x)
 }
 
-func TestX(t *testing.T) {
+func TestKey_WriteIndices(t *testing.T) {
+	type args struct {
+		j filter.Projector
+		f builder.Fielder
+	}
+	o := model.Object{}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.ExcludedColumn{},
+			},
+			want: "0-21",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{},
+			},
+			want: "",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{{"id": 0}},
+			},
+			want: "0",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{{"id": 0, "uuid_2": 1}},
+			},
+			want: "0,1",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{{"id": 0, "uuid_2": 1}, {}},
+			},
+			want: "",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{{"id": 0}, {"uuid_2": 1}},
+			},
+			want: "1",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: &builder.IncludedColumn{{"id": 0, "uuid_2": 1}, o.Columns()},
+			},
+			want: "0-21",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: IndexedColumn(t, o, 1, 1, 1),
+			},
+			want: "0-2",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: IndexedColumn(t, o, 1, 0, 1),
+			},
+			want: "0,2",
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				f: IndexedColumn(t, o, 1, 1, 0, 1, 1, 1, 1, 0, 1),
+			},
+			want: "0,1,3-6,8",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k := &builder.Key{}
+			err := k.WriteIndices(tt.args.j, tt.args.f)
+			require.ErrorIs(t, err, tt.wantErr)
+			key := k.String()
+			require.Equal(t, tt.want, key)
+		})
+	}
+}
 
-	builder.WritePresentRanges([]int{1, 1, 2, 3, 4, 5, 0, 0, 0, 0, 10, 11, 12})
-	//                               0  1  2  3  4  5  6  7  8  9  10  11  12
-	builder.WritePresentRanges([]int{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 00, 00, 00})
-	//                                           4     6  7  8  9
-	builder.WritePresentRanges([]int{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 00, 00, 00})
-	builder.WritePresentRanges([]int{1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 00, 00, 00})
-	builder.WritePresentRanges([]int{1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 00, 00, 00})
-	builder.WritePresentRanges([]int{1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 00, 00, 00})
-	builder.WritePresentRanges([]int{1, 1, 1, 0, 1, 5, 6, 7, 8, 0, 00, 00, 12})
-	builder.WritePresentRanges([]int{1, 1, 1, 0, 1, 5, 6, 7, 8, 0, 00, 11, 00})
-	builder.WritePresentRanges([]int{1, 1, 1, 1, 1, 5, 6, 7, 8, 1, 11, 11, 11})
+type TestedColumn []string
 
+func (t TestedColumn) Used(n string) bool { return slices.Contains(t, n) }
+
+func (t TestedColumn) Names() [2]map[string]int { return [2]map[string]int{} }
+
+func (t TestedColumn) Returned(n string) bool { return t.Used(n) }
+
+func IndexedColumn(t *testing.T, j filter.Fielder, idx ...byte) (c TestedColumn) {
+	t.Helper()
+	n := j.Names()
+	for i, b := range idx {
+		if b != 0 {
+			c = append(c, n[i])
+		}
+	}
+	return
 }

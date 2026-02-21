@@ -625,7 +625,7 @@ func BenchmarkConstructor_Select(b *testing.B) {
 		switch q {
 		case SELECT:
 		default:
-			//b.Fatal(q)
+			b.Fatal(q)
 		}
 	}
 }
@@ -650,7 +650,7 @@ func BenchmarkConstructor_Select_WithCache(b *testing.B) {
 		switch q {
 		case SELECT:
 		default:
-			//b.Fatal(q)
+			b.Fatal(q)
 		}
 	}
 }
