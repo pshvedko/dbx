@@ -13,9 +13,9 @@ import (
 
 type Map[K comparable, V any] sync.Map
 
-func (m *Map[K, V]) Get(k K) (V, bool) { v, ok := (*sync.Map)(m).Load(k); return v.(V), ok }
+func (m *Map[K, V]) Load(k K) (V, bool) { v, ok := (*sync.Map)(m).Load(k); return v.(V), ok }
 
-func (m *Map[K, V]) Put(k K, v V) { (*sync.Map)(m).Store(k, v) }
+func (m *Map[K, V]) Store(k K, v V) { (*sync.Map)(m).Store(k, v) }
 
 type Pool[T any] sync.Pool
 

@@ -3,10 +3,10 @@ package request
 import (
 	"context"
 	"database/sql"
+	"github.com/pshvedko/dbx/filter"
 	"runtime"
 
 	"github.com/pshvedko/dbx/builder"
-	"github.com/pshvedko/dbx/filter"
 )
 
 type Option interface {
@@ -151,3 +151,7 @@ func WithCache(c builder.Keeper) OptionFunc {
 type Cache struct {
 	filter.Map[builder.Hash, string]
 }
+
+func (c *Cache) Get(hash builder.Hash) (string, bool) { return c.Load(hash) }
+
+func (c *Cache) Put(hash builder.Hash, query string) { c.Store(hash, query) }

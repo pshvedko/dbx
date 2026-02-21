@@ -122,8 +122,8 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
-func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, r byte) (*Key, error) {
-	if !c.IsCacheEnabled() {
+func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (any, error) {
+	if !c.IsEnabled() {
 		return nil, nil
 	}
 
@@ -131,37 +131,46 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, r byte) (*Ke
 	k.Grow(128)
 	k.Alloc(0) // FIXME
 
-	err := k.WriteByte(r)
-	if err != nil {
-		return nil, err
-	}
-	err = k.WriteByte(':')
-	if err != nil {
-		return nil, err
-	}
-	_, err = k.WriteString(j.Name())
-	if err != nil {
-		return nil, err
-	}
-	err = k.WriteByte(':')
-	if err != nil {
-		return nil, err
-	}
-	err = k.WriteIndices(j, c)
+	h, err := c.CalculateKey(j, f, t, &k)
 	if err != nil {
 		return nil, err
 	}
 
-	if f != nil {
-		err = f.To(&k, j)
-		if err != nil {
-			return nil, err
-		}
-	}
+	fmt.Println(h)
 
 	// TODO OFFSET LIMIT
 
-	return &k, nil
+	return nil, nil
+}
+
+func (c *Constructor) CalculateKey(j filter.Projector, f filter.Filter, t byte, k *Key) (Hash, error) {
+	n, err := k.WriteIndices(j, c)
+	if err != nil {
+		return Hash{}, err
+	}
+
+	if f != nil {
+		err = f.To(k, j)
+		if err != nil {
+			return Hash{}, err
+		}
+		err = k.WriteDeleted(j, c.Deleted)
+		if err != nil {
+			return Hash{}, err
+		}
+	}
+
+	q := k.String()
+	h := Hash{
+		Origin: c.Origin,
+		Static: Static{
+			Type: t,
+			Name: j.Name(),
+			List: q[:n],
+			Sign: q[n:],
+		},
+	}
+	return h, nil
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
@@ -170,7 +179,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	defer c.Done()
-	_, err = c.TryCache(j, f, 'S')
+	_, err = c.TryCache(j, f, SELECT)
 	if err != nil {
 		return nil, "", nil, nil, nil
 	}

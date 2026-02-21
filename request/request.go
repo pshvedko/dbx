@@ -183,7 +183,7 @@ func (r *Request) Constructor() *builder.Constructor {
 		Modify: builder.Modify{
 			Created: r.s.c,
 			Updated: r.s.u,
-			Deleted: func() builder.Deleted {
+			Deleted: func() builder.Deleted { // TODO check field name
 				if r.m == DeletedFree {
 					return builder.DeletedFree(r.s.d)
 				} else if r.m == DeletedOnly {

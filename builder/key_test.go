@@ -1,7 +1,7 @@
 package builder_test
 
 import (
-	"encoding/json"
+	"runtime"
 	"slices"
 	"testing"
 
@@ -15,21 +15,35 @@ import (
 
 func TestConstructor_TryCache(t *testing.T) {
 	var j model.Object
+	var k builder.Key
+
+	_, file, line, ok := runtime.Caller(0)
+	require.True(t, ok)
+
 	r, err := request.NewWithOption([]request.Option{
 		request.WithCreated("time_1"),
 		request.WithUpdated("time_2"),
 		request.WithDeleted("time_4"),
 		request.WithoutCount(),
-		request.WithoutReturning(),
+		request.WithoutField{"float_32", "float_64", "string_1", "string_2", "string_3", "string_4"},
 		request.WithCache(&__c),
 	})
 	require.NoError(t, err)
 
-	k, err := r.Constructor().Range(&__o, &__l).Sort(__y).TryCache(&j, __f, '$')
+	h, err := r.Constructor().Range(&__o, &__l).Sort(__y).CalculateKey(&j, __f, builder.SELECT, &k)
 	require.NoError(t, err)
-	require.NotZero(t, k)
-
-	t.Logf(k.String())
+	t.Log(h)
+	require.Equal(t, builder.Hash{
+		Origin: builder.Origin{
+			File: file,
+			Line: line + 9,
+		},
+		Static: builder.Static{
+			Type: builder.SELECT,
+			Name: j.Name(),
+			List: "0-7,10-13,18-21",
+			Sign: "[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21",
+		}}, h)
 }
 
 func TestKey_To(t *testing.T) {
@@ -44,48 +58,6 @@ func TestKey_To(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("%s", &k)
-}
-
-const KEY = `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`
-
-func BenchmarkKey(b *testing.B) {
-	j := model.Object{}
-	f := __f
-	var q string
-	for i := 0; i < b.N; i++ {
-		k := builder.Key{}
-		k.Alloc(16)
-		k.Grow(128)
-		err := f.To(&k, &j)
-		if err != nil {
-			b.Fatal(err)
-		}
-		q = k.String()
-		switch q {
-		case KEY:
-		default:
-			b.Fatal(q)
-		}
-	}
-}
-
-func TestUnmarshalJSON(t *testing.T) {
-	f := __f
-
-	j, err := filter.MarshalJSON(f)
-	require.NoError(t, err)
-
-	t.Logf("%s", j)
-
-	var m []any
-	err = json.Unmarshal(j, &m)
-	require.NoError(t, err)
-
-	t.Logf("%v", m)
-
-	x, err := filter.UnmarshalJSON(j)
-	require.NoError(t, err)
-	require.Equal(t, f, x)
 }
 
 func TestKey_WriteIndices(t *testing.T) {
@@ -185,7 +157,7 @@ func TestKey_WriteIndices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			k := &builder.Key{}
-			err := k.WriteIndices(tt.args.j, tt.args.f)
+			_, err := k.WriteIndices(tt.args.j, tt.args.f)
 			require.ErrorIs(t, err, tt.wantErr)
 			key := k.String()
 			require.Equal(t, tt.want, key)
@@ -210,4 +182,27 @@ func IndexedColumn(t *testing.T, j filter.Fielder, idx ...byte) (c TestedColumn)
 		}
 	}
 	return
+}
+
+const KEY = `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`
+
+func BenchmarkKey(b *testing.B) {
+	j := model.Object{}
+	f := __f
+	var q string
+	for i := 0; i < b.N; i++ {
+		k := builder.Key{}
+		k.Alloc(16)
+		k.Grow(128)
+		err := f.To(&k, &j)
+		if err != nil {
+			b.Fatal(err)
+		}
+		q = k.String()
+		switch q {
+		case KEY:
+		default:
+			b.Fatal(q)
+		}
+	}
 }
