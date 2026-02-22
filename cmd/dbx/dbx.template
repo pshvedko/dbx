@@ -40,6 +40,19 @@ func ({{.Type}}) Columns() map[string]int {
     return {{.Type}}Columns
 }
 
+func ({{.Type}}) IsTrusted() bool {
+	return false
+}
+
+func ({{.Type}}) Exists(key string) bool {
+	switch key {
+	case {{range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}}:
+		return true
+	default:
+		return false
+	}
+}
+
 func (obj {{.Type}}) Copy() filter.Copier {
 	return obj
 }

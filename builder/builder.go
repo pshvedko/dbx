@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+
 	"github.com/pshvedko/dbx/filter"
 )
 
@@ -41,31 +42,17 @@ func Conjunct(b filter.Builder, j filter.Projector, u bool, ff []filter.Filter) 
 	return
 }
 
-type ErrNoSuchField map[string]int
-
-func (e ErrNoSuchField) Error() string {
-	return fmt.Sprintf("no such field: %v", map[string]int(e))
-}
-
 func StraightTo[T any, M interface {
 	~map[string]T
 	Type() filter.Type
 }](b filter.Builder, j filter.Projector, u bool, oo M) (err error) {
-	nn, ff := b.Supply()
-	for k := range oo {
-		nn[k]++
-	}
-	for _, k := range j.Names() {
-		_, ok := oo[k]
-		if ok {
-			ff = append(ff, k)
-			delete(nn, k)
+	if !b.IsTrusted() && !j.IsTrusted() {
+		for k := range oo {
+			if !j.Exists(k) {
+				return fmt.Errorf("unknown column: %q", k)
+			}
 		}
 	}
-	if len(nn) > 0 {
-		return ErrNoSuchField(nn)
-	}
-	defer b.Reuse(nn, ff)
 	if len(oo) > 1 {
 		_, err = b.AppendParenthesis(true)
 		if err != nil {
@@ -73,7 +60,12 @@ func StraightTo[T any, M interface {
 		}
 	}
 	t := j.Table()
-	for i, f := range ff {
+	i := 0
+	for _, f := range j.Names() {
+		v, ok := oo[f]
+		if !ok {
+			continue
+		}
 		if i > 0 {
 			_, err = b.AppendVia(u)
 			if err != nil {
@@ -84,10 +76,11 @@ func StraightTo[T any, M interface {
 		if err != nil {
 			return
 		}
-		_, err = b.AppendValue(oo.Type(), oo[f])
+		_, err = b.AppendValue(oo.Type(), v) // TODO try func() { oo[f] }
 		if err != nil {
 			return
 		}
+		i++
 	}
 	if len(oo) > 1 {
 		_, err = b.AppendParenthesis(false)

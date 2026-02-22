@@ -82,20 +82,17 @@ func (c *Constructor) Unreturned(n string) bool {
 }
 
 func (c *Constructor) Adjust(f filter.Fielder) error { // TODO ДЛЯ IN ДЕЛАТЬ &Array
-	columns := f.Columns()
 	size := 0
-	fund := 0
-	for name := range columns {
+	fund := f.Len()
+	for _, name := range f.Names() {
 		size += len(name)
-		fund++
 	}
-	for _, fields := range c.Fielder.Names() {
+	for _, fields := range c.Names() {
 		for name := range fields {
-			size += len(name)
-			_, ok := columns[name]
-			if !ok {
-				return fmt.Errorf("unknown column: %s", name)
+			if !f.Exists(name) {
+				return fmt.Errorf("unknown column: %q", name)
 			}
+			size += len(name)
 		}
 	}
 	c.Grow(size<<2 + size)
@@ -136,8 +133,7 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (any
 		return nil, err
 	}
 
-	fmt.Println(h)
-
+	_ = h
 	// TODO OFFSET LIMIT
 
 	return nil, nil
@@ -333,8 +329,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 					return c.O
 				}
 			}
-			_, ok := j.Columns()[y]
-			if !ok {
+			if !j.Exists(y) {
 				if len(y) == 0 || strings.ContainsFunc(y, func(r rune) bool {
 					return r < '0' || r > '9'
 				}) {

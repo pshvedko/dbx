@@ -8,29 +8,32 @@ type Key struct {
 	Builder
 }
 
-func (k *Key) AppendValue(t filter.Type, v any) (int, error) {
-	var n1, n2 int
-	var err error
+func (Key) IsTrusted() bool { return true }
+
+func (k *Key) AppendValue(t filter.Type, v any) (n int, err error) {
+	var u int
 	switch t {
 	case filter.TRUE, filter.FALSE:
 	default:
-		n1, err = k.WriteString(t.String())
+		n, err = k.WriteString(t.String())
 		if err != nil {
-			return n1, err
+			return
 		}
 	}
 	z := k.Size()
 	f := k.Value(v)
 	switch x := f.(type) {
+	case nil:
 	case Keyword:
-		return n1 + 1, k.WriteByte(x[0])
+		err = k.WriteByte(x[0])
+		n++
 	default:
-		if x != nil && z == k.Size() {
-			n2, err = k.AppendFormat(x)
-			return n1 + n2, err
+		if z == k.Size() {
+			u, err = k.AppendFormat(x)
+			n += u
 		}
-		return n1, nil
 	}
+	return
 }
 
 func (k *Key) AppendColumn(t string, c string, m map[string]int) (int, error) {

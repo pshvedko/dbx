@@ -28,9 +28,9 @@ type Table struct {
 	Alias string
 }
 
-func (t Table) Table() string {
-	return t.Alias
-}
+func (Table) IsTrusted() bool { return true }
+
+func (t Table) Table() string { return t.Alias }
 
 type Special string
 
@@ -81,11 +81,6 @@ type Unifier interface {
 	Conjunct(Projector, bool, []Filter) error
 }
 
-type Supplier interface {
-	Supply() (map[string]int, []string)
-	Reuse(map[string]int, []string)
-}
-
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
@@ -93,7 +88,6 @@ type Formatter interface {
 	Len() int
 	Rectifier
 	Unifier
-	Supplier
 }
 
 type Builder interface {
@@ -107,6 +101,7 @@ type Builder interface {
 	AppendParenthesis(bool) (int, error)
 	AppendVia(bool) (int, error)
 	Formatter
+	IsTrusted() bool
 }
 
 type PK []string
@@ -125,6 +120,7 @@ type Fielder interface {
 	Name() string
 	Names() []string
 	Columns() map[string]int
+	Exists(string) bool
 	Value(int) (any, bool, bool) // value, none, auto
 	Field(int) (any, bool)       // value, none
 	Copier
@@ -144,6 +140,7 @@ type Projector interface {
 	Fielder
 	Placer
 	Table() string
+	IsTrusted() bool
 }
 
 type Filter interface {

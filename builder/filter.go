@@ -119,9 +119,9 @@ func (b By) AppendTo(w io.Writer) (int, error) {
 type Builder struct {
 	strings.Builder
 	v []any
-	f []string
-	m map[string]int
 }
+
+func (Builder) IsTrusted() bool { return false }
 
 func (f *Builder) Value(v any) fmt.Formatter {
 	switch x := v.(type) {
@@ -156,21 +156,6 @@ func (f *Builder) Values() []any {
 
 func (f *Builder) Alloc(n int) {
 	f.v = make([]any, 0, 8+n)
-	f.f = make([]string, 0, 8+n>>1)
-}
-
-var (
-	poolErrNoSuchField = filter.Pool[map[string]int]{New: func() any { return make(map[string]int, 32) }}
-)
-
-func (f *Builder) Supply() (map[string]int, []string) {
-	m := poolErrNoSuchField.Get()
-	return m, f.f[:0]
-}
-
-func (f *Builder) Reuse(m map[string]int, v []string) {
-	poolErrNoSuchField.Put(m)
-	f.f = v
 }
 
 func (f *Builder) Width() (int, bool) {

@@ -13,7 +13,7 @@ import (
 	"github.com/pshvedko/dbx/request"
 )
 
-func TestConstructor_TryCache(t *testing.T) {
+func TestConstructor_CalculateKey(t *testing.T) {
 	var j model.Object
 	var k builder.Key
 
