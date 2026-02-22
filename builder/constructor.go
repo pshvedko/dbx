@@ -70,6 +70,10 @@ type Constructor struct {
 	T bool
 }
 
+func (c *Constructor) IsTrusted() bool {
+	return c.T
+}
+
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
 	return fmt.Fprintf(c, format, a...) // FIXME
 }

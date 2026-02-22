@@ -583,7 +583,6 @@ func TestAliases_Alias(t *testing.T) {
 }
 
 var (
-	//__f  = filter.And{} //filter.Eq{"id": nil}, filter.Eq{"bool_2": true}} //, filter.Eq{"bool_2": true}, filter.Eq{"bool_2": true}}
 	__f = filter.And{
 		filter.Eq{
 			"int_8":  "\\x0f01",

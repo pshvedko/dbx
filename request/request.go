@@ -36,6 +36,7 @@ type Request struct {
 		c builder.Keeper
 	}
 	w func()
+	b bool
 }
 
 func (r *Request) closer() io.Closer {
@@ -195,6 +196,7 @@ func (r *Request) Constructor() *builder.Constructor {
 		Cache: builder.Cache{Origin: r.h.o, Keeper: r.h.c},
 		Mode:  r.p.Mode(),
 		Z:     r.z,
+		T:     r.b,
 	}
 }
 

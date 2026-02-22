@@ -121,7 +121,9 @@ type Builder struct {
 	v []any
 }
 
-func (f *Builder) Value(v any) fmt.Formatter {
+func (b *Builder) IsTrusted() bool { return false }
+
+func (b *Builder) Value(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case nil:
 		return NULL
@@ -131,63 +133,63 @@ func (f *Builder) Value(v any) fmt.Formatter {
 		}
 		return FALSE
 	default:
-		return f.Add(v)
+		return b.Add(v)
 	}
 }
 
-func (f *Builder) Add(v any) fmt.Formatter {
+func (b *Builder) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
 	}
-	f.v = append(f.v, v)
-	return Holder(len(f.v))
+	b.v = append(b.v, v)
+	return Holder(len(b.v))
 }
 
-func (f *Builder) Size() int {
-	return len(f.v)
+func (b *Builder) Size() int {
+	return len(b.v)
 }
 
-func (f *Builder) Values() []any {
-	return f.v
+func (b *Builder) Values() []any {
+	return b.v
 }
 
-func (f *Builder) Alloc(n int) {
-	f.v = make([]any, 0, n)
+func (b *Builder) Alloc(n int) {
+	b.v = make([]any, 0, n)
 }
 
-func (f *Builder) Width() (int, bool) {
+func (b *Builder) Width() (int, bool) {
 	return 0, false
 }
 
-func (f *Builder) Precision() (int, bool) {
+func (b *Builder) Precision() (int, bool) {
 	return 0, false
 }
 
-func (f *Builder) Flag(int) bool {
+func (b *Builder) Flag(int) bool {
 	return false
 }
 
-func (f *Builder) AppendInt(i int) (int, error) {
-	return Integer(i).AppendTo(f)
+func (b *Builder) AppendInt(i int) (int, error) {
+	return Integer(i).AppendTo(b)
 }
 
-func (f *Builder) AppendColumn(t string, c string, m map[string]int) (int, error) {
-	return Column{t, c}.AppendTo(f)
+func (b *Builder) AppendColumn(t string, c string, m map[string]int) (int, error) {
+	return Column{t, c}.AppendTo(b)
 }
 
-func (f *Builder) AppendVia(b bool) (int, error) {
-	if b {
-		return f.WriteString(" AND ")
+func (b *Builder) AppendVia(u bool) (int, error) {
+	if u {
+		return b.WriteString(" AND ")
 	}
-	return f.WriteString(" OR ")
+	return b.WriteString(" OR ")
 }
 
-func (f *Builder) AppendParenthesis(b bool) (int, error) {
-	if b {
-		return f.WriteString("( ")
+func (b *Builder) AppendParenthesis(u bool) (int, error) {
+	if u {
+		return b.WriteString("( ")
 	}
-	return f.WriteString(" )")
+	return b.WriteString(" )")
 }
 
 const (
@@ -205,60 +207,60 @@ const (
 	Na = " NOT LIKE %v"
 )
 
-func (f *Builder) EQ(v fmt.Formatter) (int, error) {
-	n1, err := f.WriteString(" = ")
+func (b *Builder) EQ(v fmt.Formatter) (int, error) {
+	n1, err := b.WriteString(" = ")
 	if err != nil {
 		return n1, err
 	}
-	n2, err := f.AppendFormat(v)
+	n2, err := b.AppendFormat(v)
 	return n1 + n2, err
 }
 
-func (f *Builder) IN(v fmt.Formatter) (int, error) {
-	n1, err := f.WriteString(" = ANY(")
+func (b *Builder) IN(v fmt.Formatter) (int, error) {
+	n1, err := b.WriteString(" = ANY(")
 	if err != nil {
 		return n1, err
 	}
-	n2, err := f.AppendFormat(v)
+	n2, err := b.AppendFormat(v)
 	if err != nil {
 		return n1 + n2, err
 	}
-	err = f.WriteByte(')')
+	err = b.WriteByte(')')
 	return n1 + n2 + 1, err
 }
 
-func (f *Builder) AppendValue(t filter.Type, v any) (int, error) {
+func (b *Builder) AppendValue(t filter.Type, v any) (int, error) {
 	switch t {
 	case filter.EQ:
 		switch v.(type) {
 		case nil, bool:
-			return fmt.Fprintf(f, Is, f.Value(v))
+			return fmt.Fprintf(b, Is, b.Value(v))
 		}
-		return f.EQ(f.Value(v))
+		return b.EQ(b.Value(v))
 	case filter.NE:
 		switch v.(type) {
 		case nil, bool:
-			return fmt.Fprintf(f, Si, f.Value(v))
+			return fmt.Fprintf(b, Si, b.Value(v))
 		}
-		return fmt.Fprintf(f, Ne, f.Value(v))
+		return fmt.Fprintf(b, Ne, b.Value(v))
 	case filter.GE:
-		return fmt.Fprintf(f, Ge, f.Value(v))
+		return fmt.Fprintf(b, Ge, b.Value(v))
 	case filter.GT:
-		return fmt.Fprintf(f, Gt, f.Value(v))
+		return fmt.Fprintf(b, Gt, b.Value(v))
 	case filter.LE:
-		return fmt.Fprintf(f, Le, f.Value(v))
+		return fmt.Fprintf(b, Le, b.Value(v))
 	case filter.LT:
-		return fmt.Fprintf(f, Lt, f.Value(v))
+		return fmt.Fprintf(b, Lt, b.Value(v))
 	case filter.AS:
-		return fmt.Fprintf(f, As, f.Value(v))
+		return fmt.Fprintf(b, As, b.Value(v))
 	case filter.NA:
-		return fmt.Fprintf(f, Na, f.Value(v))
+		return fmt.Fprintf(b, Na, b.Value(v))
 	case filter.IN:
-		return f.IN(f.Value(v))
+		return b.IN(b.Value(v))
 	case filter.NI:
-		return fmt.Fprintf(f, Ni, f.Value(v))
+		return fmt.Fprintf(b, Ni, b.Value(v))
 	case filter.FALSE, filter.TRUE:
-		return f.AppendFormat(f.Value(v))
+		return b.AppendFormat(b.Value(v))
 	case filter.AND, filter.OR:
 		fallthrough
 	default:
@@ -266,18 +268,18 @@ func (f *Builder) AppendValue(t filter.Type, v any) (int, error) {
 	}
 }
 
-func (f *Builder) Conjunct(j filter.Projector, u bool, ff []filter.Filter) error {
-	return Conjunct(f, j, u, ff)
+func (b *Builder) Conjunct(j filter.Projector, u bool, ff []filter.Filter) error {
+	return Conjunct(b, j, u, ff)
 }
 
-func (f *Builder) Straight(j filter.Projector, u bool, x filter.Filter) error {
-	return Straight(f, j, u, x)
+func (b *Builder) Straight(j filter.Projector, u bool, x filter.Filter) error {
+	return Straight(b, j, u, x)
 }
 
-func (f *Builder) AppendFormat(x fmt.Formatter) (int, error) {
+func (b *Builder) AppendFormat(x fmt.Formatter) (int, error) {
 	switch x := x.(type) {
 	case AppenderTo:
-		return x.AppendTo(f)
+		return x.AppendTo(b)
 	}
-	return fmt.Fprint(f, x)
+	return fmt.Fprint(b, x)
 }

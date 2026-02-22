@@ -13,7 +13,7 @@ import (
 )
 
 func TestKey_WriteHash(t *testing.T) {
-	var j model.Object
+	j := model.Object{}
 
 	r, err := request.NewWithOption([]request.Option{
 		request.WithCreated("time_1"),
@@ -29,8 +29,10 @@ func TestKey_WriteHash(t *testing.T) {
 
 	n, err := k.WriteHash(&j, __f)
 	require.NoError(t, err)
+	q := k.String()
+	t.Log(q)
 	require.Equal(t, 15, n)
-	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21", k.String())
+	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21", q)
 }
 
 func TestKey_To(t *testing.T) {
@@ -176,7 +178,7 @@ const (
 func BenchmarkKey(b *testing.B) {
 	f := __f
 	j := model.Object{}
-	c := builder.Constructor{}
+	c := builder.Constructor{T: true}
 	var q string
 	for i := 0; i < b.N; i++ {
 		k := builder.Key{Constructor: &c}
@@ -206,6 +208,7 @@ func BenchmarkKey_WriteHash(b *testing.B) {
 			Updated: "time_2",
 			Deleted: builder.DeletedNone("time_4"),
 		},
+		T: true,
 	}
 	var q string
 	for i := 0; i < b.N; i++ {

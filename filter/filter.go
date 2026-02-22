@@ -99,6 +99,7 @@ type Builder interface {
 	AppendParenthesis(bool) (int, error)
 	AppendVia(bool) (int, error)
 	Formatter
+	IsTrusted() bool
 }
 
 type PK []string

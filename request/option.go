@@ -139,6 +139,13 @@ const (
 	PutUpdate
 )
 
+type WithTrusted bool
+
+func (o WithTrusted) Apply(r *Request) error {
+	r.b = bool(o)
+	return nil
+}
+
 func WithCache(c builder.Keeper) OptionFunc {
 	_, file, line, _ := runtime.Caller(1)
 	return func(r *Request) error {
