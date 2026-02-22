@@ -133,9 +133,7 @@ func (k *Key) WriteIndices(j filter.Fielder) (err error) {
 func (k *Key) WriteDeleted(j filter.Fielder) (err error) {
 	b := byte('+')
 	switch k.Deleted.(type) {
-	case nil:
-		return
-	case DeletedFree:
+	case DeletedFree, nil:
 		return
 	case DeletedNone:
 	case DeletedOnly:

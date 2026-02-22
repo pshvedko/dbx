@@ -129,7 +129,8 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (any
 		return nil, nil
 	}
 	k := Key{
-		Constructor: c}
+		Constructor: c,
+	}
 	_, err := k.WriteHash(j, f)
 	if err != nil {
 		return nil, err

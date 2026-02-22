@@ -88,17 +88,22 @@ type Formatter interface {
 	Unifier
 }
 
-type Builder interface {
-	io.Writer
-	io.ByteWriter
-	io.StringWriter
-	fmt.Stringer
+type Appender interface {
 	AppendValue(Type, any) (int, error)
 	AppendInt(int) (int, error)
 	AppendColumn(string, string, map[string]int) (int, error)
 	AppendParenthesis(bool) (int, error)
 	AppendVia(bool) (int, error)
+	AppendFormat(fmt.Formatter) (int, error)
+}
+
+type Builder interface {
+	io.Writer
+	io.ByteWriter
+	io.StringWriter
+	fmt.Stringer
 	Formatter
+	Appender
 	IsTrusted() bool
 }
 

@@ -119,7 +119,7 @@ func (o ReadDeleted) Apply(r *Request) error {
 const (
 	DeletedNone ReadDeleted = iota // IS NULL
 	DeletedOnly                    // IS NOT NULL
-	DeletedFree                    // IS NULL AND IS NOT NULL
+	DeletedFree                    // IS NULL OR IS NOT NULL
 )
 
 type PerformPut int
