@@ -67,6 +67,7 @@ type Constructor struct {
 	Donner
 	filter.And
 	Cache
+	T bool
 }
 
 func (c *Constructor) Printf(format string, a ...any) (int, error) {
@@ -123,50 +124,27 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (any
 	if !c.IsEnabled() {
 		return nil, nil
 	}
-
-	k := Key{}
-	k.Grow(128)
-	k.Alloc(0) // FIXME
-
-	h, err := c.CalculateKey(j, f, t, &k)
+	k := Key{
+		Constructor: c}
+	_, err := k.WriteHash(j, f)
 	if err != nil {
 		return nil, err
 	}
 
-	_ = h
+	//q := k.String()
+	//h := Hash{
+	//	Origin: k.Origin,
+	//	Static: Static{
+	//		Type: t,
+	//		Name: j.Name(),
+	//		List: q[:n],
+	//		Sign: q[n:],
+	//	},
+	//}
+
 	// TODO OFFSET LIMIT
 
 	return nil, nil
-}
-
-func (c *Constructor) CalculateKey(j filter.Projector, f filter.Filter, t byte, k *Key) (Hash, error) {
-	n, err := k.WriteIndices(j, c)
-	if err != nil {
-		return Hash{}, err
-	}
-
-	if f != nil {
-		err = f.To(k, j)
-		if err != nil {
-			return Hash{}, err
-		}
-		err = k.WriteDeleted(j, c.Deleted)
-		if err != nil {
-			return Hash{}, err
-		}
-	}
-
-	q := k.String()
-	h := Hash{
-		Origin: c.Origin,
-		Static: Static{
-			Type: t,
-			Name: j.Name(),
-			List: q[:n],
-			Sign: q[n:],
-		},
-	}
-	return h, nil
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {

@@ -121,8 +121,6 @@ type Builder struct {
 	v []any
 }
 
-func (Builder) IsTrusted() bool { return false }
-
 func (f *Builder) Value(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case nil:
@@ -155,7 +153,7 @@ func (f *Builder) Values() []any {
 }
 
 func (f *Builder) Alloc(n int) {
-	f.v = make([]any, 0, 8+n)
+	f.v = make([]any, 0, n)
 }
 
 func (f *Builder) Width() (int, bool) {

@@ -28,8 +28,6 @@ type Table struct {
 	Alias string
 }
 
-func (Table) IsTrusted() bool { return true }
-
 func (t Table) Table() string { return t.Alias }
 
 type Special string
@@ -101,7 +99,6 @@ type Builder interface {
 	AppendParenthesis(bool) (int, error)
 	AppendVia(bool) (int, error)
 	Formatter
-	IsTrusted() bool
 }
 
 type PK []string
@@ -140,7 +137,6 @@ type Projector interface {
 	Fielder
 	Placer
 	Table() string
-	IsTrusted() bool
 }
 
 type Filter interface {

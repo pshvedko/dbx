@@ -46,11 +46,9 @@ func StraightTo[T any, M interface {
 	~map[string]T
 	Type() filter.Type
 }](b filter.Builder, j filter.Projector, u bool, oo M) (err error) {
-	if !b.IsTrusted() && !j.IsTrusted() {
-		for k := range oo {
-			if !j.Exists(k) {
-				return fmt.Errorf("unknown column: %q", k)
-			}
+	for f := range oo {
+		if !j.Exists(f) {
+			return fmt.Errorf("unknown column: %q", f)
 		}
 	}
 	if len(oo) > 1 {

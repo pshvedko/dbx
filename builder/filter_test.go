@@ -10,25 +10,10 @@ import (
 	"github.com/pshvedko/dbx/filter"
 )
 
-type Trusted struct {
-	filter.Builder
-}
-
-func (Trusted) IsTrusted() bool { return true }
-
-func (t *Trusted) Conjunct(j filter.Projector, u bool, ff []filter.Filter) error {
-	return builder.Conjunct(t, j, u, ff)
-}
-
-func (t *Trusted) Straight(j filter.Projector, u bool, x filter.Filter) error {
-	return builder.Straight(t, j, u, x)
-}
-
 func TestFilter_To(t *testing.T) {
 	tests := []struct {
 		name    string
 		f       filter.Filter
-		t       bool
 		want    string
 		want1   []any
 		wantErr bool
@@ -46,13 +31,6 @@ func TestFilter_To(t *testing.T) {
 			want:    ``,
 			want1:   []any{},
 			wantErr: true,
-		},
-		{
-			name:  "",
-			f:     filter.Eq{"not_exists": 1},
-			t:     true,
-			want:  ``,
-			want1: []any{},
 		},
 		{
 			name:  "",
@@ -171,12 +149,10 @@ func TestFilter_To(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			b := builder.NewBuilder(32)
-			if tt.t {
-				b = &Trusted{Builder: b}
-			}
-			println("trusted", b.IsTrusted())
-			if err := tt.f.To(b, &model.Object{}); (err != nil) != tt.wantErr {
+			b := builder.Builder{}
+			b.Alloc(32)
+			j := model.Object{}
+			if err := tt.f.To(&b, &j); (err != nil) != tt.wantErr {
 				t.Errorf("To() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			got, got1 := b.String(), b.Values()

@@ -40,10 +40,6 @@ func (User) Columns() map[string]int {
 	return UserColumns
 }
 
-func (User) IsTrusted() bool {
-	return false
-}
-
 func (User) Exists(key string) bool {
 	switch key {
 	case "id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted":

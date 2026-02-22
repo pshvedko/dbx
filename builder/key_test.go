@@ -1,7 +1,6 @@
 package builder_test
 
 import (
-	"runtime"
 	"slices"
 	"testing"
 
@@ -13,12 +12,8 @@ import (
 	"github.com/pshvedko/dbx/request"
 )
 
-func TestConstructor_CalculateKey(t *testing.T) {
+func TestKey_WriteHash(t *testing.T) {
 	var j model.Object
-	var k builder.Key
-
-	_, file, line, ok := runtime.Caller(0)
-	require.True(t, ok)
 
 	r, err := request.NewWithOption([]request.Option{
 		request.WithCreated("time_1"),
@@ -30,34 +25,23 @@ func TestConstructor_CalculateKey(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	h, err := r.Constructor().Range(&__o, &__l).Sort(__y).CalculateKey(&j, __f, builder.SELECT, &k)
+	k := builder.Key{Constructor: r.Constructor().Range(&__o, &__l).Sort(__y)}
+
+	n, err := k.WriteHash(&j, __f)
 	require.NoError(t, err)
-	t.Log(h)
-	require.Equal(t, builder.Hash{
-		Origin: builder.Origin{
-			File: file,
-			Line: line + 9,
-		},
-		Static: builder.Static{
-			Type: builder.SELECT,
-			Name: j.Name(),
-			List: "0-7,10-13,18-21",
-			Sign: "[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21",
-		}}, h)
+	require.Equal(t, 15, n)
+	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21", k.String())
 }
 
 func TestKey_To(t *testing.T) {
 	j := model.Object{}
-	k := builder.Key{}
+	k := builder.Key{Constructor: &builder.Constructor{}}
 	f := __f
-
-	k.Alloc(16)
-	k.Grow(128)
 
 	err := f.To(&k, &j)
 	require.NoError(t, err)
-
 	t.Logf("%s", &k)
+	require.Equal(t, `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`, k.String())
 }
 
 func TestKey_WriteIndices(t *testing.T) {
@@ -156,8 +140,8 @@ func TestKey_WriteIndices(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k := &builder.Key{}
-			_, err := k.WriteIndices(tt.args.j, tt.args.f)
+			k := builder.Key{Constructor: &builder.Constructor{Fielder: tt.args.f}}
+			err := k.WriteIndices(tt.args.j)
 			require.ErrorIs(t, err, tt.wantErr)
 			key := k.String()
 			require.Equal(t, tt.want, key)
@@ -184,14 +168,18 @@ func IndexedColumn(t *testing.T, j filter.Fielder, idx ...byte) (c TestedColumn)
 	return
 }
 
-const KEY = `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`
+const (
+	KEY  = `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`
+	HASH = `0-21` + KEY + `+21`
+)
 
 func BenchmarkKey(b *testing.B) {
-	j := model.Object{}
 	f := __f
+	j := model.Object{}
+	c := builder.Constructor{}
 	var q string
 	for i := 0; i < b.N; i++ {
-		k := builder.Key{}
+		k := builder.Key{Constructor: &c}
 		k.Alloc(16)
 		k.Grow(128)
 		err := f.To(&k, &j)
@@ -204,5 +192,36 @@ func BenchmarkKey(b *testing.B) {
 		default:
 			b.Fatal(q)
 		}
+		k.Reset()
+	}
+}
+
+func BenchmarkKey_WriteHash(b *testing.B) {
+	f := __f
+	j := model.Object{}
+	c := builder.Constructor{
+		Fielder: builder.ExcludedColumn{},
+		Modify: builder.Modify{
+			Created: "time_1",
+			Updated: "time_2",
+			Deleted: builder.DeletedNone("time_4"),
+		},
+	}
+	var q string
+	for i := 0; i < b.N; i++ {
+		k := builder.Key{Constructor: &c}
+		k.Alloc(16)
+		k.Grow(128)
+		_, err := k.WriteHash(&j, f)
+		if err != nil {
+			b.Fatal(err)
+		}
+		q = k.String()
+		switch q {
+		case HASH:
+		default:
+			b.Fatal(q)
+		}
+		k.Reset()
 	}
 }

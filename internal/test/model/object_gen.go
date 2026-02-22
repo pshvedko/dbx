@@ -40,10 +40,6 @@ func (Object) Columns() map[string]int {
 	return ObjectColumns
 }
 
-func (Object) IsTrusted() bool {
-	return false
-}
-
 func (Object) Exists(key string) bool {
 	switch key {
 	case "id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4":

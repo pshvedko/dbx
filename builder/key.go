@@ -5,10 +5,8 @@ import (
 )
 
 type Key struct {
-	Builder
+	*Constructor
 }
-
-func (Key) IsTrusted() bool { return true }
 
 func (k *Key) AppendValue(t filter.Type, v any) (n int, err error) {
 	var u int
@@ -97,12 +95,11 @@ func (k *Key) WriteRange(i, z int) (n int, err error) {
 	return
 }
 
-func (k *Key) WriteIndices(j filter.Fielder, f Fielder) (size int, err error) {
-	size = k.Len()
+func (k *Key) WriteIndices(j filter.Fielder) (err error) {
 	y := true
 	z := 0
 	for i, n := range j.Names() {
-		if !f.Returned(n) {
+		if !k.Returned(n) {
 			if !y {
 				_, err = k.WriteRange(i, z)
 				if err != nil {
@@ -129,22 +126,18 @@ func (k *Key) WriteIndices(j filter.Fielder, f Fielder) (size int, err error) {
 	}
 	if !y {
 		_, err = k.WriteRange(j.Len(), z)
-		if err != nil {
-			return
-		}
 	}
-	return k.Len() - size, err
+	return
 }
 
-func (k *Key) WriteDeleted(j filter.Fielder, f Deleted) (err error) {
-	var b byte
-	switch f.(type) {
+func (k *Key) WriteDeleted(j filter.Fielder) (err error) {
+	b := byte('+')
+	switch k.Deleted.(type) {
 	case nil:
 		return
 	case DeletedFree:
 		return
 	case DeletedNone:
-		b = '+'
 	case DeletedOnly:
 		b = '-'
 	}
@@ -152,7 +145,23 @@ func (k *Key) WriteDeleted(j filter.Fielder, f Deleted) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = k.AppendInt(j.Columns()[f.AsDeleted()])
+	_, err = k.AppendInt(j.Columns()[k.AsDeleted()])
+	return
+}
+
+func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (n int, err error) {
+	err = k.WriteIndices(j)
+	if err != nil {
+		return
+	}
+	n = k.Len()
+	if f != nil {
+		err = f.To(k, j)
+		if err != nil {
+			return
+		}
+	}
+	err = k.WriteDeleted(j)
 	return
 }
 
