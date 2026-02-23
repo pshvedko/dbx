@@ -246,42 +246,46 @@ var (
 	ErrInvalidRange = errors.New("invalid range")
 )
 
-func (h Hash) Places(j filter.Placer) ([]any, error) {
-	if len(h.List) == 0 {
+func (s Static) Places(j filter.Placer) ([]any, error) {
+	if len(s.List) == 0 {
 		return []any{}, nil
 	}
-	v, i, e, b, p := 0, 0, 0, -1, j.Places()
-	for _, a := range [2]string{h.List, "."} {
-		for _, r := range a {
-			switch r {
-			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
-				e *= 10
-				e += int(r - '0')
-			case '-':
-				if b != -1 {
-					return nil, ErrInvalidRange
-				}
-				b = e
-				e = 0
-			case '.':
-				fallthrough
-			case ',':
-				if i > e {
-					return nil, ErrInvalidRange
-				} else if b == -1 {
-					b = e
-				} else if b >= e {
-					return nil, ErrInvalidRange
-				}
-				for b <= e {
-					p[v] = p[b]
-					v++
-					b++
-					i = b
-				}
-				b = -1
-				e = 0
+	v, i, e, r, l, p := 0, 0, 0, -1, s.List, j.Places()
+	for k := 0; k <= len(l); k++ {
+		var b byte
+		if k == len(l) {
+			b = ','
+		} else {
+			b = l[k]
+		}
+		switch {
+		case b >= '0' && b <= '9':
+			e *= 10
+			e += int(b - '0')
+		case b == '-':
+			if r != -1 {
+				return nil, ErrInvalidRange
 			}
+			r = e
+			e = 0
+		case b == ',':
+			if i > e {
+				return nil, ErrInvalidRange
+			} else if r == -1 {
+				r = e
+			} else if r >= e {
+				return nil, ErrInvalidRange
+			}
+			for r <= e {
+				p[v] = p[r]
+				v++
+				r++
+				i = r
+			}
+			r = -1
+			e = 0
+		default:
+			return nil, ErrInvalidRange
 		}
 	}
 	return p[:v], nil
