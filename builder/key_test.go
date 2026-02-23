@@ -2,6 +2,7 @@ package builder_test
 
 import (
 	"github.com/pshvedko/dbx/request"
+	"github.com/pshvedko/dbx/util"
 	"slices"
 	"testing"
 
@@ -320,7 +321,7 @@ func TestConstructor_Select_WithCache(t *testing.T) {
 	t.Log(p0)
 	t.Log(z0)
 
-	z1, q1, a1, p1, err := r.Constructor().Range(&__o, &__l).Sort(__y).Select(&j, f)
+	z1, q1, a1, p1, err := r.Constructor().Range(util.PtrUint(100), util.PtrUint(200)).Sort(__y).Select(&j, f)
 	require.NoError(t, err)
 	t.Log(q1)
 	t.Log(a1)

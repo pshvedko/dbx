@@ -65,7 +65,7 @@ type Constructor struct {
 	O Order
 	Z bool
 	Donner
-	filter.And
+	F [2]filter.Filter
 	Cache
 	T bool
 }
@@ -86,7 +86,7 @@ func (c *Constructor) Unreturned(n string) bool {
 	return !c.Returned(n)
 }
 
-func (c *Constructor) Adjust(f filter.Fielder) error { // TODO ДЛЯ IN ДЕЛАТЬ &Array
+func (c *Constructor) Adjust(f filter.Fielder) error {
 	size := 0
 	fund := f.Len()
 	for _, name := range f.Names() {
@@ -175,7 +175,7 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	w := c.Where(f)
+	w := c.AndFilter(f)
 	v, nn, t := 0, j.Names(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
@@ -647,6 +647,6 @@ func (c *Constructor) WriteOnConflictDoUpdateSet(pk []string) error {
 	return err
 }
 
-func (c *Constructor) Where(ff ...filter.Filter) filter.And {
-	return append(c.And, ff...)
+func (c *Constructor) AndFilter(ff ...filter.Filter) filter.And {
+	return append(c.F[:0], ff...)
 }

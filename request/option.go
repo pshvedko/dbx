@@ -146,11 +146,11 @@ func (o WithTrusted) Apply(r *Request) error {
 	return nil
 }
 
-func WithCache(c builder.Keeper) OptionFunc {
+func WithCache(k builder.Keeper) OptionFunc {
 	_, file, line, _ := runtime.Caller(1)
 	return func(r *Request) error {
 		r.h.o = builder.Origin{File: file, Line: line}
-		r.h.c = c
+		r.h.k = k
 		return nil
 	}
 }

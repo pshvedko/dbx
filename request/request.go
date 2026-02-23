@@ -33,7 +33,7 @@ type Request struct {
 	z bool
 	h struct {
 		o builder.Origin
-		c builder.Keeper
+		k builder.Keeper
 	}
 	w func()
 	b bool
@@ -144,7 +144,7 @@ func (r *Request) End(err error) error {
 	r.t = false
 	r.e = false
 	r.z = false
-	r.h.c = nil
+	r.h.k = nil
 	return err
 }
 
@@ -179,12 +179,11 @@ func (r *Request) Constructor() *builder.Constructor {
 			Group: r.a.g,
 		},
 		Aliases: make(builder.Aliases, 2),
-		And:     make(filter.And, 0, 2),
 		Donner:  func() {},
 		Modify: builder.Modify{
 			Created: r.s.c,
 			Updated: r.s.u,
-			Deleted: func() builder.Deleted { // TODO check field name
+			Deleted: func() builder.Deleted {
 				if r.m == DeletedFree {
 					return builder.DeletedFree(r.s.d)
 				} else if r.m == DeletedOnly {
@@ -193,7 +192,7 @@ func (r *Request) Constructor() *builder.Constructor {
 				return builder.DeletedNone(r.s.d)
 			}(),
 		},
-		Cache: builder.Cache{Origin: r.h.o, Keeper: r.h.c},
+		Cache: builder.Cache{Origin: r.h.o, Keeper: r.h.k},
 		Mode:  r.p.Mode(),
 		Z:     r.z,
 		T:     r.b,

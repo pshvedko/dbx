@@ -247,13 +247,13 @@ var (
 )
 
 func (s Static) Places(j filter.Placer) ([]any, error) {
-	if len(s.List) == 0 {
-		return []any{}, nil
-	}
 	v, i, e, r, l, p := 0, 0, 0, -1, s.List, j.Places()
 	for k := 0; k <= len(l); k++ {
 		var b byte
 		if k == len(l) {
+			if k == 0 {
+				continue
+			}
 			b = ','
 		} else {
 			b = l[k]
