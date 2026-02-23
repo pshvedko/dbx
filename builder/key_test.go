@@ -1,6 +1,7 @@
 package builder_test
 
 import (
+	"github.com/pshvedko/dbx/request"
 	"slices"
 	"testing"
 
@@ -9,41 +10,169 @@ import (
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
 	"github.com/pshvedko/dbx/internal/test/model"
-	"github.com/pshvedko/dbx/request"
 )
 
-func TestKey_WriteHash(t *testing.T) {
-	j := model.Object{}
-
-	r, err := request.NewWithOption([]request.Option{
-		request.WithCreated("time_1"),
-		request.WithUpdated("time_2"),
-		request.WithDeleted("time_4"),
-		request.WithoutCount(),
-		request.WithoutField{"float_32", "float_64", "string_1", "string_2", "string_3", "string_4"},
-		request.WithCache(&__c),
-	})
-	require.NoError(t, err)
-
-	k := builder.Key{Constructor: r.Constructor().Range(&__o, &__l).Sort(__y)}
-
-	n, err := k.WriteHash(&j, __f)
-	require.NoError(t, err)
-	q := k.String()
-	t.Log(q)
-	require.Equal(t, 15, n)
-	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21", q)
-}
-
-func TestKey_To(t *testing.T) {
-	j := model.Object{}
-	k := builder.Key{Constructor: &builder.Constructor{}}
-	f := __f
-
-	err := f.To(&k, &j)
-	require.NoError(t, err)
-	t.Logf("%s", &k)
-	require.Equal(t, `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`, k.String())
+func TestHash_Places(t *testing.T) {
+	var o model.Object
+	type args struct {
+		j filter.Projector
+		L string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    []any
+		wantErr error
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0-21",
+			},
+			want: o.Places(),
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "",
+			},
+			want: []any{},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0",
+			},
+			want: []any{&o.ID},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "1",
+			},
+			want: []any{&o.UUID2},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0,1",
+			},
+			want: []any{&o.ID, &o.UUID2},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0-1",
+			},
+			want: []any{&o.ID, &o.UUID2},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0,1,3",
+			},
+			want: []any{&o.ID, &o.UUID2, &o.UUID4},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0,1,3-5,7",
+			},
+			want: []any{&o.ID, &o.UUID2, &o.UUID4, &o.Bool1, &o.Bool2, &o.Bool4},
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0,1,3-5-7",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "0-",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "1-1",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "1-",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "1-2,",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: ",",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "-",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "2-1",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+		{
+			name: "",
+			args: args{
+				j: &o,
+				L: "1,3,2",
+			},
+			wantErr: builder.ErrInvalidRange,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := builder.Hash{Static: builder.Static{List: tt.args.L}}
+			got, err := h.Places(tt.args.j)
+			require.ErrorIs(t, tt.wantErr, err)
+			require.Equal(t, tt.want, got)
+			for i, v := range got {
+				require.Same(t, tt.want[i], v)
+			}
+		})
+	}
 }
 
 func TestKey_WriteIndices(t *testing.T) {
@@ -168,6 +297,73 @@ func IndexedColumn(t *testing.T, j filter.Fielder, idx ...byte) (c TestedColumn)
 		}
 	}
 	return
+}
+
+func TestConstructor_Select_WithCache(t *testing.T) {
+	j := model.Object{}
+
+	r, err := request.NewWithOption([]request.Option{
+		request.WithCreated("time_1"),
+		request.WithUpdated("time_2"),
+		request.WithDeleted("time_4"),
+		request.WithoutField{"uuid_3", "bool_1", "float_32", "float_64", "string_1", "string_2", "string_3", "string_4"},
+		request.WithCache(&__c),
+	})
+	require.NoError(t, err)
+
+	f := __f
+
+	z0, q0, a0, p0, err := r.Constructor().Range(&__o, &__l).Sort(__y).Select(&j, f)
+	require.NoError(t, err)
+	t.Log(q0)
+	t.Log(a0)
+	t.Log(p0)
+	t.Log(z0)
+
+	z1, q1, a1, p1, err := r.Constructor().Range(&__o, &__l).Sort(__y).Select(&j, f)
+	require.NoError(t, err)
+	t.Log(q1)
+	t.Log(a1)
+	t.Log(p1)
+	t.Log(z1)
+	require.Equal(t, q0, q1)
+	require.Equal(t, a0, a1)
+	require.Equal(t, p0, p1)
+	require.Equal(t, z0, z1)
+}
+
+func TestKey_WriteHash(t *testing.T) {
+	j := model.Object{}
+
+	r, err := request.NewWithOption([]request.Option{
+		request.WithCreated("time_1"),
+		request.WithUpdated("time_2"),
+		request.WithDeleted("time_4"),
+		request.WithoutCount(),
+		request.WithoutField{"float_32", "float_64", "string_1", "string_2", "string_3", "string_4"},
+		request.WithCache(&__c),
+	})
+	require.NoError(t, err)
+
+	k := builder.Key{Constructor: r.Constructor().Range(&__o, &__l).Sort(__y)}
+
+	n, err := k.WriteHash(&j, __f)
+	require.NoError(t, err)
+	q := k.String()
+	t.Log(q)
+	require.Equal(t, 15, n)
+	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21OL", q)
+}
+
+func TestKey_To(t *testing.T) {
+	j := model.Object{}
+	k := builder.Key{Constructor: &builder.Constructor{}}
+	f := __f
+
+	err := f.To(&k, &j)
+	require.NoError(t, err)
+	t.Logf("%s", &k)
+	require.Equal(t, `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`, k.String())
 }
 
 const (

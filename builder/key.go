@@ -1,6 +1,7 @@
 package builder
 
 import (
+	"errors"
 	"github.com/pshvedko/dbx/filter"
 )
 
@@ -147,19 +148,40 @@ func (k *Key) WriteDeleted(j filter.Fielder) (err error) {
 	return
 }
 
-func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (n int, err error) {
-	err = k.WriteIndices(j)
+func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (int, error) {
+	err := k.WriteIndices(j)
 	if err != nil {
-		return
+		return 0, err
 	}
-	n = k.Len()
+	n := k.Len()
 	if f != nil {
 		err = f.To(k, j)
 		if err != nil {
-			return
+			return 0, err
 		}
 	}
 	err = k.WriteDeleted(j)
+	if err != nil {
+		return 0, err
+	}
+	return n, k.WriteOffsetLimit()
+}
+
+func (k *Key) WriteOffsetLimit() (err error) {
+	if k.R.O != nil {
+		err = k.WriteByte('O')
+		if err != nil {
+			return
+		}
+		k.Add(*k.R.O)
+	}
+	if k.R.L != nil {
+		err = k.WriteByte('L')
+		if err != nil {
+			return
+		}
+		k.Add(*k.R.L)
+	}
 	return
 }
 
@@ -183,13 +205,63 @@ type Static struct {
 }
 
 type Hash struct {
-	Origin
-	Static
+	Origin `json:"origin"`
+	Static `json:"static"`
+}
+
+var (
+	ErrInvalidRange = errors.New("invalid range")
+)
+
+func (h Hash) Places(j filter.Placer) ([]any, error) {
+	if len(h.List) == 0 {
+		return []any{}, nil
+	}
+	v, i, e, b, p := 0, 0, 0, -1, j.Places()
+	for _, a := range [2]string{h.List, "."} {
+		for _, r := range a {
+			switch r {
+			case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+				e *= 10
+				e += int(r - '0')
+			case '-':
+				if b != -1 {
+					return nil, ErrInvalidRange
+				}
+				b = e
+				e = 0
+			case '.':
+				fallthrough
+			case ',':
+				if i > e {
+					return nil, ErrInvalidRange
+				} else if b == -1 {
+					b = e
+				} else if b >= e {
+					return nil, ErrInvalidRange
+				}
+				for b <= e {
+					p[v] = p[b]
+					v++
+					b++
+					i = b
+				}
+				b = -1
+				e = 0
+			}
+		}
+	}
+	return p[:v], nil
+}
+
+type Query struct {
+	Data string `json:"data,omitempty"`
+	Size [4]int `json:"size,omitempty"`
 }
 
 type Keeper interface {
-	Get(Hash) (string, bool)
-	Put(Hash, string)
+	Get(Hash) (Query, bool)
+	Put(Hash, Query)
 }
 
 type Cache struct {

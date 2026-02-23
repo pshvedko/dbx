@@ -100,8 +100,8 @@ func (c *Constructor) Adjust(f filter.Fielder) error { // TODO ДЛЯ IN ДЕЛ�
 			size += len(name)
 		}
 	}
-	c.Grow(size<<2 + size)
-	c.Alloc(fund >> 1)
+	c.Grow(size * 5)
+	c.Alloc(fund / 2)
 	return nil
 }
 
@@ -124,32 +124,38 @@ func (c *Counter) Count() (string, int, error) {
 	return c.String(), c.z, nil
 }
 
-func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (any, error) {
+func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (*Counter, int, string, []any, error) {
 	if !c.IsEnabled() {
-		return nil, nil
+		return nil, 0, "", j.Places(), nil
 	}
 	k := Key{
 		Constructor: c,
 	}
-	_, err := k.WriteHash(j, f)
+	y, err := k.WriteHash(j, f)
 	if err != nil {
-		return nil, err
+		return nil, 0, "", nil, err
 	}
-
-	//q := k.String()
-	//h := Hash{
-	//	Origin: k.Origin,
-	//	Static: Static{
-	//		Type: t,
-	//		Name: j.Name(),
-	//		List: q[:n],
-	//		Sign: q[n:],
-	//	},
-	//}
-
-	// TODO OFFSET LIMIT
-
-	return nil, nil
+	q := k.String()
+	h := Hash{
+		Origin: k.Origin,
+		Static: Static{
+			Type: t,
+			Name: j.Name(),
+			List: q[:y],
+			Sign: q[y:],
+		},
+	}
+	x, ok := c.Get(h)
+	if ok {
+		var p []any
+		p, err = h.Places(j)
+		if err != nil {
+			return nil, 0, "", nil, err
+		}
+		return c.NewCounter(x.Data[x.Size[0]:x.Size[1]], x.Size[2]), x.Size[3], x.Data, p, err
+	}
+	c.Again()
+	return nil, y, "", j.Places(), nil
 }
 
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
@@ -158,16 +164,19 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	defer c.Done()
-	_, err = c.TryCache(j, f, SELECT)
+	x, y, q, vv, err := c.TryCache(j, f, SELECT)
 	if err != nil {
-		return nil, "", nil, nil, nil
+		return nil, "", nil, nil, err
+	} else if len(q) > 0 {
+		return x, q, c.Values(), vv, nil
 	}
+	k := c.Len()
 	_, err = c.WriteString("SELECT")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
 	w := c.Where(f)
-	v, nn, vv, t := 0, j.Names(), j.Places(), c.Alias(j.Table())
+	v, nn, t := 0, j.Names(), c.Alias(j.Table())
 	for i, n := range nn {
 		if c.IsDeleted(n) {
 			w = c.WithDeleted(w)
@@ -250,17 +259,30 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 			return nil, "", nil, nil, err
 		}
 	}
-	if c.Z || z == c.Size() {
-		return nil, c.String(), c.Values(), vv[:v], nil
-	}
-	return c.NewCounter(n, m, z), c.String(), c.Values(), vv[:v], nil
+	return c.AddCache(y, k, n, m, z, vv[:v], j, SELECT)
 }
 
-func (c *Constructor) NewCounter(n int, m int, z int) *Counter {
-	return &Counter{
-		q: c.String()[n:m],
-		z: z,
+func (c *Constructor) AddCache(y int, k int, n int, m int, z int, vv []any, j filter.Fielder, t byte) (*Counter, string, []any, []any, error) {
+	q := c.String()
+	if c.IsEnabled() {
+		c.Put(Hash{
+			Origin: c.Origin,
+			Static: Static{
+				Type: t,
+				Name: j.Name(),
+				List: q[:k][:y],
+				Sign: q[:k][y:],
+			},
+		}, Query{Data: q[k:], Size: [4]int{n - k, m - k, z, y}})
 	}
+	return c.NewCounter(q[n:m], z), q[k:], c.Values(), vv, nil
+}
+
+func (c *Constructor) NewCounter(q string, z int) *Counter {
+	if c.Z || z == c.Size() {
+		return nil
+	}
+	return &Counter{q: q, z: z}
 }
 
 func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {

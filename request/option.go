@@ -156,9 +156,9 @@ func WithCache(c builder.Keeper) OptionFunc {
 }
 
 type Cache struct {
-	filter.Map[builder.Hash, string]
+	filter.Map[builder.Hash, builder.Query]
 }
 
-func (c *Cache) Get(hash builder.Hash) (string, bool) { return c.Load(hash) }
+func (c *Cache) Get(hash builder.Hash) (builder.Query, bool) { return c.Load(hash) }
 
-func (c *Cache) Put(hash builder.Hash, query string) { c.Store(hash, query) }
+func (c *Cache) Put(hash builder.Hash, query builder.Query) { c.Store(hash, query) }

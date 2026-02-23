@@ -13,7 +13,13 @@ import (
 
 type Map[K comparable, V any] sync.Map
 
-func (m *Map[K, V]) Load(k K) (V, bool) { v, ok := (*sync.Map)(m).Load(k); return v.(V), ok }
+func (m *Map[K, V]) Load(k K) (v V, ok bool) {
+	x, ok := (*sync.Map)(m).Load(k)
+	if ok {
+		v = x.(V)
+	}
+	return
+}
 
 func (m *Map[K, V]) Store(k K, v V) { (*sync.Map)(m).Store(k, v) }
 

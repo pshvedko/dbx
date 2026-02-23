@@ -158,6 +158,10 @@ func (b *Builder) Alloc(n int) {
 	b.v = make([]any, 0, n)
 }
 
+func (b *Builder) Again() {
+	b.v = b.v[:0]
+}
+
 func (b *Builder) Width() (int, bool) {
 	return 0, false
 }
