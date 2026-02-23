@@ -280,8 +280,8 @@ func (s Static) Places(j filter.Placer) ([]any, error) {
 				p[v] = p[r]
 				v++
 				r++
-				i = r
 			}
+			i = r
 			r = -1
 			e = 0
 		default:
