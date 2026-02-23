@@ -164,10 +164,43 @@ func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return n, k.WriteOffsetLimit()
+	return n, k.WriteOrderOffsetLimit(j)
 }
 
-func (k *Key) WriteOffsetLimit() (err error) {
+func (k *Key) WriteOrderOffsetLimit(j filter.Projector) (err error) {
+	var z byte
+	for _, o := range k.O {
+		switch x := o.(type) {
+		case int:
+			if x < 0 {
+				x = -x
+				z = '-'
+			} else {
+				z = '+'
+			}
+			err = k.WriteByte(z)
+			if err != nil {
+				return err
+			}
+			_, err = k.AppendInt(x)
+		case string:
+			switch x[0] {
+			case '+', '-':
+				x = x[1:]
+				z = x[0]
+			default:
+				z = '+'
+			}
+			err = k.WriteByte(z)
+			if err != nil {
+				return err
+			}
+			_, err = k.AppendInt(j.Columns()[x])
+		}
+	}
+	if err != nil {
+		return err
+	}
 	if k.R.O != nil {
 		err = k.WriteByte('O')
 		if err != nil {

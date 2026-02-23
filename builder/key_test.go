@@ -346,13 +346,12 @@ func TestKey_WriteHash(t *testing.T) {
 	require.NoError(t, err)
 
 	k := builder.Key{Constructor: r.Constructor().Range(&__o, &__l).Sort(__y)}
-
 	n, err := k.WriteHash(&j, __f)
 	require.NoError(t, err)
 	q := k.String()
 	t.Log(q)
 	require.Equal(t, 15, n)
-	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21OL", q)
+	require.Equal(t, "0-7,10-13,18-21[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]+21-1+18OL", q)
 }
 
 func TestKey_To(t *testing.T) {

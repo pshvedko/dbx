@@ -152,7 +152,7 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (*Co
 		if err != nil {
 			return nil, 0, "", nil, err
 		}
-		return c.NewCounter(x.Data[x.Size[0]:x.Size[1]], x.Size[2]), x.Size[3], x.Data, p, err
+		return c.NewCounter(x.Data[x.Size[0]:x.Size[1]], x.Size[2]), x.Size[3], x.Data, p, nil
 	}
 	c.Again()
 	return nil, y, "", j.Places(), nil
