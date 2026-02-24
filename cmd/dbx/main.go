@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"embed"
 	"flag"
+	"github.com/fatih/structtag"
+	"github.com/iancoleman/strcase"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -16,15 +18,19 @@ import (
 	"sort"
 	"strings"
 	"text/template"
-
-	"github.com/fatih/structtag"
-	"github.com/iancoleman/strcase"
+	"unicode"
 )
 
 //go:embed dbx.template
 var tmpFS embed.FS
 
 type spec []string
+
+func (t spec) Capitalize() string {
+	r := []rune(t[len(t)-1])
+	r[0] = unicode.ToUpper(r[0])
+	return string(r)
+}
 
 func (t spec) String() string {
 	return strings.Join(t, "")
@@ -52,6 +58,7 @@ type Type interface {
 	IsInterface() bool
 	IsPointer() bool
 	String() string
+	Capitalize() string
 }
 
 type field struct {

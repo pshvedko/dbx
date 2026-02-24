@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -54,8 +53,9 @@ func Random() Special {
 	return "RANDOM()"
 }
 
-func NilIfZero[T any](v T) (any, bool) {
-	if reflect.ValueOf(v).IsZero() {
+func NilIfZero[T comparable](v T) (any, bool) {
+	var z T
+	if v == z {
 		return nil, true
 	}
 	return v, false

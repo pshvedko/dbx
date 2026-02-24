@@ -74,21 +74,21 @@ func (obj User) Value(i int) (any, bool, bool) {
 func (obj User) Field(i int) (any, bool) {
 	switch i {
 	case 0:
-		return filter.NilIfZero(obj.ID)
+		return UUIDNilIfZero(obj.ID)
 	case 1:
 		return obj.DomainID, false
 	case 2:
 		return obj.Login, false
 	case 3:
-		return filter.NilIfZero(obj.Active)
+		return BoolNilIfZero(obj.Active)
 	case 4:
-		return filter.NilIfZero(obj.UserRoles)
+		return UserRoleNilIfZero(obj.UserRoles)
 	case 5:
 		return obj.Created, false
 	case 6:
 		return obj.Updated, false
 	case 7:
-		return filter.NilIfZero(obj.Deleted)
+		return TimeNilIfZero(obj.Deleted)
 	default:
 		panic(i)
 	}

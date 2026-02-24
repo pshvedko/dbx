@@ -74,49 +74,49 @@ func (obj Object) Value(i int) (any, bool, bool) {
 func (obj Object) Field(i int) (any, bool) {
 	switch i {
 	case 0:
-		return filter.NilIfZero(obj.ID)
+		return UUIDNilIfZero(obj.ID)
 	case 1:
 		return obj.UUID2, false
 	case 2:
-		return filter.NilIfZero(obj.UUID3)
+		return UUIDNilIfZero(obj.UUID3)
 	case 3:
-		return filter.NilIfZero(obj.UUID4)
+		return UUIDNilIfZero(obj.UUID4)
 	case 4:
 		return obj.Bool1, false
 	case 5:
 		return obj.Bool2, false
 	case 6:
-		return filter.NilIfZero(obj.Bool3)
+		return BoolNilIfZero(obj.Bool3)
 	case 7:
-		return filter.NilIfZero(obj.Bool4)
+		return BoolNilIfZero(obj.Bool4)
 	case 8:
 		return obj.Float32, false
 	case 9:
-		return filter.NilIfZero(obj.Float64)
+		return Float64NilIfZero(obj.Float64)
 	case 10:
-		return filter.NilIfZero(obj.Int8)
+		return BitsNilIfZero(obj.Int8)
 	case 11:
 		return obj.Int16, false
 	case 12:
-		return filter.NilIfZero(obj.Int32)
+		return Int32NilIfZero(obj.Int32)
 	case 13:
-		return filter.NilIfZero(obj.Int64)
+		return Int64NilIfZero(obj.Int64)
 	case 14:
 		return obj.String1, false
 	case 15:
 		return obj.String2, false
 	case 16:
-		return filter.NilIfZero(obj.String3)
+		return StringNilIfZero(obj.String3)
 	case 17:
-		return filter.NilIfZero(obj.String4)
+		return StringNilIfZero(obj.String4)
 	case 18:
 		return obj.Time1, false
 	case 19:
 		return obj.Time2, false
 	case 20:
-		return filter.NilIfZero(obj.Time3)
+		return TimeNilIfZero(obj.Time3)
 	case 21:
-		return filter.NilIfZero(obj.Time4)
+		return TimeNilIfZero(obj.Time4)
 	default:
 		panic(i)
 	}

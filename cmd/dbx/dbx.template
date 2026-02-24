@@ -77,7 +77,7 @@ func (obj {{.Type}}) Field(i int) (any, bool) {
 	switch i {
 	{{range $index, $_ := .Fields -}}
 	case {{$index}}:
-		return {{if or .IsPointer .IsSlice .IsMap .IsInterface .IsPrimary .IsZero}}filter.NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
+		return {{if or .IsPointer .IsSlice .IsMap .IsInterface .IsPrimary .IsZero}}{{.Capitalize}}NilIfZero(obj.{{.Name}}){{else}}obj.{{.Name}}, false{{end}}
     {{end -}}
     default:
 		panic(i)
