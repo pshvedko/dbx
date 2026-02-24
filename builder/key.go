@@ -9,7 +9,7 @@ type Key struct {
 	*Constructor
 }
 
-func (k *Key) AppendValue(t filter.Type, v any) (n int, err error) {
+func (k Key) AppendValue(t filter.Type, v any) (n int, err error) {
 	var u int
 	switch t {
 	case filter.TRUE, filter.FALSE:
@@ -35,29 +35,29 @@ func (k *Key) AppendValue(t filter.Type, v any) (n int, err error) {
 	return
 }
 
-func (k *Key) AppendColumn(t string, c string, m map[string]int) (int, error) {
+func (k Key) AppendColumn(t string, c string, m map[string]int) (int, error) {
 	return k.AppendInt(m[c])
 }
 
-func (k *Key) AppendVia(b bool) (int, error) {
+func (k Key) AppendVia(b bool) (int, error) {
 	if b {
 		return 1, k.WriteByte('&')
 	}
 	return 1, k.WriteByte('|')
 }
 
-func (k *Key) AppendParenthesis(b bool) (int, error) {
+func (k Key) AppendParenthesis(b bool) (int, error) {
 	if b {
 		return 1, k.WriteByte('[')
 	}
 	return 1, k.WriteByte(']')
 }
 
-func (k *Key) Straight(j filter.Projector, u bool, x filter.Filter) (err error) {
+func (k Key) Straight(j filter.Projector, u bool, x filter.Filter) (err error) {
 	return Straight(k, j, u, x)
 }
 
-func (k *Key) Conjunct(j filter.Projector, u bool, ff []filter.Filter) (err error) {
+func (k Key) Conjunct(j filter.Projector, u bool, ff []filter.Filter) (err error) {
 	_, err = k.AppendParenthesis(true)
 	if err != nil {
 		return
@@ -78,7 +78,7 @@ func (k *Key) Conjunct(j filter.Projector, u bool, ff []filter.Filter) (err erro
 	return
 }
 
-func (k *Key) WriteRange(i, z int) (n int, err error) {
+func (k Key) WriteRange(i, z int) (n int, err error) {
 	b := byte('-')
 	switch i - z {
 	case 0:
@@ -96,7 +96,7 @@ func (k *Key) WriteRange(i, z int) (n int, err error) {
 	return
 }
 
-func (k *Key) WriteIndices(j filter.Fielder) (err error) {
+func (k Key) WriteIndices(j filter.Fielder) (err error) {
 	y := true
 	z := 0
 	for i, n := range j.Names() {
@@ -131,7 +131,7 @@ func (k *Key) WriteIndices(j filter.Fielder) (err error) {
 	return
 }
 
-func (k *Key) WriteDeleted(j filter.Fielder) (err error) {
+func (k Key) WriteDeleted(j filter.Fielder) (err error) {
 	b := byte('+')
 	switch k.Deleted.(type) {
 	case DeletedFree, nil:
@@ -148,7 +148,7 @@ func (k *Key) WriteDeleted(j filter.Fielder) (err error) {
 	return
 }
 
-func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (int, error) {
+func (k Key) WriteHash(j filter.Projector, f filter.Filter) (int, error) {
 	err := k.WriteIndices(j)
 	if err != nil {
 		return 0, err
@@ -167,7 +167,7 @@ func (k *Key) WriteHash(j filter.Projector, f filter.Filter) (int, error) {
 	return n, k.WriteOrderOffsetLimit(j)
 }
 
-func (k *Key) WriteOrderOffsetLimit(j filter.Projector) (err error) {
+func (k Key) WriteOrderOffsetLimit(j filter.Projector) (err error) {
 	var z byte
 	for _, o := range k.O {
 		switch x := o.(type) {

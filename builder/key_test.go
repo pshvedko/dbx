@@ -360,9 +360,9 @@ func TestKey_To(t *testing.T) {
 	k := builder.Key{Constructor: &builder.Constructor{}}
 	f := __f
 
-	err := f.To(&k, &j)
+	err := f.To(k, &j)
 	require.NoError(t, err)
-	t.Logf("%s", &k)
+	t.Logf("%s", k)
 	require.Equal(t, `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`, k.String())
 }
 
@@ -380,7 +380,7 @@ func BenchmarkKey(b *testing.B) {
 		k := builder.Key{Constructor: &c}
 		k.Alloc(16)
 		k.Grow(128)
-		err := f.To(&k, &j)
+		err := f.To(k, &j)
 		if err != nil {
 			b.Fatal(err)
 		}

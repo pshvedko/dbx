@@ -128,16 +128,13 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (*Co
 	if !c.IsEnabled() {
 		return nil, 0, "", j.Places(), nil
 	}
-	k := Key{
-		Constructor: c,
-	}
-	y, err := k.WriteHash(j, f)
+	y, err := Key{Constructor: c}.WriteHash(j, f)
 	if err != nil {
 		return nil, 0, "", nil, err
 	}
-	q := k.String()
+	q := c.String()
 	h := Hash{
-		Origin: k.Origin,
+		Origin: c.Origin,
 		Static: Static{
 			Type: t,
 			Name: j.Name(),
