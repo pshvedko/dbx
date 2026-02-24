@@ -18,3 +18,5 @@ type User struct {
 	Updated   time.Time  `db:"updated"`
 	Deleted   *time.Time `db:"deleted"`
 }
+
+type UserPK0 = uuid.UUID

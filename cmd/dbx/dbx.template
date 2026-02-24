@@ -3,11 +3,13 @@
 package {{.Package}}
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 {{range .Types}}
 func ({{.Type}}) Table() string {
@@ -95,5 +97,35 @@ func (obj {{.Type}}) String() string {
 	return b.String()
 }
 
-type {{.Type}}List = dbx.FlatArray[Object]
+type {{.Type}}List = dbx.FlatArray[{{.Type}}]
+
+func (obj *{{.Type}}) Get(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Get(ctx, db, obj, filter.Eq{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}": obj.{{.Name}}{{end}}{{end -}} }, options...)
+}
+
+func (obj *{{.Type}}) Put(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Put(ctx, db, obj, options...)
+}
+
+func (obj *{{.Type}}) Delete(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Delete1(ctx, db, obj, filter.Eq{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}"{{.Alias}}": obj.{{.Name}}{{end}}{{end -}} }, options...)
+}
+
+func Get{{.Type}}(ctx context.Context, db dbx.DBX, {{$comma := false}}{{$pk := .Type}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}pk{{$index}} {{$pk}}PK{{$index}}{{end}}{{end -}} , options ...request.Option) (*{{.Type}}, error) {
+	obj := {{.Type}}{ {{- $comma := false}}{{- range $index, $_ := .Fields}}{{if .IsPrimary}}{{if $comma}}, {{end}}{{$comma = true}}{{.Name}}: pk{{$index}}{{end}}{{end -}} }
+	err := obj.Get(ctx, db, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func List{{.Type}}(ctx context.Context, db dbx.DBX, f filter.Filter, offset *uint, limit *uint, order []any, options ...request.Option) (uint, []{{.Type}}, error) {
+    var arr {{.Type}}List
+	total, err := dbx.List(ctx, db, &arr, f, offset, limit, order, options...)
+	if err != nil {
+		return 0, nil, err
+	}
+	return total, arr, nil
+}
 {{end}}

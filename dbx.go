@@ -110,6 +110,10 @@ func Delete1[T filter.Fielder](ctx context.Context, db request.Connector, o *T, 
 	if err != nil {
 		return err
 	}
+	err = r.WithTx(ctx)
+	if err != nil {
+		return err
+	}
 	err = r.Delete(ctx, &arr, f)
 	if err == nil {
 		switch len(arr) {

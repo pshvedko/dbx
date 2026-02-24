@@ -3,11 +3,13 @@
 package model
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/pshvedko/dbx"
 	"github.com/pshvedko/dbx/filter"
+	"github.com/pshvedko/dbx/request"
 )
 
 func (User) Table() string {
@@ -119,4 +121,34 @@ func (obj User) String() string {
 	return b.String()
 }
 
-type UserList = dbx.FlatArray[Object]
+type UserList = dbx.FlatArray[User]
+
+func (obj *User) Get(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Get(ctx, db, obj, filter.Eq{"id": obj.ID}, options...)
+}
+
+func (obj *User) Put(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Put(ctx, db, obj, options...)
+}
+
+func (obj *User) Delete(ctx context.Context, db dbx.DBX, options ...request.Option) error {
+	return dbx.Delete1(ctx, db, obj, filter.Eq{"id": obj.ID}, options...)
+}
+
+func GetUser(ctx context.Context, db dbx.DBX, pk0 UserPK0, options ...request.Option) (*User, error) {
+	obj := User{ID: pk0}
+	err := obj.Get(ctx, db, options...)
+	if err != nil {
+		return nil, err
+	}
+	return &obj, nil
+}
+
+func ListUser(ctx context.Context, db dbx.DBX, f filter.Filter, offset *uint, limit *uint, order []any, options ...request.Option) (uint, []User, error) {
+	var arr UserList
+	total, err := dbx.List(ctx, db, &arr, f, offset, limit, order, options...)
+	if err != nil {
+		return 0, nil, err
+	}
+	return total, arr, nil
+}

@@ -313,3 +313,11 @@ func (r *Request) WithOption(oo ...Option) error {
 	}
 	return nil
 }
+
+func (r *Request) WithTx(ctx context.Context) error {
+	if r.t {
+		return nil
+	}
+	r.o = &sql.TxOptions{}
+	return r.makeTx(ctx)
+}
