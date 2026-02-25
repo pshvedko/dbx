@@ -36,7 +36,7 @@ func (k Key) AppendValue(t filter.Type, v any) (n int, err error) {
 }
 
 func (k Key) AppendColumn(t string, n string, j filter.Projector) (int, error) {
-	return k.AppendInt(j.Columns()[n])
+	return k.AppendInt(j.Index(n))
 }
 
 func (k Key) AppendVia(b bool) (int, error) {
@@ -144,7 +144,7 @@ func (k Key) WriteDeleted(j filter.Fielder) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = k.AppendInt(j.Columns()[k.AsDeleted()])
+	_, err = k.AppendInt(j.Index(k.AsDeleted()))
 	return
 }
 
@@ -195,7 +195,7 @@ func (k Key) WriteOrderOffsetLimit(j filter.Projector) (err error) {
 			if err != nil {
 				return err
 			}
-			_, err = k.AppendInt(j.Columns()[x])
+			_, err = k.AppendInt(j.Index(x))
 		}
 	}
 	if err != nil {

@@ -91,75 +91,70 @@ type Join[A Projector, B Projector] struct {
 	F Filter
 }
 
-func (o Join[A, B]) Type() int {
+func (j Join[A, B]) Type() int {
 	return InnerJoin
 }
 
-func (o Join[A, B]) Right() Projector {
-	return o.B
+func (j Join[A, B]) Right() Projector {
+	return j.B
 }
 
-func (o Join[A, B]) On(string) And {
-	return And{o.F}
+func (j Join[A, B]) On(string) And {
+	return And{j.F}
 }
 
-func (o Join[A, B]) PK() PK {
-	return o.A.PK()
+func (j Join[A, B]) PK() PK {
+	return j.A.PK()
 }
 
-func (o Join[A, B]) Len() int {
-	return o.A.Len() + o.B.Len()
+func (j Join[A, B]) Len() int {
+	return j.A.Len() + j.B.Len()
 }
 
-func (o Join[A, B]) Name() string {
-	return path.Join(o.A.Name(), "0", o.B.Name())
+func (j Join[A, B]) Name() string {
+	return path.Join(j.A.Name(), "0", j.B.Name())
 }
 
-func (o Join[A, B]) Names() []string {
-	return o.A.Names()
+func (j Join[A, B]) Names() []string {
+	return j.A.Names()
 }
 
-func (o Join[A, B]) Columns() map[string]int {
-	//m := maps.Clone(o.A.Columns())
-	//n := len(m)
-	//for i, k := range o.B.Names() { FIXME
-	//	m[k] = i + n
-	//}
-	return o.A.Columns()
+func (j Join[A, B]) Index(k string) int {
+	return j.A.Index(k)
 }
 
-func (o Join[A, B]) Exists(k string) bool {
-	return o.A.Exists(k)
+func (j Join[A, B]) Exists(k string) bool {
+	return j.A.Exists(k) || j.B.Exists(k)
 }
 
-func (o Join[A, B]) Value(i int) (any, bool, bool) {
-	if i < o.A.Len() {
-		return o.A.Value(i)
+func (j Join[A, B]) Value(i int) (any, bool, bool) {
+	if i < j.A.Len() {
+		return j.A.Value(i)
 	}
-	return o.B.Value(i - o.A.Len())
+	return j.B.Value(i - j.A.Len())
 }
 
-func (o Join[A, B]) Field(i int) (any, bool) {
-	if i < o.A.Len() {
-		return o.A.Field(i)
+func (j Join[A, B]) Field(i int) (any, bool) {
+	if i < j.A.Len() {
+		return j.A.Field(i)
 	}
-	return o.B.Field(i - o.A.Len())
+	return j.B.Field(i - j.A.Len())
 }
 
-func (o Join[A, B]) Self() Projector {
-	return &o
+func (j Join[A, B]) Self() Projector {
+	return &j
 }
 
-func (o Join[A, B]) Copy() Copier {
-	return o
+func (j Join[A, B]) Copy() Copier {
+	return j
 }
 
-func (o Join[A, B]) Places() []any {
-	return append(append(make([]any, 0, o.A.Len()+o.B.Len()), o.A.Places()...), o.B.Places()...)
+func (j Join[A, B]) Places() []any {
+	return append(append(make([]any, 0, j.A.Len()+j.B.Len()), j.A.Places()...), j.B.Places()...)
 }
 
-func (o Join[A, B]) Table() string {
-	return o.A.Table()
+func (j Join[A, B]) Table() string {
+	return j.A.Table()
 }
 
 func NewJoin[A Projector, B Projector](a A, b B, f Filter) Join[A, B] {
@@ -241,7 +236,8 @@ type Fielder interface {
 	Len() int
 	Name() string
 	Names() []string
-	Columns() map[string]int
+	//	Columns() map[string]int
+	Index(string) int
 	Exists(string) bool
 	Value(int) (any, bool, bool) // value, none, auto
 	Field(int) (any, bool)       // value, none

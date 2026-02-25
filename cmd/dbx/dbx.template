@@ -38,6 +38,7 @@ func ({{.Type}}) Names() []string {
 
 var {{.Type}}Columns = map[string]int{ {{- range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}": {{$index}}{{end}}}
 
+// DEPRECATED: use Index
 func ({{.Type}}) Columns() map[string]int {
     return {{.Type}}Columns
 }
@@ -72,6 +73,17 @@ func (obj {{.Type}}) Value(i int) (any, bool, bool) {
     {{- end}}
 	default:
 		return v, ok, false
+	}
+}
+
+func ({{.Type}}) Index(k string) int {
+	switch k {
+	{{range $index, $_ := .Fields -}}
+	case "{{.Alias}}":
+		return {{$index}}
+    {{end -}}
+    default:
+		panic(k)
 	}
 }
 

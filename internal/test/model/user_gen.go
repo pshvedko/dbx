@@ -38,6 +38,7 @@ func (User) Names() []string {
 
 var UserColumns = map[string]int{"id": 0, "domain_id": 1, "login": 2, "active": 3, "user_roles": 4, "created": 5, "updated": 6, "deleted": 7}
 
+// DEPRECATED: use Index
 func (User) Columns() map[string]int {
 	return UserColumns
 }
@@ -70,6 +71,29 @@ func (obj User) Value(i int) (any, bool, bool) {
 		return v, ok, true
 	default:
 		return v, ok, false
+	}
+}
+
+func (User) Index(k string) int {
+	switch k {
+	case "id":
+		return 0
+	case "domain_id":
+		return 1
+	case "login":
+		return 2
+	case "active":
+		return 3
+	case "user_roles":
+		return 4
+	case "created":
+		return 5
+	case "updated":
+		return 6
+	case "deleted":
+		return 7
+	default:
+		panic(k)
 	}
 }
 

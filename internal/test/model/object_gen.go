@@ -38,6 +38,7 @@ func (Object) Names() []string {
 
 var ObjectColumns = map[string]int{"id": 0, "uuid_2": 1, "uuid_3": 2, "uuid_4": 3, "bool_1": 4, "bool_2": 5, "bool_3": 6, "bool_4": 7, "float_32": 8, "float_64": 9, "int_8": 10, "int_16": 11, "int_32": 12, "int_64": 13, "string_1": 14, "string_2": 15, "string_3": 16, "string_4": 17, "time_1": 18, "time_2": 19, "time_3": 20, "time_4": 21}
 
+// DEPRECATED: use Index
 func (Object) Columns() map[string]int {
 	return ObjectColumns
 }
@@ -70,6 +71,57 @@ func (obj Object) Value(i int) (any, bool, bool) {
 		return v, ok, true
 	default:
 		return v, ok, false
+	}
+}
+
+func (Object) Index(k string) int {
+	switch k {
+	case "id":
+		return 0
+	case "uuid_2":
+		return 1
+	case "uuid_3":
+		return 2
+	case "uuid_4":
+		return 3
+	case "bool_1":
+		return 4
+	case "bool_2":
+		return 5
+	case "bool_3":
+		return 6
+	case "bool_4":
+		return 7
+	case "float_32":
+		return 8
+	case "float_64":
+		return 9
+	case "int_8":
+		return 10
+	case "int_16":
+		return 11
+	case "int_32":
+		return 12
+	case "int_64":
+		return 13
+	case "string_1":
+		return 14
+	case "string_2":
+		return 15
+	case "string_3":
+		return 16
+	case "string_4":
+		return 17
+	case "time_1":
+		return 18
+	case "time_2":
+		return 19
+	case "time_3":
+		return 20
+	case "time_4":
+		return 21
+	default:
+		panic(k)
 	}
 }
 

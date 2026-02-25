@@ -256,12 +256,10 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	err = o.Join()
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-
 	_, err = c.WriteString(" WHERE ")
 	if err != nil {
 		return nil, "", nil, nil, err

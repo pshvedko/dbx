@@ -6,7 +6,7 @@ type Index map[int]any
 func (s Set) Index(f Fielder) Index {
 	index := make(Index, len(s))
 	for key, value := range s {
-		index[f.Columns()[key]] = value
+		index[f.Index(key)] = value
 	}
 	return index
 }
@@ -40,7 +40,7 @@ func (w Wrapper) WithSet(set Set) Mutator {
 }
 
 func (w Wrapper) WithValue(key string, value any) Mutator {
-	return Wrapper{Projector: WrapperWithValue{Projector: w, index: Index{w.Columns()[key]: value}}}
+	return Wrapper{Projector: WrapperWithValue{Projector: w, index: Index{w.Index(key): value}}}
 }
 
 type WrapperWithPK struct {
