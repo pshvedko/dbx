@@ -35,8 +35,8 @@ func (k Key) AppendValue(t filter.Type, v any) (n int, err error) {
 	return
 }
 
-func (k Key) AppendColumn(t string, c string, m map[string]int) (int, error) {
-	return k.AppendInt(m[c])
+func (k Key) AppendColumn(t string, n string, j filter.Projector) (int, error) {
+	return k.AppendInt(j.Columns()[n])
 }
 
 func (k Key) AppendVia(b bool) (int, error) {

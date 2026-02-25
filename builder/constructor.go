@@ -86,15 +86,15 @@ func (c *Constructor) Unreturned(n string) bool {
 	return !c.Returned(n)
 }
 
-func (c *Constructor) Adjust(f filter.Fielder) error {
+func (c *Constructor) Adjust(j filter.Fielder) error {
 	size := 0
-	fund := f.Len()
-	for _, name := range f.Names() {
+	fund := j.Len()
+	for _, name := range j.Names() {
 		size += len(name)
 	}
 	for _, fields := range c.Names() {
 		for name := range fields {
-			if !f.Exists(name) {
+			if !j.Exists(name) {
 				return fmt.Errorf("unknown column: %q", name)
 			}
 			size += len(name)
@@ -155,6 +155,63 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (*Co
 	return nil, y, "", j.Places(), nil
 }
 
+func (c *Constructor) WriteColumns(v int, t string, w filter.And, p []any, m int, j filter.Projector, f Joiner) (int, Joiner, filter.And, error) {
+	var err error
+	for i, n := range j.Names() {
+		if c.IsDeleted(n) {
+			w = c.WithDeleted(w)
+		}
+		if c.Unreturned(n) {
+			continue
+		}
+		if v > 0 {
+			err = c.WriteByte(',')
+			if err != nil {
+				return 0, nil, nil, err
+			}
+		}
+		err = c.WriteByte(' ')
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		_, err = Column{t, n}.AppendTo(c)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		p[v] = p[m+i]
+		v++
+	}
+	switch j := j.(type) {
+	case filter.Joiner:
+		o := j.On(t)
+		a := c.Alias(j.Table())
+		v, f, o, err = c.WriteColumns(v, a, o, p, m+j.Len()-j.Right().Len(), j.Right(), f)
+		if err != nil {
+			return 0, nil, nil, err
+		}
+		f = append(f, func() error {
+			err := c.WriteByte(' ')
+			if err != nil {
+				return err
+			}
+			_, err = c.Write(joins[j.Type()])
+			if err != nil {
+				return err
+			}
+			err = c.WriteTable(j.Table(), a)
+			if err != nil {
+				return err
+			}
+			_, err = c.WriteString(" ON ")
+			if err != nil {
+				return err
+			}
+			return o.To(Join{Constructor: c, Alias: t}, filter.Table{Projector: j, Alias: a})
+		})
+	}
+	return v, f, w, nil
+}
+
 func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, string, []any, []any, error) {
 	err := c.Adjust(j)
 	if err != nil {
@@ -173,30 +230,10 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	w := c.AndFilter(f)
-	v, nn, t := 0, j.Names(), c.Alias(j.Table())
-	for i, n := range nn {
-		if c.IsDeleted(n) {
-			w = c.WithDeleted(w)
-		}
-		if c.Unreturned(n) {
-			continue
-		}
-		if v > 0 {
-			err = c.WriteByte(',')
-			if err != nil {
-				return nil, "", nil, nil, err
-			}
-		}
-		err = c.WriteByte(' ')
-		if err != nil {
-			return nil, "", nil, nil, err
-		}
-		_, err = Column{t, n}.AppendTo(c)
-		if err != nil {
-			return nil, "", nil, nil, err
-		}
-		vv[v] = vv[i]
-		v++
+	t := c.Alias(j.Table())
+	v, o, w, err := c.WriteColumns(0, t, w, vv, 0, j, Joiner{})
+	if err != nil {
+		return nil, "", nil, nil, err
 	}
 	n := c.Len()
 	_, err = c.WriteString(" FROM \"")
@@ -215,7 +252,17 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
-	_, err = c.WriteString("\" WHERE ")
+	err = c.WriteByte('"')
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	err = o.Join()
+	if err != nil {
+		return nil, "", nil, nil, err
+	}
+
+	_, err = c.WriteString(" WHERE ")
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -642,6 +689,18 @@ func (c *Constructor) WriteOnConflictDoUpdateSet(pk []string) error {
 	}
 	_, err = c.WriteString("\" ) DO UPDATE SET")
 	return err
+}
+
+func (c *Constructor) WriteQuotedString(s string) error {
+	err := c.WriteByte('"')
+	if err != nil {
+		return err
+	}
+	_, err = c.WriteString(s)
+	if err != nil {
+		return err
+	}
+	return c.WriteByte('"')
 }
 
 func (c *Constructor) AndFilter(ff ...filter.Filter) filter.And {

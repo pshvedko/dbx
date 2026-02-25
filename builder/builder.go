@@ -72,7 +72,7 @@ func StraightTo[T any, M interface {
 				return
 			}
 		}
-		_, err = b.AppendColumn(t, f, j.Columns())
+		_, err = b.AppendColumn(t, f, j)
 		if err != nil {
 			return
 		}

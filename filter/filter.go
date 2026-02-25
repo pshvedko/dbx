@@ -61,6 +61,116 @@ func NilIfZero[T comparable](v T) (any, bool) {
 	return v, false
 }
 
+type Column string
+
+// T1 { [INNER] | { LEFT | RIGHT | FULL } [OUTER] } JOIN T2 ON EXPRESSION
+// T1 NATURAL { [INNER] | { LEFT | RIGHT | FULL } [OUTER] } JOIN T2
+const (
+	InnerJoin = iota
+	LeftOuterJoin
+	RightOuterJoin
+	FullOuterJoin
+	CrossJoin
+	NaturalInnerJoin
+	NaturalLeftOuterJoin
+	NaturalRightOuterJoin
+	NaturalFullOuterJoin
+)
+
+type Joiner interface {
+	Projector
+	Right() Projector
+	Type() int
+	On(string) And
+}
+
+type Join[A Projector, B Projector] struct {
+	A A
+	B B
+	F Filter
+}
+
+func (o Join[A, B]) Type() int {
+	return InnerJoin
+}
+
+func (o Join[A, B]) Right() Projector {
+	return o.B
+}
+
+func (o Join[A, B]) On(string) And {
+	return And{o.F}
+}
+
+func (o Join[A, B]) PK() PK {
+	return o.A.PK()
+}
+
+func (o Join[A, B]) Len() int {
+	return o.A.Len() + o.B.Len()
+}
+
+func (o Join[A, B]) Name() string {
+	return o.A.Name()
+}
+
+func (o Join[A, B]) Names() []string {
+	return o.A.Names()
+}
+
+func (o Join[A, B]) Columns() map[string]int {
+	//m := maps.Clone(o.A.Columns())
+	//n := len(m)
+	//for i, k := range o.B.Names() { FIXME
+	//	m[k] = i + n
+	//}
+	return o.A.Columns()
+}
+
+func (o Join[A, B]) Exists(k string) bool {
+	return o.A.Exists(k)
+}
+
+func (o Join[A, B]) Value(i int) (any, bool, bool) {
+	if i < o.A.Len() {
+		return o.A.Value(i)
+	}
+	return o.B.Value(i - o.A.Len())
+}
+
+func (o Join[A, B]) Field(i int) (any, bool) {
+	if i < o.A.Len() {
+		return o.A.Field(i)
+	}
+	return o.B.Field(i - o.A.Len())
+}
+
+func (o Join[A, B]) Self() Projector {
+	return &o
+}
+
+func (o Join[A, B]) Copy() Copier {
+	return o
+}
+
+func (o Join[A, B]) Places() []any {
+	return append(append(make([]any, 0, o.A.Len()+o.B.Len()), o.A.Places()...), o.B.Places()...)
+}
+
+func (o Join[A, B]) Table() string {
+	return o.A.Table()
+}
+
+func NewJoin[A Projector, B Projector](a A, b B, f Filter) Join[A, B] {
+	return Join[A, B]{
+		A: a,
+		B: b,
+		F: f,
+	}
+}
+
+var _ Joiner = &Join[Projector, Projector]{}
+
 type Injectable[T Fielder] []T
 
 func (o Injectable[T]) Element() Projector {
@@ -76,6 +186,8 @@ func (o *Injectable[T]) Inject(j Projector) {
 		panic(v)
 	}
 }
+
+var _ Injector = &Injectable[Projector]{}
 
 type Rectifier interface {
 	Straight(Projector, bool, Filter) error
@@ -97,7 +209,7 @@ type Formatter interface {
 type Appender interface {
 	AppendValue(Type, any) (int, error)
 	AppendInt(int) (int, error)
-	AppendColumn(string, string, map[string]int) (int, error)
+	AppendColumn(string, string, Projector) (int, error)
 	AppendParenthesis(bool) (int, error)
 	AppendVia(bool) (int, error)
 	AppendFormat(fmt.Formatter) (int, error)

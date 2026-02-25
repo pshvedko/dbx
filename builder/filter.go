@@ -18,6 +18,13 @@ var (
 	among = []byte{'"', '.', '"'}
 	quote = []byte{'"'}
 	place = []byte{'$'}
+	joins = [...][]byte{
+		filter.InnerJoin:      {'J', 'O', 'I', 'N'},
+		filter.LeftOuterJoin:  {'L', 'E', 'F', 'T', ' ', 'J', 'O', 'I', 'N'},
+		filter.RightOuterJoin: {'R', 'I', 'G', 'H', 'T', ' ', 'J', 'O', 'I', 'N'},
+		filter.FullOuterJoin:  {'F', 'U', 'L', 'L', ' ', 'J', 'O', 'I', 'N'},
+		filter.CrossJoin:      {'C', 'R', 'O', 'S', 'S', ' ', 'J', 'O', 'I', 'N'},
+	}
 )
 
 func (c Comma) Format(f fmt.State, _ rune) {
@@ -141,6 +148,8 @@ func (b *Builder) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
+	case filter.Column:
+
 	}
 	b.v = append(b.v, v)
 	return Holder(len(b.v))
@@ -178,8 +187,8 @@ func (b *Builder) AppendInt(i int) (int, error) {
 	return Integer(i).AppendTo(b)
 }
 
-func (b *Builder) AppendColumn(t string, c string, m map[string]int) (int, error) {
-	return Column{t, c}.AppendTo(b)
+func (b *Builder) AppendColumn(t string, n string, j filter.Projector) (int, error) {
+	return Column{t, n}.AppendTo(b)
 }
 
 func (b *Builder) AppendVia(u bool) (int, error) {
