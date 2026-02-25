@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"path"
 	"slices"
 	"strings"
 	"sync"
@@ -111,7 +112,7 @@ func (o Join[A, B]) Len() int {
 }
 
 func (o Join[A, B]) Name() string {
-	return o.A.Name()
+	return path.Join(o.A.Name(), "0", o.B.Name())
 }
 
 func (o Join[A, B]) Names() []string {
