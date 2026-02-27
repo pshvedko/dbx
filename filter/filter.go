@@ -81,8 +81,9 @@ const (
 type Joiner interface {
 	Projector
 	Right() Projector
+	Left() Projector
 	Type() int
-	On(string) And
+	On() And
 }
 
 type Join[A Projector, B Projector] struct {
@@ -91,41 +92,34 @@ type Join[A Projector, B Projector] struct {
 	F Filter
 }
 
-func (j Join[A, B]) Type() int {
-	return InnerJoin
+func (j Join[A, B]) Join() Joiner { return j }
+
+func (j Join[A, B]) Type() int { return InnerJoin }
+
+func (j Join[A, B]) Left() Projector { return j.A }
+
+func (j Join[A, B]) Right() Projector { return j.B }
+
+func (j Join[A, B]) On() And { return And{j.F} }
+
+func (j Join[A, B]) PK() PK { return j.A.PK() }
+
+func (j Join[A, B]) Len() int { return j.A.Len() + j.B.Len() }
+
+func (j Join[A, B]) Size() int { return j.A.Size() + j.B.Size() }
+
+func (j Join[A, B]) Name() string { return path.Join(j.A.Name(), "0", j.B.Name()) }
+
+func (j Join[A, B]) Names() []string { return j.A.Names() }
+
+func (j Join[A, B]) Index(t, k string) int {
+	if t == j.A.Table() {
+		return j.A.Index(t, k)
+	}
+	return j.B.Index(t, k)
 }
 
-func (j Join[A, B]) Right() Projector {
-	return j.B
-}
-
-func (j Join[A, B]) On(string) And {
-	return And{j.F}
-}
-
-func (j Join[A, B]) PK() PK {
-	return j.A.PK()
-}
-
-func (j Join[A, B]) Len() int {
-	return j.A.Len() + j.B.Len()
-}
-
-func (j Join[A, B]) Name() string {
-	return path.Join(j.A.Name(), "0", j.B.Name())
-}
-
-func (j Join[A, B]) Names() []string {
-	return j.A.Names()
-}
-
-func (j Join[A, B]) Index(k string) int {
-	return j.A.Index(k)
-}
-
-func (j Join[A, B]) Exists(k string) bool {
-	return j.A.Exists(k) || j.B.Exists(k)
-}
+func (j Join[A, B]) Exists(t, k string) bool { return j.A.Exists(t, k) || j.B.Exists(t, k) }
 
 func (j Join[A, B]) Value(i int) (any, bool, bool) {
 	if i < j.A.Len() {
@@ -141,21 +135,15 @@ func (j Join[A, B]) Field(i int) (any, bool) {
 	return j.B.Field(i - j.A.Len())
 }
 
-func (j Join[A, B]) Self() Projector {
-	return &j
-}
+func (j Join[A, B]) Self() Projector { return &j }
 
-func (j Join[A, B]) Copy() Copier {
-	return j
-}
+func (j Join[A, B]) Copy() Copier { return j }
 
 func (j Join[A, B]) Places() []any {
 	return append(append(make([]any, 0, j.A.Len()+j.B.Len()), j.A.Places()...), j.B.Places()...)
 }
 
-func (j Join[A, B]) Table() string {
-	return j.A.Table()
-}
+func (j Join[A, B]) Table() string { return j.A.Table() }
 
 func NewJoin[A Projector, B Projector](a A, b B, f Filter) Join[A, B] {
 	return Join[A, B]{
@@ -193,6 +181,10 @@ type Unifier interface {
 	Conjunct(Projector, bool, []Filter) error
 }
 
+type Qualifier interface {
+	Regular(string) (string, string, bool)
+}
+
 type Formatter interface {
 	Size() int
 	Value(any) fmt.Formatter
@@ -217,6 +209,7 @@ type Builder interface {
 	io.StringWriter
 	fmt.Stringer
 	Formatter
+	Qualifier
 	Appender
 	IsTrusted() bool
 }
@@ -234,13 +227,15 @@ type Placer interface {
 type Fielder interface {
 	PK() PK
 	Len() int
+	Size() int
 	Name() string
+	// Names
+	// DEPRECATED:
 	Names() []string
-	//	Columns() map[string]int
-	Index(string) int
-	Exists(string) bool
-	Value(int) (any, bool, bool) // value, none, auto
-	Field(int) (any, bool)       // value, none
+	Index(string, string) int
+	Exists(string, string) bool
+	Value(int) (any, bool, bool)
+	Field(int) (any, bool)
 	Copier
 }
 
@@ -252,6 +247,7 @@ type Injector interface {
 type Copier interface {
 	Self() Projector
 	Copy() Copier
+	Join() Joiner
 }
 
 type Projector interface {

@@ -2,11 +2,10 @@ package builder
 
 import (
 	"fmt"
+	"github.com/pshvedko/dbx/filter"
 	"io"
 	"strconv"
 	"strings"
-
-	"github.com/pshvedko/dbx/filter"
 )
 
 type Comma int
@@ -69,6 +68,11 @@ func (c Column) Format(f fmt.State, _ rune) {
 }
 
 func (c Column) AppendTo(w io.Writer) (int, error) {
+	i := strings.IndexByte(c[1], '.')
+	if i != -1 {
+		c[0] = c[1][:i]
+		c[1] = c[1][i+1:]
+	}
 	u1, err := w.Write(quote)
 	if err != nil {
 		return u1, err
@@ -123,10 +127,75 @@ func (b By) AppendTo(w io.Writer) (int, error) {
 	return n1 + 1 + n2, err
 }
 
+type Alias struct {
+	t string
+	a string
+}
+
+type Aliases struct {
+	i ['z' - 'a' + 1]int
+	x [8]Alias
+	a []Alias
+}
+
+func (z *Aliases) Regular(k string) (string, string, bool) {
+	n := strings.IndexByte(k, '.')
+	if n == -1 {
+		return "", k, true
+	}
+	if n == 0 || n == len(k)-1 {
+		return "", "", false
+	}
+	return z.Regular2(k[:n], k[n+1:])
+}
+
+func (z *Aliases) Regular2(t string, k string) (string, string, bool) {
+	for _, a := range z.a {
+		if a.t == t || a.a == t {
+			return a.t, k, true
+		}
+	}
+	return "", "", false
+}
+
+func (z *Aliases) Alias(i int, t string) string {
+	for i < len(z.a) {
+		if t == z.a[i].t {
+			return z.a[i].a
+		}
+		i++
+	}
+	panic(t)
+}
+
+func (z *Aliases) Table(t string) error {
+	if len(t) < 2 || t[1] >= '0' && t[1] <= '9' {
+		return fmt.Errorf("illegal table name: %s", t)
+	}
+	a := t[:1]
+	b := t[0] - 'a'
+	i := z.i[b]
+	if i > 0 {
+		a = string(append(append(make([]byte, 0, 1+len(integers[i])), t[0]), integers[i]...))
+	}
+	if z.a == nil {
+		z.a = z.x[:0]
+	}
+	z.a = append(z.a, Alias{
+		t: t,
+		a: a,
+	})
+	z.i[b]++
+	return nil
+}
+
 type Builder struct {
 	strings.Builder
+	Aliases
 	v []any
 }
+
+var _ filter.Qualifier = &Builder{}
 
 func (b *Builder) IsTrusted() bool { return false }
 
@@ -148,8 +217,6 @@ func (b *Builder) Add(v any) fmt.Formatter {
 	switch x := v.(type) {
 	case fmt.Formatter:
 		return x
-	case filter.Column:
-
 	}
 	b.v = append(b.v, v)
 	return Holder(len(b.v))

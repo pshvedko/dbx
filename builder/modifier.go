@@ -1,50 +1,61 @@
 package builder
 
-import (
-	"github.com/pshvedko/dbx/filter"
-)
+import "github.com/pshvedko/dbx/filter"
+
+type Field struct {
+	Table  string
+	Column string
+}
+
+type Fields map[string]int
+
+func (m Fields) Find(t, n string) bool {
+	if _, ok := m[n]; ok {
+		return true
+	}
+	if _, ok := m[t+"."+n]; ok {
+		return true
+	}
+	return false
+}
 
 type Fielder interface {
-	Used(string) bool
-	Names() [2]map[string]int
-	Returned(string) bool
+	Used(string, string) bool
+	Names() [2]Fields
+	Returned(string, string) bool
 }
 
-type IncludedColumn [2]map[string]int
+type IncludedColumn [2]Fields
 
-func (c IncludedColumn) Returned(k string) bool {
+func (c IncludedColumn) Returned(t string, n string) bool {
 	if c[1] != nil {
-		_, ok := c[1][k]
-		return ok
+		return c[1].Find(t, n)
 	}
-	return c.Used(k)
+	return c.Used(t, n)
 }
 
-func (c IncludedColumn) Used(k string) bool {
-	_, ok := c[0][k]
-	return ok
+func (c IncludedColumn) Used(t string, n string) bool {
+	return c[0].Find(t, n)
 }
 
-func (c IncludedColumn) Names() [2]map[string]int {
+func (c IncludedColumn) Names() [2]Fields {
 	return c
 }
 
-type ExcludedColumn [2]map[string]int
+type ExcludedColumn [2]Fields
 
-func (c ExcludedColumn) Returned(k string) bool {
+func (c ExcludedColumn) Returned(t string, n string) bool {
 	if c[1] != nil {
-		_, ok := c[1][k]
-		return ok
+		return c[1].Find(t, n)
 	}
-	return c.Used(k)
+	return c.Used(t, n)
 }
 
-func (c ExcludedColumn) Used(k string) bool {
-	_, ok := c[0][k]
-	return !ok
+func (c ExcludedColumn) Used(t string, n string) bool {
+	return !c[0].Find(t, n)
 }
 
-func (c ExcludedColumn) Names() [2]map[string]int {
+func (c ExcludedColumn) Names() [2]Fields {
 	return c
 }
 

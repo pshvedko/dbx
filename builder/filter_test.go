@@ -221,3 +221,63 @@ func TestHolder_AppendTo(t *testing.T) {
 		})
 	}
 }
+
+func TestAliases_Alias(t *testing.T) {
+	a := builder.Aliases{}
+	type args struct {
+		t string
+		i int
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "",
+			args: args{t: "object"},
+			want: "o",
+		},
+		{
+			name: "",
+			args: args{t: "origin"},
+			want: "o1",
+		},
+		{
+			name: "",
+			args: args{t: "any"},
+			want: "a",
+		},
+		{
+			name: "",
+			args: args{t: "any", i: 3},
+			want: "a1",
+		},
+		{
+			name:    "",
+			args:    args{t: "o2"},
+			wantErr: true,
+		},
+		{
+			name:    "",
+			args:    args{t: "a"},
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := a.Table(tt.args.t)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("Table() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			if got := a.Alias(tt.args.i, tt.args.t); got != tt.want {
+				t.Errorf("Alias() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

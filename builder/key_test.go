@@ -273,7 +273,9 @@ func TestKey_WriteIndices(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			k := builder.Key{Constructor: &builder.Constructor{Fielder: tt.args.f}}
-			err := k.WriteIndices(tt.args.j)
+			err := k.Table(tt.args.j.Table())
+			require.NoError(t, err)
+			err = k.WriteIndices(tt.args.j)
 			require.ErrorIs(t, err, tt.wantErr)
 			key := k.String()
 			require.Equal(t, tt.want, key)
@@ -283,11 +285,11 @@ func TestKey_WriteIndices(t *testing.T) {
 
 type TestedColumn []string
 
-func (t TestedColumn) Used(n string) bool { return slices.Contains(t, n) }
+func (t TestedColumn) Used(x string, n string) bool { return slices.Contains(t, n) }
 
-func (t TestedColumn) Names() [2]map[string]int { return [2]map[string]int{} }
+func (t TestedColumn) Names() [2]builder.Fields { return [2]builder.Fields{} }
 
-func (t TestedColumn) Returned(n string) bool { return t.Used(n) }
+func (t TestedColumn) Returned(x string, n string) bool { return t.Used(x, n) }
 
 func IndexedColumn(t *testing.T, j filter.Fielder, idx ...byte) (c TestedColumn) {
 	t.Helper()
@@ -347,6 +349,8 @@ func TestKey_WriteHash(t *testing.T) {
 	require.NoError(t, err)
 
 	k := builder.Key{Constructor: r.Constructor().Range(&__o, &__l).Sort(__y)}
+	err = k.Table(j.Table())
+	require.NoError(t, err)
 	n, err := k.WriteHash(&j, __f)
 	require.NoError(t, err)
 	q := k.String()
@@ -360,7 +364,9 @@ func TestKey_To(t *testing.T) {
 	k := builder.Key{Constructor: &builder.Constructor{}}
 	f := __f
 
-	err := f.To(k, &j)
+	err := k.Table(j.Table())
+	require.NoError(t, err)
+	err = f.To(k, &j)
 	require.NoError(t, err)
 	t.Logf("%s", k)
 	require.Equal(t, `[[5EQT&10EQ]&[8IN&11IN&14IN]&[T|13GT|15NA]]`, k.String())

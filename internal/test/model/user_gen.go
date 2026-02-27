@@ -43,8 +43,15 @@ func (User) Columns() map[string]int {
 	return UserColumns
 }
 
-func (User) Exists(key string) bool {
-	switch key {
+func (User) Size() int { return 1 }
+
+func (User) Join() filter.Joiner { return nil }
+
+func (User) Exists(t, n string) bool {
+	if t != "" && t != UserTable {
+		return false
+	}
+	switch n {
 	case "id", "domain_id", "login", "active", "user_roles", "created", "updated", "deleted":
 		return true
 	default:
@@ -74,8 +81,11 @@ func (obj User) Value(i int) (any, bool, bool) {
 	}
 }
 
-func (User) Index(k string) int {
-	switch k {
+func (User) Index(t, n string) int {
+	if t != "" && t != UserTable {
+		return -1
+	}
+	switch n {
 	case "id":
 		return 0
 	case "domain_id":
@@ -93,7 +103,7 @@ func (User) Index(k string) int {
 	case "deleted":
 		return 7
 	default:
-		panic(k)
+		panic(n)
 	}
 }
 

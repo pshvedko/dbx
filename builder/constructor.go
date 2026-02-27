@@ -2,9 +2,9 @@ package builder
 
 import (
 	"fmt"
-	"github.com/pshvedko/dbx/filter"
-	"strconv"
 	"strings"
+
+	"github.com/pshvedko/dbx/filter"
 )
 
 type Order []any
@@ -21,25 +21,6 @@ type Ranger struct {
 type Access struct {
 	Group string
 	Owner string
-}
-
-type Aliases map[rune]int
-
-func (a Aliases) Alias(t string) string {
-	var k rune
-	for i, r := range t {
-		if i != 0 {
-			t = t[:i]
-			break
-		}
-		k = r
-	}
-	n := a[k]
-	a[k]++
-	if n == 0 {
-		return t
-	}
-	return t + strconv.Itoa(n)
 }
 
 type Mode int
@@ -59,7 +40,6 @@ type Constructor struct {
 	Fielder
 	Modify
 	Access
-	Aliases
 	Mode
 	R Ranger
 	O Order
@@ -78,24 +58,33 @@ func (c *Constructor) Printf(format string, a ...any) (int, error) {
 	return fmt.Fprintf(c, format, a...) // FIXME
 }
 
-func (c *Constructor) Unused(n string) bool {
-	return !c.Used(n)
+func (c *Constructor) Unused(t, n string) bool {
+	return !c.Used(t, n)
 }
 
-func (c *Constructor) Unreturned(n string) bool {
-	return !c.Returned(n)
+func (c *Constructor) Unreturned(t, n string) bool {
+	return !c.Returned(t, n)
 }
 
-func (c *Constructor) Adjust(j filter.Fielder) error {
+func (c *Constructor) Adjust(j filter.Projector) error {
 	size := 0
 	fund := j.Len()
-	for _, name := range j.Names() {
-		size += len(name)
+	{
+		err := c.Table(j.Table()) // FIXME join
+		if err != nil {
+			return err
+		}
+		for _, name := range j.Names() {
+			size += len(name)
+		}
 	}
 	for _, fields := range c.Names() {
 		for name := range fields {
-			if !j.Exists(name) {
-				return fmt.Errorf("unknown column: %q", name)
+			if !c.IsTrusted() {
+				t, f, ok := c.Regular(name)
+				if !ok || !j.Exists(t, f) {
+					return fmt.Errorf("field: unknown column: %s", name)
+				}
 			}
 			size += len(name)
 		}
@@ -155,13 +144,13 @@ func (c *Constructor) TryCache(j filter.Projector, f filter.Filter, t byte) (*Co
 	return nil, y, "", j.Places(), nil
 }
 
-func (c *Constructor) WriteColumns(v int, t string, w filter.And, p []any, m int, j filter.Projector, f Joiner) (int, Joiner, filter.And, error) {
+func (c *Constructor) WriteColumns(v int, t string, w filter.And, p []any, m, k int, j filter.Projector, f Joiner) (int, Joiner, filter.And, error) {
 	var err error
 	for i, n := range j.Names() {
 		if c.IsDeleted(n) {
 			w = c.WithDeleted(w)
 		}
-		if c.Unreturned(n) {
+		if c.Unreturned(t, n) {
 			continue
 		}
 		if v > 0 {
@@ -183,9 +172,11 @@ func (c *Constructor) WriteColumns(v int, t string, w filter.And, p []any, m int
 	}
 	switch j := j.(type) {
 	case filter.Joiner:
-		o := j.On(t)
-		a := c.Alias(j.Table())
-		v, f, o, err = c.WriteColumns(v, a, o, p, m+j.Len()-j.Right().Len(), j.Right(), f)
+		k++
+		o := j.On()
+		r := j.Right()
+		a := c.Alias(k, r.Table())
+		v, f, o, err = c.WriteColumns(v, a, o, p, m+j.Len()-r.Len(), k, r, f)
 		if err != nil {
 			return 0, nil, nil, err
 		}
@@ -198,7 +189,7 @@ func (c *Constructor) WriteColumns(v int, t string, w filter.And, p []any, m int
 			if err != nil {
 				return err
 			}
-			err = c.WriteTable(j.Table(), a)
+			err = c.WriteTable(r.Table(), a)
 			if err != nil {
 				return err
 			}
@@ -230,8 +221,8 @@ func (c *Constructor) Select(j filter.Projector, f filter.Filter) (*Counter, str
 		return nil, "", nil, nil, err
 	}
 	w := c.AndFilter(f)
-	t := c.Alias(j.Table())
-	v, o, w, err := c.WriteColumns(0, t, w, vv, 0, j, Joiner{})
+	t := c.Alias(0, j.Table())
+	v, o, w, err := c.WriteColumns(0, t, w, vv, 0, 0, j, Joiner{})
 	if err != nil {
 		return nil, "", nil, nil, err
 	}
@@ -327,7 +318,7 @@ func (c *Constructor) NewCounter(q string, z int) *Counter {
 	return &Counter{q: q, z: z}
 }
 
-func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
+func (c *Constructor) WriteOrder(j filter.Projector, a string, v int) error {
 	if len(c.O) == 0 {
 		return nil
 	}
@@ -376,18 +367,19 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 					return c.O
 				}
 			}
-			if !j.Exists(y) {
+			t, k, ok := c.Regular(y)
+			if !ok || !j.Exists(t, k) {
 				if len(y) == 0 || strings.ContainsFunc(y, func(r rune) bool {
 					return r < '0' || r > '9'
 				}) {
-					return fmt.Errorf("unknown column: %s", y)
+					return fmt.Errorf("order: unknown column: %s", y)
 				}
 				_, err = By{Keyword(y), o}.AppendTo(c)
 				if err != nil {
 					return err
 				}
 			} else {
-				_, err = By{Column{t, y}, o}.AppendTo(c)
+				_, err = By{Column{a, y}, o}.AppendTo(c)
 				if err != nil {
 					return err
 				}
@@ -398,7 +390,7 @@ func (c *Constructor) WriteOrder(j filter.Projector, t string, v int) error {
 				return err
 			}
 		default:
-			return fmt.Errorf("unknown column: %v", y)
+			return fmt.Errorf("order: unknown column: %v", y)
 		}
 	}
 	return nil
@@ -420,7 +412,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 		return "", nil, nil, err
 	}
 	defer c.Done()
-	t := c.Alias(j.Table())
+	t := c.Alias(0, j.Table())
 	_, err = c.Printf("UPDATE %q AS %q SET", j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
@@ -450,7 +442,7 @@ func (c *Constructor) Update(j filter.Projector, ff ...filter.Filter) (string, [
 				continue
 			}
 			v = c.Add(o)
-		case c.Unused(n) || c.IsCreated(n):
+		case c.Unused(t, n) || c.IsCreated(n):
 			continue
 		case none && auto:
 			continue
@@ -492,7 +484,7 @@ func (c *Constructor) WriteReturning(t string, nn []string, vv []any) (string, [
 	}
 	var v int
 	for i, n := range nn {
-		if c.Unreturned(n) {
+		if c.Unreturned(t, n) {
 			continue
 		}
 		_, err = c.Printf("%v %v", Comma(v), Column{t, n})
@@ -526,7 +518,7 @@ func (c *Constructor) Insert(j filter.Projector) (string, []any, []any, error) {
 	if err != nil {
 		return "", nil, nil, err
 	}
-	t := c.Alias(j.Table())
+	t := c.Alias(0, j.Table())
 	err = c.WriteTable(j.Table(), t)
 	if err != nil {
 		return "", nil, nil, err
@@ -608,11 +600,11 @@ type UnusedColumn struct {
 	Fielder
 }
 
-func (UnusedColumn) Used(string) bool {
+func (UnusedColumn) Used(string, string) bool {
 	return false
 }
 
-func (c *Constructor) SoftDelete() *Constructor {
+func (c *Constructor) SoftDelete() *Constructor { // FIXME? *
 	c.Fielder = UnusedColumn{Fielder: c.Fielder}
 	return c
 }
@@ -626,7 +618,7 @@ func (c *Constructor) Delete(j filter.Projector, f filter.Filter) (string, []any
 		return "", nil, nil, err
 	}
 	defer c.Done()
-	nn, vv, t := j.Names(), j.Places(), c.Alias(j.Table())
+	nn, vv, t := j.Names(), j.Places(), c.Alias(0, j.Table())
 	_, err = c.WriteString("DELETE FROM")
 	if err != nil {
 		return "", nil, nil, err

@@ -43,8 +43,15 @@ func ({{.Type}}) Columns() map[string]int {
     return {{.Type}}Columns
 }
 
-func ({{.Type}}) Exists(key string) bool {
-	switch key {
+func ({{.Type}}) Size() int { return 1 }
+
+func ({{.Type}}) Join() filter.Joiner { return nil }
+
+func ({{.Type}}) Exists(t, n string) bool {
+    if t != "" && t != {{.Type}}Table {
+        return false
+    }
+    switch n {
 	case {{range $index, $_ := .Fields}}{{if $index}}, {{end}}"{{.Alias}}"{{end -}}:
 		return true
 	default:
@@ -76,14 +83,17 @@ func (obj {{.Type}}) Value(i int) (any, bool, bool) {
 	}
 }
 
-func ({{.Type}}) Index(k string) int {
-	switch k {
+func ({{.Type}}) Index(t, n string) int {
+	if t != "" && t != {{.Type}}Table {
+		return -1
+	}
+	switch n {
 	{{range $index, $_ := .Fields -}}
 	case "{{.Alias}}":
 		return {{$index}}
     {{end -}}
     default:
-		panic(k)
+		panic(n)
 	}
 }
 

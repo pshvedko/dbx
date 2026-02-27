@@ -48,8 +48,9 @@ func StraightTo[T any, M interface {
 }](b filter.Builder, j filter.Projector, u bool, oo M) (err error) {
 	if !b.IsTrusted() {
 		for f := range oo {
-			if !j.Exists(f) {
-				return fmt.Errorf("unknown column: %q", f)
+			t, k, ok := b.Regular(f)
+			if !ok || !j.Exists(t, k) {
+				return fmt.Errorf("filter: unknown column: %s", f)
 			}
 		}
 	}
@@ -64,6 +65,10 @@ func StraightTo[T any, M interface {
 	for _, f := range j.Names() {
 		v, ok := oo[f]
 		if !ok {
+			// FIXME t+f
+			//v, ok = oo[t+f]
+			//if !ok {
+			//}
 			continue
 		}
 		if i > 0 {
@@ -76,7 +81,7 @@ func StraightTo[T any, M interface {
 		if err != nil {
 			return
 		}
-		_, err = b.AppendValue(oo.Type(), v) // TODO try func() { oo[f] }
+		_, err = b.AppendValue(oo.Type(), v)
 		if err != nil {
 			return
 		}

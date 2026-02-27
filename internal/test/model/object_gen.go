@@ -43,8 +43,15 @@ func (Object) Columns() map[string]int {
 	return ObjectColumns
 }
 
-func (Object) Exists(key string) bool {
-	switch key {
+func (Object) Size() int { return 1 }
+
+func (Object) Join() filter.Joiner { return nil }
+
+func (Object) Exists(t, n string) bool {
+	if t != "" && t != ObjectTable {
+		return false
+	}
+	switch n {
 	case "id", "uuid_2", "uuid_3", "uuid_4", "bool_1", "bool_2", "bool_3", "bool_4", "float_32", "float_64", "int_8", "int_16", "int_32", "int_64", "string_1", "string_2", "string_3", "string_4", "time_1", "time_2", "time_3", "time_4":
 		return true
 	default:
@@ -74,8 +81,11 @@ func (obj Object) Value(i int) (any, bool, bool) {
 	}
 }
 
-func (Object) Index(k string) int {
-	switch k {
+func (Object) Index(t, n string) int {
+	if t != "" && t != ObjectTable {
+		return -1
+	}
+	switch n {
 	case "id":
 		return 0
 	case "uuid_2":
@@ -121,7 +131,7 @@ func (Object) Index(k string) int {
 	case "time_4":
 		return 21
 	default:
-		panic(k)
+		panic(n)
 	}
 }
 

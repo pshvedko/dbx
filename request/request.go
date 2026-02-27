@@ -5,19 +5,20 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"io"
-	"log/slog"
-
 	"github.com/pshvedko/dbx/builder"
 	"github.com/pshvedko/dbx/filter"
+	"io"
+	"log/slog"
 )
 
 type Request struct {
 	c Connection
 	e bool
 	t bool
-	x [2]bool
-	f [2]map[string]int
+	u struct {
+		x [2]bool
+		f [2]builder.Fields
+	}
 	o *sql.TxOptions
 	a struct {
 		u string
@@ -139,8 +140,8 @@ func (r *Request) End(err error) error {
 	r.w = nil
 	r.c = nil
 	r.o = nil
-	r.f = [2]map[string]int{nil, nil}
-	r.x = [2]bool{false, false}
+	r.u.f = [2]builder.Fields{nil, nil}
+	r.u.x = [2]bool{false, false}
 	r.t = false
 	r.e = false
 	r.z = false
@@ -148,20 +149,20 @@ func (r *Request) End(err error) error {
 	return err
 }
 
-func (r *Request) withField(i int, b bool, kk ...string) error {
+func (r *Request) withField(m int, b bool, kk ...string) error {
 	switch {
-	case r.x[i] == b:
-		r.x[i] = !r.x[i]
+	case r.u.x[m] == b:
+		r.u.x[m] = !r.u.x[m]
 		fallthrough
-	case r.f[i] == nil:
-		r.f[i] = map[string]int{}
+	case r.u.f[m] == nil:
+		r.u.f[m] = builder.Fields{}
 	}
 	for _, k := range kk {
-		_, ok := r.f[i][k]
+		_, ok := r.u.f[m][k]
 		if ok {
 			return fmt.Errorf("repeated column: %s", k)
 		}
-		r.f[i][k] = 0
+		r.u.f[m][k] = len(r.u.f[m])
 	}
 	return nil
 }
@@ -169,17 +170,16 @@ func (r *Request) withField(i int, b bool, kk ...string) error {
 func (r *Request) Constructor() *builder.Constructor {
 	return &builder.Constructor{
 		Fielder: func() builder.Fielder {
-			if r.x[0] || len(r.f[0]) == 0 {
-				return builder.ExcludedColumn(r.f)
+			if r.u.x[0] || len(r.u.f[0]) == 0 {
+				return builder.ExcludedColumn(r.u.f)
 			}
-			return builder.IncludedColumn(r.f)
+			return builder.IncludedColumn(r.u.f)
 		}(),
 		Access: builder.Access{
 			Owner: r.a.u,
 			Group: r.a.g,
 		},
-		Aliases: make(builder.Aliases, 2),
-		Donner:  func() {},
+		Donner: func() {},
 		Modify: builder.Modify{
 			Created: r.s.c,
 			Updated: r.s.u,

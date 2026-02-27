@@ -36,7 +36,7 @@ func (k Key) AppendValue(t filter.Type, v any) (n int, err error) {
 }
 
 func (k Key) AppendColumn(t string, n string, j filter.Projector) (int, error) {
-	return k.AppendInt(j.Index(n))
+	return k.AppendInt(j.Index(t, n))
 }
 
 func (k Key) AppendVia(b bool) (int, error) {
@@ -96,11 +96,12 @@ func (k Key) WriteRange(i, z int) (n int, err error) {
 	return
 }
 
-func (k Key) WriteIndices(j filter.Fielder) (err error) {
+func (k Key) WriteIndices(j filter.Projector) (err error) {
 	y := true
 	z := 0
+	t := k.Alias(0, j.Table())
 	for i, n := range j.Names() {
-		if !k.Returned(n) {
+		if k.Unreturned(t, n) {
 			if !y {
 				_, err = k.WriteRange(i, z)
 				if err != nil {
@@ -131,7 +132,7 @@ func (k Key) WriteIndices(j filter.Fielder) (err error) {
 	return
 }
 
-func (k Key) WriteDeleted(j filter.Fielder) (err error) {
+func (k Key) WriteDeleted(j filter.Projector) (err error) {
 	b := byte('+')
 	switch k.Deleted.(type) {
 	case DeletedFree, nil:
@@ -144,7 +145,7 @@ func (k Key) WriteDeleted(j filter.Fielder) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = k.AppendInt(j.Index(k.AsDeleted()))
+	_, err = k.AppendInt(j.Index(j.Table(), k.AsDeleted()))
 	return
 }
 
@@ -195,7 +196,8 @@ func (k Key) WriteOrderOffsetLimit(j filter.Projector) (err error) {
 			if err != nil {
 				return err
 			}
-			_, err = k.AppendInt(j.Index(x))
+			t, x, _ := k.Regular(x)
+			_, err = k.AppendInt(j.Index(t, x))
 		}
 	}
 	if err != nil {
